@@ -49,19 +49,19 @@ function buscar(metodo, ruta) {
 }
 
 // Las rutas se registran al importar cada modulo.
-import './rutas/auth.js'
-import './rutas/configuracion.js'
-import './rutas/lugares.js'
-import './rutas/eventos.js'
-import './rutas/soda.js'
-import './rutas/pedidos.js'
-import './rutas/objetos.js'
-import './rutas/recordatorios.js'
-import './rutas/clases.js'
-import './rutas/enfermeria.js'
-import './rutas/notificaciones.js'
-import './rutas/usuarios.js'
-import './rutas/resumen.js'
+import './_rutas/auth.js'
+import './_rutas/configuracion.js'
+import './_rutas/lugares.js'
+import './_rutas/eventos.js'
+import './_rutas/soda.js'
+import './_rutas/pedidos.js'
+import './_rutas/objetos.js'
+import './_rutas/recordatorios.js'
+import './_rutas/clases.js'
+import './_rutas/enfermeria.js'
+import './_rutas/notificaciones.js'
+import './_rutas/usuarios.js'
+import './_rutas/resumen.js'
 
 registrar('GET', '/salud', async ({ res }) => {
   json(res, 200, {

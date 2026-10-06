@@ -1,0 +1,376 @@
+/* ==========================================================================
+   CitX - Tokens de diseno
+   Paleta tomada del prototipo de Figma y del logotipo del Complejo Educativo
+   CIT: turquesa, azul petroleo y azul marino.
+   ========================================================================== */
+
+:root {
+  /* --- Rampa turquesa (color principal, botones) --- */
+  --turquesa-50: #e6f7f6;
+  --turquesa-100: #c2ebe9;
+  --turquesa-200: #8ddbd7;
+  --turquesa-300: #4fc8c2;
+  --turquesa-400: #1bb8b1;
+  --turquesa-500: #04afa8;
+  --turquesa-600: #039690;
+  --turquesa-700: #037a76;
+  --turquesa-800: #02615e;
+  --turquesa-900: #014746;
+
+  /* --- Rampa azul petroleo (acciones secundarias) --- */
+  --petroleo-50: #e7f2f7;
+  --petroleo-100: #c3dfeb;
+  --petroleo-200: #8dc3d8;
+  --petroleo-300: #52a5c2;
+  --petroleo-400: #1f8dad;
+  --petroleo-500: #0b7fa0;
+  --petroleo-600: #0a6c88;
+  --petroleo-700: #08576e;
+  --petroleo-800: #064555;
+  --petroleo-900: #04333f;
+
+  /* --- Rampa azul marino (logotipo, titulos) --- */
+  --marino-50: #eaedf6;
+  --marino-100: #ccd3e8;
+  --marino-200: #a3aed4;
+  --marino-300: #7183b9;
+  --marino-400: #45599b;
+  --marino-500: #2f4789;
+  --marino-600: #233a7a;
+  --marino-700: #1c2e62;
+  --marino-800: #15234a;
+  --marino-900: #0e1832;
+
+  /* --- Neutros con una pizca de azul para que peguen con la marca --- */
+  --gris-0: #ffffff;
+  --gris-25: #fbfcfd;
+  --gris-50: #f5f7f9;
+  --gris-100: #eceff3;
+  --gris-200: #dde2e9;
+  --gris-300: #c3cbd6;
+  --gris-400: #97a2b2;
+  --gris-500: #6b7686;
+  --gris-600: #4e5767;
+  --gris-700: #3a4250;
+  --gris-800: #262d39;
+  --gris-900: #171c26;
+  --gris-950: #0d1117;
+
+  /* --- Colores de estado --- */
+  --exito-50: #e8f6ed;
+  --exito-500: #1e8e4a;
+  --exito-600: #16733b;
+  --exito-700: #0f5a2d;
+
+  --aviso-50: #fdf3e3;
+  --aviso-500: #b8730b;
+  --aviso-600: #965d06;
+  --aviso-700: #7a4b04;
+
+  --error-50: #fdeaea;
+  --error-500: #c42b2b;
+  --error-600: #a31f1f;
+  --error-700: #861919;
+
+  --info-50: #e7f2f7;
+  --info-500: #0b7fa0;
+
+  /* --- Degradado de la marca: solo logo y acentos muy puntuales --- */
+  --degradado-marca: linear-gradient(
+    135deg,
+    #0ad0c0 0%,
+    #04afa8 35%,
+    #1f8dad 70%,
+    #2179d8 100%
+  );
+
+  /* ---------- Tokens semanticos: modo claro ---------- */
+  --fondo: var(--gris-50);
+  --fondo-elevado: var(--gris-0);
+  --superficie: var(--gris-0);
+  --superficie-2: var(--gris-50);
+  --superficie-3: var(--gris-100);
+  --superficie-hover: var(--gris-100);
+
+  --borde: var(--gris-200);
+  --borde-fuerte: var(--gris-300);
+  --borde-sutil: var(--gris-100);
+
+  --texto: var(--gris-900);
+  --texto-suave: var(--gris-600);
+  --texto-tenue: var(--gris-500);
+  --texto-sobre-color: #ffffff;
+  --texto-titulo: var(--marino-600);
+
+  --principal: var(--turquesa-500);
+  --principal-fuerte: var(--turquesa-600);
+  --principal-suave: var(--turquesa-50);
+  --principal-borde: var(--turquesa-200);
+  --sobre-principal: #ffffff;
+
+  --accion: var(--petroleo-500);
+  --accion-fuerte: var(--petroleo-600);
+  --accion-suave: var(--petroleo-50);
+  --sobre-accion: #ffffff;
+
+  --marca: var(--marino-600);
+
+  --exito: var(--exito-600);
+  --exito-fondo: var(--exito-50);
+  --aviso: var(--aviso-600);
+  --aviso-fondo: var(--aviso-50);
+  --error: var(--error-600);
+  --error-fondo: var(--error-50);
+  --info: var(--info-500);
+  --info-fondo: var(--info-50);
+
+  --foco: var(--petroleo-500);
+  --foco-halo: rgba(11, 127, 160, 0.28);
+
+  /* --- Sombras: discretas, nada de brillos --- */
+  --sombra-1:
+    0 1px 2px rgba(23, 28, 38, 0.06), 0 1px 1px rgba(23, 28, 38, 0.04);
+  --sombra-2:
+    0 2px 6px rgba(23, 28, 38, 0.07), 0 1px 2px rgba(23, 28, 38, 0.05);
+  --sombra-3:
+    0 6px 16px rgba(23, 28, 38, 0.09), 0 2px 5px rgba(23, 28, 38, 0.05);
+  --sombra-4:
+    0 14px 34px rgba(23, 28, 38, 0.13), 0 4px 10px rgba(23, 28, 38, 0.06);
+  --sombra-interior: inset 0 1px 2px rgba(23, 28, 38, 0.06);
+
+  /* --- Tipografia --- */
+  --fuente-titulo: 'Delius', 'Figtree', ui-rounded, system-ui, sans-serif;
+  --fuente-base: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --fuente-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
+
+  /* Escala tipografica en rem: asi el ajuste de tamano de texto de la
+     configuracion agranda todo junto sin romper el diseno. */
+  --txt-xs: 0.75rem;
+  --txt-sm: 0.875rem;
+  --txt-base: 1rem;
+  --txt-md: 1.0625rem;
+  --txt-lg: 1.1875rem;
+  --txt-xl: 1.375rem;
+  --txt-2xl: 1.625rem;
+  --txt-3xl: 2rem;
+  --txt-4xl: 2.5rem;
+
+  --peso-normal: 400;
+  --peso-medio: 500;
+  --peso-semi: 600;
+  --peso-fuerte: 700;
+  --peso-extra: 800;
+
+  --alto-ajustado: 1.2;
+  --alto-normal: 1.5;
+  --alto-amplio: 1.7;
+
+  /* --- Espaciado --- */
+  --e-1: 0.25rem;
+  --e-2: 0.5rem;
+  --e-3: 0.75rem;
+  --e-4: 1rem;
+  --e-5: 1.25rem;
+  --e-6: 1.5rem;
+  --e-7: 1.75rem;
+  --e-8: 2rem;
+  --e-10: 2.5rem;
+  --e-12: 3rem;
+  --e-16: 4rem;
+  --e-20: 5rem;
+
+  /* --- Radios --- */
+  --radio-xs: 6px;
+  --radio-sm: 10px;
+  --radio-md: 14px;
+  --radio-lg: 20px;
+  --radio-xl: 28px;
+  --radio-pildora: 999px;
+
+  /* --- Medidas de interfaz --- */
+  --objetivo-tactil: 44px;
+  --ancho-contenido: 1180px;
+  --ancho-lectura: 68ch;
+  --alto-barra-inferior: 64px;
+  --ancho-lateral: 248px;
+  --margen-lateral: 1rem;
+
+  /* --- Movimiento --- */
+  --mov: 1;
+  --dur-rapida: calc(140ms * var(--mov));
+  --dur-media: calc(260ms * var(--mov));
+  --dur-lenta: calc(420ms * var(--mov));
+  --curva: cubic-bezier(0.32, 0.72, 0, 1);
+  --curva-suave: cubic-bezier(0.4, 0, 0.2, 1);
+  --curva-rebote: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* --- Capas --- */
+  --z-base: 1;
+  --z-pegajoso: 20;
+  --z-barra: 40;
+  --z-hoja: 60;
+  --z-modal: 80;
+  --z-aviso: 100;
+
+  color-scheme: light;
+}
+
+/* ---------- Modo oscuro ---------- */
+:root[data-tema='oscuro'] {
+  --fondo: var(--gris-950);
+  --fondo-elevado: var(--gris-900);
+  --superficie: #161b23;
+  --superficie-2: #1d232d;
+  --superficie-3: #252c38;
+  --superficie-hover: #252c38;
+
+  --borde: #2c3542;
+  --borde-fuerte: #3c4757;
+  --borde-sutil: #222935;
+
+  --texto: #e9edf3;
+  --texto-suave: #a8b3c2;
+  --texto-tenue: #8491a3;
+  --texto-sobre-color: #ffffff;
+  --texto-titulo: #8ddbd7;
+
+  --principal: var(--turquesa-400);
+  --principal-fuerte: var(--turquesa-300);
+  --principal-suave: rgba(4, 175, 168, 0.14);
+  --principal-borde: rgba(79, 200, 194, 0.35);
+  --sobre-principal: #042725;
+
+  --accion: var(--petroleo-300);
+  --accion-fuerte: var(--petroleo-200);
+  --accion-suave: rgba(11, 127, 160, 0.16);
+  --sobre-accion: #04222b;
+
+  --marca: var(--turquesa-300);
+
+  --exito: #4cc77c;
+  --exito-fondo: rgba(30, 142, 74, 0.16);
+  --aviso: #e0a33f;
+  --aviso-fondo: rgba(184, 115, 11, 0.16);
+  --error: #f08585;
+  --error-fondo: rgba(196, 43, 43, 0.18);
+  --info: var(--petroleo-300);
+  --info-fondo: rgba(11, 127, 160, 0.16);
+
+  --foco: var(--turquesa-300);
+  --foco-halo: rgba(79, 200, 194, 0.3);
+
+  --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --sombra-2: 0 2px 6px rgba(0, 0, 0, 0.5);
+  --sombra-3: 0 6px 16px rgba(0, 0, 0, 0.55);
+  --sombra-4: 0 14px 34px rgba(0, 0, 0, 0.6);
+  --sombra-interior: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+
+  color-scheme: dark;
+}
+
+/* ---------- Alto contraste ---------- */
+:root[data-contraste='alto'] {
+  --texto: #000000;
+  --texto-suave: #1a1a1a;
+  --texto-tenue: #2b2b2b;
+  --texto-titulo: #10224f;
+  --fondo: #ffffff;
+  --superficie: #ffffff;
+  --superficie-2: #ffffff;
+  --superficie-3: #f0f0f0;
+  --borde: #000000;
+  --borde-fuerte: #000000;
+  --borde-sutil: #4a4a4a;
+  --principal: var(--turquesa-800);
+  --principal-fuerte: var(--turquesa-900);
+  --accion: var(--petroleo-800);
+  --accion-fuerte: var(--petroleo-900);
+  --exito: var(--exito-700);
+  --error: var(--error-700);
+  --aviso: var(--aviso-700);
+  --foco: #000000;
+  --foco-halo: rgba(0, 0, 0, 0.35);
+  --sombra-1: 0 0 0 1px #000000;
+  --sombra-2: 0 0 0 1px #000000;
+  --sombra-3: 0 0 0 2px #000000;
+  --sombra-4: 0 0 0 2px #000000;
+}
+
+:root[data-tema='oscuro'][data-contraste='alto'] {
+  --texto: #ffffff;
+  --texto-suave: #f0f0f0;
+  --texto-tenue: #e0e0e0;
+  --texto-titulo: #8ddbd7;
+  --fondo: #000000;
+  --superficie: #000000;
+  --superficie-2: #0d0d0d;
+  --superficie-3: #1a1a1a;
+  --borde: #ffffff;
+  --borde-fuerte: #ffffff;
+  --borde-sutil: #b0b0b0;
+  --principal: var(--turquesa-200);
+  --principal-fuerte: var(--turquesa-100);
+  --sobre-principal: #000000;
+  --accion: var(--petroleo-200);
+  --accion-fuerte: var(--petroleo-100);
+  --sobre-accion: #000000;
+  --exito: #7fe3a4;
+  --error: #ffa8a8;
+  --aviso: #ffcc70;
+  --foco: #ffffff;
+  --foco-halo: rgba(255, 255, 255, 0.4);
+  --sombra-1: 0 0 0 1px #ffffff;
+  --sombra-2: 0 0 0 1px #ffffff;
+  --sombra-3: 0 0 0 2px #ffffff;
+  --sombra-4: 0 0 0 2px #ffffff;
+}
+
+/* ---------- Tamano de texto ---------- */
+:root[data-texto='normal'] {
+  font-size: 100%;
+}
+:root[data-texto='grande'] {
+  font-size: 112.5%;
+}
+:root[data-texto='mas-grande'] {
+  font-size: 125%;
+}
+:root[data-texto='enorme'] {
+  font-size: 140%;
+}
+
+/* ---------- Botones y areas tactiles mas grandes ---------- */
+:root[data-tactil='grande'] {
+  --objetivo-tactil: 56px;
+  --alto-barra-inferior: 76px;
+}
+
+/* ---------- Tipografia para dislexia ---------- */
+:root[data-dislexia='si'] {
+  --fuente-base: 'Atkinson Hyperlegible', 'Figtree', system-ui, sans-serif;
+  --fuente-titulo: 'Atkinson Hyperlegible', 'Figtree', system-ui, sans-serif;
+  letter-spacing: 0.012em;
+  word-spacing: 0.06em;
+}
+
+/* ---------- Reducir movimiento ---------- */
+:root[data-movimiento='reducido'] {
+  --mov: 0.01;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-movimiento='completo']) {
+    --mov: 0.01;
+  }
+}
+
+/* ---------- Filtros para daltonismo ---------- */
+:root[data-daltonismo='protanopia'] body {
+  filter: url('#filtro-protanopia');
+}
+:root[data-daltonismo='deuteranopia'] body {
+  filter: url('#filtro-deuteranopia');
+}
+:root[data-daltonismo='tritanopia'] body {
+  filter: url('#filtro-tritanopia');
+}

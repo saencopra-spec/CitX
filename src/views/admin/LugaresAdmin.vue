@@ -10,11 +10,11 @@ import {
   MapPin,
   Search,
 } from 'lucide-vue-next'
-import EncabezadoPanel from '@/components/EncabezadoPanel.vue'
-import Dialogo from '@/components/Dialogo.vue'
-import Campo from '@/components/Campo.vue'
-import SubirFoto from '@/components/SubirFoto.vue'
-import MapaCampus from '@/components/MapaCampus.vue'
+import EncabezadoPanel from '@/components/estructura/EncabezadoPanel.vue'
+import Dialogo from '@/components/avisos/Dialogo.vue'
+import Campo from '@/components/formularios/Campo.vue'
+import SubirFoto from '@/components/formularios/SubirFoto.vue'
+import MapaCampus from '@/components/mapa/MapaCampus.vue'
 import { api } from '@/lib/api'
 import { usarErrores } from '@/lib/errores'
 import { useAvisos } from '@/stores/avisos'

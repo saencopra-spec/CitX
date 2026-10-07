@@ -12,8 +12,8 @@ import {
   MapPin,
   Megaphone,
 } from 'lucide-vue-next'
-import EncabezadoPagina from '@/components/EncabezadoPagina.vue'
-import EstadoVacio from '@/components/EstadoVacio.vue'
+import EncabezadoPagina from '@/components/estructura/EncabezadoPagina.vue'
+import EstadoVacio from '@/components/avisos/EstadoVacio.vue'
 import { useNotificaciones } from '@/stores/notificaciones'
 import { useLugares } from '@/stores/lugares'
 import { fechaRelativa, horaDe } from '@compartido/hora.js'

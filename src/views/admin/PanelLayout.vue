@@ -19,9 +19,9 @@ import {
   LogOut,
   Settings,
 } from 'lucide-vue-next'
-import LogoCitx from '@/components/LogoCitx.vue'
-import EscudoCit from '@/components/EscudoCit.vue'
-import CampanaAvisos from '@/components/CampanaAvisos.vue'
+import LogoCitx from '@/components/marca/LogoCitx.vue'
+import EscudoCit from '@/components/marca/EscudoCit.vue'
+import CampanaAvisos from '@/components/avisos/CampanaAvisos.vue'
 import { useAuth } from '@/stores/auth'
 import { useNotificaciones } from '@/stores/notificaciones'
 import { useConfirmar } from '@/stores/confirmar'
@@ -140,7 +140,11 @@ const visibles = computed(() =>
   grupos
     .map((g) => ({
       ...g,
-      enlaces: g.enlaces.filter((e) => auth.puede(e.permiso)),
+      enlaces: g.enlaces.filter(
+        (e) =>
+          auth.puede(e.permiso) &&
+          !(e.nombre === 'admin-resumen' && auth.usuario?.rol === 'objetos')
+      ),
     }))
     .filter((g) => g.enlaces.length)
 )
@@ -201,7 +205,7 @@ async function salir() {
           <span>{{ auth.nombreRol }}</span>
         </p>
         <RouterLink
-          v-if="!auth.esPersonalSoda"
+          v-if="!auth.soloPanel"
           :to="{ name: 'menu' }"
           class="enlace"
         >

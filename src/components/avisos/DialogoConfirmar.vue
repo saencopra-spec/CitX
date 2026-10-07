@@ -1,5 +1,5 @@
 <script setup>
-import Dialogo from './Dialogo.vue'
+import Dialogo from '@/components/avisos/Dialogo.vue'
 import { useConfirmar } from '@/stores/confirmar'
 
 const confirmar = useConfirmar()

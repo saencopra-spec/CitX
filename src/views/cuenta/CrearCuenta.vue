@@ -8,9 +8,9 @@ import {
   UserPlus,
   KeyRound,
 } from 'lucide-vue-next'
-import PantallaEntrada from '@/components/PantallaEntrada.vue'
-import Campo from '@/components/Campo.vue'
-import CampoContrasena from '@/components/CampoContrasena.vue'
+import PantallaEntrada from '@/components/estructura/PantallaEntrada.vue'
+import Campo from '@/components/formularios/Campo.vue'
+import CampoContrasena from '@/components/formularios/CampoContrasena.vue'
 import { useAuth } from '@/stores/auth'
 import { useAvisos } from '@/stores/avisos'
 import { usarErrores, opcionesSeccion } from '@/lib/errores'
@@ -125,7 +125,7 @@ async function enviar() {
         ? `Cuenta creada. Bienvenido a CitX, ${auth.nombreCorto}.`
         : `Cuenta creada como ${NOMBRE_ROL[usuario.rol].toLowerCase()}.`
     )
-    router.replace(usuario.rol === 'soda' ? '/admin/pedidos' : { name: 'menu' })
+    router.replace(auth.inicioDe(usuario))
   } catch (e) {
     mostrar(e, { aviso: !e.campos })
   } finally {
@@ -135,7 +135,10 @@ async function enviar() {
 </script>
 
 <template>
-  <PantallaEntrada titulo="Crear cuenta en CitX">
+  <PantallaEntrada
+    titulo="Crear cuenta en CitX"
+    bajada="Tarda menos de un minuto."
+  >
     <ol data-entra class="pasos" aria-label="Pasos">
       <li
         :class="{ 'es-actual': paso === 1 }"

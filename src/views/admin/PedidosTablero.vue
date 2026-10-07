@@ -12,8 +12,8 @@ import {
   CircleCheck,
   X,
 } from 'lucide-vue-next'
-import EncabezadoPanel from '@/components/EncabezadoPanel.vue'
-import Dialogo from '@/components/Dialogo.vue'
+import EncabezadoPanel from '@/components/estructura/EncabezadoPanel.vue'
+import Dialogo from '@/components/avisos/Dialogo.vue'
 import { api } from '@/lib/api'
 import { usarSondeo } from '@/lib/sondeo'
 import { sonarCampana } from '@/lib/avisosNavegador'

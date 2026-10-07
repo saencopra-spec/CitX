@@ -15,10 +15,10 @@ import {
   Copy,
   RotateCcw,
 } from 'lucide-vue-next'
-import EncabezadoPanel from '@/components/EncabezadoPanel.vue'
-import Dialogo from '@/components/Dialogo.vue'
-import Campo from '@/components/Campo.vue'
-import CampoContrasena from '@/components/CampoContrasena.vue'
+import EncabezadoPanel from '@/components/estructura/EncabezadoPanel.vue'
+import Dialogo from '@/components/avisos/Dialogo.vue'
+import Campo from '@/components/formularios/Campo.vue'
+import CampoContrasena from '@/components/formularios/CampoContrasena.vue'
 import { api } from '@/lib/api'
 import { useAuth } from '@/stores/auth'
 import { useAvisos } from '@/stores/avisos'
@@ -83,7 +83,7 @@ const detalleErrores = usarErrores()
 
 const esYo = computed(() => elegido.value?.id === auth.usuario?.id)
 const ajustaPermisos = computed(() =>
-  ['profesor', 'administrativo', 'soda'].includes(edicion.value.rol)
+  ['profesor', 'administrativo', 'soda', 'objetos'].includes(edicion.value.rol)
 )
 const cambioRol = computed(
   () => elegido.value && edicion.value.rol !== elegido.value.rol
@@ -796,6 +796,11 @@ onMounted(cargar)
 .persona__inicial[data-rol='administrativo'] {
   background: var(--accion-suave);
   color: var(--accion);
+}
+
+.persona__inicial[data-rol='objetos'] {
+  background: var(--exito-fondo);
+  color: var(--exito);
 }
 
 .persona__inicial[data-rol='soda'] {

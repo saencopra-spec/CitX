@@ -11,10 +11,10 @@ import {
   LayoutDashboard,
   KeyRound,
 } from 'lucide-vue-next'
-import LogoCitx from './LogoCitx.vue'
-import EscudoCit from './EscudoCit.vue'
-import BotonLeer from './BotonLeer.vue'
-import CampanaAvisos from './CampanaAvisos.vue'
+import LogoCitx from '@/components/marca/LogoCitx.vue'
+import EscudoCit from '@/components/marca/EscudoCit.vue'
+import BotonLeer from '@/components/accesibilidad/BotonLeer.vue'
+import CampanaAvisos from '@/components/avisos/CampanaAvisos.vue'
 import { useAuth } from '@/stores/auth'
 import { useCarrito } from '@/stores/carrito'
 import { useNotificaciones } from '@/stores/notificaciones'

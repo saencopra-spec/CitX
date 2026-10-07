@@ -10,7 +10,7 @@ import {
   Stethoscope,
   Info,
 } from 'lucide-vue-next'
-import EncabezadoPagina from '@/components/EncabezadoPagina.vue'
+import EncabezadoPagina from '@/components/estructura/EncabezadoPagina.vue'
 import { api } from '@/lib/api'
 import { estadoEnfermeria, HORARIO_ENFERMERIA } from '@compartido/enfermeria.js'
 import { horaLegible } from '@compartido/hora.js'

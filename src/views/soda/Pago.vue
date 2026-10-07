@@ -11,8 +11,8 @@ import {
   LoaderCircle,
   Clock,
 } from 'lucide-vue-next'
-import EncabezadoPagina from '@/components/EncabezadoPagina.vue'
-import Campo from '@/components/Campo.vue'
+import EncabezadoPagina from '@/components/estructura/EncabezadoPagina.vue'
+import Campo from '@/components/formularios/Campo.vue'
 import { useCarrito } from '@/stores/carrito'
 import { useAvisos } from '@/stores/avisos'
 import { api } from '@/lib/api'

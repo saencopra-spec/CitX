@@ -1,8 +1,8 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import Dialogo from './Dialogo.vue'
-import Campo from './Campo.vue'
-import SubirFoto from './SubirFoto.vue'
+import Dialogo from '@/components/avisos/Dialogo.vue'
+import Campo from '@/components/formularios/Campo.vue'
+import SubirFoto from '@/components/formularios/SubirFoto.vue'
 import { api } from '@/lib/api'
 import { usarErrores } from '@/lib/errores'
 import { useAvisos } from '@/stores/avisos'

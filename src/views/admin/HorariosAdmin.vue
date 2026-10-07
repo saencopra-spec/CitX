@@ -1,8 +1,8 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue'
 import { Save, Copy } from 'lucide-vue-next'
-import EncabezadoPanel from '@/components/EncabezadoPanel.vue'
-import Campo from '@/components/Campo.vue'
+import EncabezadoPanel from '@/components/estructura/EncabezadoPanel.vue'
+import Campo from '@/components/formularios/Campo.vue'
 import { api } from '@/lib/api'
 import { useAvisos } from '@/stores/avisos'
 import { useConfirmar } from '@/stores/confirmar'

@@ -3,8 +3,9 @@ import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import gsap from 'gsap'
 import { Mail } from 'lucide-vue-next'
-import LogoCitx from '@/components/LogoCitx.vue'
-import EscudoCit from '@/components/EscudoCit.vue'
+import LogoCitx from '@/components/marca/LogoCitx.vue'
+import EscudoCit from '@/components/marca/EscudoCit.vue'
+import CarruselFotos from '@/components/marca/CarruselFotos.vue'
 import { useAvisos } from '@/stores/avisos'
 import { useConfiguracion } from '@/stores/configuracion'
 
@@ -37,7 +38,7 @@ onMounted(() => {
 <template>
   <main ref="raiz" class="empieza">
     <div class="empieza__foto" aria-hidden="true">
-      <img src="/fotos/campus-aereo.webp" alt="" width="358" height="292" />
+      <CarruselFotos />
     </div>
 
     <header data-entra class="empieza__marca">
@@ -148,7 +149,7 @@ onMounted(() => {
 .empieza__foto {
   position: absolute;
   inset: 0 0 auto 0;
-  height: 230px;
+  height: 300px;
   z-index: 0;
 }
 
@@ -162,10 +163,11 @@ onMounted(() => {
   content: '';
   position: absolute;
   inset: 0;
+  z-index: 1;
   background: linear-gradient(
     180deg,
-    rgba(21, 35, 74, 0.25) 0%,
-    var(--fondo-elevado) 96%
+    transparent 40%,
+    var(--fondo-elevado) 98%
   );
 }
 
@@ -181,7 +183,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: var(--e-5);
-  margin-top: 120px;
+  margin-top: 170px;
   padding: var(--e-4) var(--e-6);
   border-radius: var(--radio-xl);
   background: var(--fondo-elevado);

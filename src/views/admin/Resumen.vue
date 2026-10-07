@@ -14,8 +14,8 @@ import {
   Trophy,
   ChartColumn,
 } from 'lucide-vue-next'
-import EncabezadoPanel from '@/components/EncabezadoPanel.vue'
-import EscudoCit from '@/components/EscudoCit.vue'
+import EncabezadoPanel from '@/components/estructura/EncabezadoPanel.vue'
+import EscudoCit from '@/components/marca/EscudoCit.vue'
 import { api } from '@/lib/api'
 import { usarSondeo } from '@/lib/sondeo'
 import { useAuth } from '@/stores/auth'

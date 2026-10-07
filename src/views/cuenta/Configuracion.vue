@@ -12,11 +12,11 @@ import {
   UserRound,
   KeyRound,
 } from 'lucide-vue-next'
-import EncabezadoPagina from '@/components/EncabezadoPagina.vue'
-import EscudoCit from '@/components/EscudoCit.vue'
-import Dialogo from '@/components/Dialogo.vue'
-import Campo from '@/components/Campo.vue'
-import CampoContrasena from '@/components/CampoContrasena.vue'
+import EncabezadoPagina from '@/components/estructura/EncabezadoPagina.vue'
+import EscudoCit from '@/components/marca/EscudoCit.vue'
+import Dialogo from '@/components/avisos/Dialogo.vue'
+import Campo from '@/components/formularios/Campo.vue'
+import CampoContrasena from '@/components/formularios/CampoContrasena.vue'
 import { useConfiguracion } from '@/stores/configuracion'
 import { useAuth } from '@/stores/auth'
 import { useAvisos } from '@/stores/avisos'
@@ -179,7 +179,7 @@ async function canjearCodigo() {
     avisos.exito(
       `Listo. Tu cuenta ahora es de ${auth.nombreRol.toLowerCase()}.`
     )
-    if (usuario.rol === 'soda') router.push('/admin/pedidos')
+    if (auth.soloPanel) router.push(auth.inicioDe(usuario))
   } catch (e) {
     avisos.error(e.campos?.codigo ?? e.message)
   } finally {
@@ -236,8 +236,8 @@ onMounted(() => entradaEscalonada(raiz.value))
           <div class="opcion__texto">
             <p id="o-tema" class="opcion__titulo">Tema</p>
             <p class="opcion__explica">
-              El modo oscuro cansa menos la vista de noche. «Automático» usa
-              el mismo modo que tu celular o computadora.
+              El modo oscuro cansa menos la vista de noche. «Automático» usa el
+              mismo modo que tu celular o computadora.
             </p>
           </div>
           <div class="segmentos" role="group" aria-labelledby="o-tema">
@@ -491,7 +491,10 @@ onMounted(() => entradaEscalonada(raiz.value))
 
     <footer class="pie-colegio">
       <EscudoCit :tamano="44" alternativo="" />
-      <p>CitX · Complejo Educativo CIT<br />La Asunción de Belén, Heredia</p>
+      <p>
+        CitX · Complejo Educativo CIT<br />La Asunción de Belén, Heredia<br />
+        <small>Foto del gallo pinto: James Diggans, CC BY 2.0.</small>
+      </p>
     </footer>
 
     <Dialogo

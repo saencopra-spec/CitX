@@ -14,6 +14,7 @@ export const ROLES = [
   'administrativo',
   'admin',
   'soda',
+  'objetos',
 ]
 
 export const NOMBRE_ROL = {
@@ -22,10 +23,23 @@ export const NOMBRE_ROL = {
   administrativo: 'Personal administrativo',
   admin: 'Administrador',
   soda: 'Soda Armonía',
+  objetos: 'Objetos perdidos',
 }
 
 /** Roles del personal: solo se obtienen con un codigo de invitacion. */
-export const ROLES_PERSONAL = ['profesor', 'administrativo', 'soda', 'admin']
+export const ROLES_PERSONAL = [
+  'profesor',
+  'administrativo',
+  'soda',
+  'objetos',
+  'admin',
+]
+
+/**
+ * Roles que solo trabajan en el panel: al entrar van directo a su seccion y
+ * no usan la app de estudiantes.
+ */
+export const ROLES_SOLO_PANEL = ['soda', 'objetos']
 
 export const PERMISOS = {
   'eventos.publicar': {
@@ -105,6 +119,7 @@ export const PERMISOS_POR_ROL = {
     'objetos.gestionar',
   ],
   soda: ['pedidos.gestionar', 'productos.gestionar', 'reportes.ver'],
+  objetos: ['objetos.gestionar'],
   admin: ACCIONES,
 }
 

@@ -11,8 +11,8 @@ import {
   PackageX,
   Table2,
 } from 'lucide-vue-next'
-import EncabezadoPanel from '@/components/EncabezadoPanel.vue'
-import EstadoVacio from '@/components/EstadoVacio.vue'
+import EncabezadoPanel from '@/components/estructura/EncabezadoPanel.vue'
+import EstadoVacio from '@/components/avisos/EstadoVacio.vue'
 import { api } from '@/lib/api'
 import { useAvisos } from '@/stores/avisos'
 import { colones } from '@compartido/dinero.js'

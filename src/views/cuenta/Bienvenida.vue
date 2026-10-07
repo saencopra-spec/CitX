@@ -3,7 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import gsap from 'gsap'
 import { useConfiguracion } from '@/stores/configuracion'
-import EscudoCit from '@/components/EscudoCit.vue'
+import EscudoCit from '@/components/marca/EscudoCit.vue'
 
 const router = useRouter()
 const configuracion = useConfiguracion()

@@ -14,25 +14,25 @@ const rutas = [
   {
     path: '/',
     name: 'bienvenida',
-    component: () => import('@/views/Bienvenida.vue'),
+    component: () => import('@/views/cuenta/Bienvenida.vue'),
     meta: { publica: true, soloInvitados: true, titulo: 'Bienvenida' },
   },
   {
     path: '/empieza',
     name: 'empieza',
-    component: () => import('@/views/EmpiezaAhora.vue'),
+    component: () => import('@/views/cuenta/EmpiezaAhora.vue'),
     meta: { publica: true, soloInvitados: true, titulo: 'Empieza ahora' },
   },
   {
     path: '/entrar',
     name: 'entrar',
-    component: () => import('@/views/IniciarSesion.vue'),
+    component: () => import('@/views/cuenta/IniciarSesion.vue'),
     meta: { publica: true, soloInvitados: true, titulo: 'Iniciar sesión' },
   },
   {
     path: '/registro',
     name: 'registro',
-    component: () => import('@/views/CrearCuenta.vue'),
+    component: () => import('@/views/cuenta/CrearCuenta.vue'),
     meta: { publica: true, soloInvitados: true, titulo: 'Crear cuenta' },
   },
 
@@ -40,19 +40,19 @@ const rutas = [
   {
     path: '/menu',
     name: 'menu',
-    component: () => import('@/views/MenuPrincipal.vue'),
+    component: () => import('@/views/inicio/MenuPrincipal.vue'),
     meta: { titulo: 'Menú principal' },
   },
   {
     path: '/mapa',
     name: 'mapa',
-    component: () => import('@/views/Mapa.vue'),
+    component: () => import('@/views/mapa/Mapa.vue'),
     meta: { titulo: 'Mapa interactivo' },
   },
   {
     path: '/guia',
     name: 'guia',
-    component: () => import('@/views/Guia.vue'),
+    component: () => import('@/views/guia/Guia.vue'),
     meta: { titulo: 'Guía digital' },
   },
   {
@@ -119,13 +119,13 @@ const rutas = [
   {
     path: '/configuracion',
     name: 'configuracion',
-    component: () => import('@/views/Configuracion.vue'),
+    component: () => import('@/views/cuenta/Configuracion.vue'),
     meta: { publica: true, titulo: 'Configuración' },
   },
   {
     path: '/notificaciones',
     name: 'notificaciones',
-    component: () => import('@/views/Notificaciones.vue'),
+    component: () => import('@/views/inicio/Notificaciones.vue'),
     meta: { titulo: 'Avisos' },
   },
 
@@ -220,7 +220,7 @@ const rutas = [
   {
     path: '/:ruta(.*)*',
     name: 'no-encontrado',
-    component: () => import('@/views/NoEncontrado.vue'),
+    component: () => import('@/views/inicio/NoEncontrado.vue'),
     meta: { publica: true, titulo: 'Página no encontrada' },
   },
 ]
@@ -244,7 +244,7 @@ router.beforeEach(async (hacia) => {
   const haySesion = Boolean(auth.usuario)
 
   if (hacia.meta.soloInvitados && haySesion) {
-    return { name: auth.esPersonalSoda ? 'admin-pedidos' : 'menu' }
+    return auth.inicioDe()
   }
 
   if (!hacia.meta.publica && !haySesion) {
@@ -264,16 +264,23 @@ router.beforeEach(async (hacia) => {
     }
   }
 
-  // La cuenta de la soda trabaja solo en el panel.
+  // Objetos perdidos ve unicamente su seccion, sin resumen.
   if (
     haySesion &&
-    auth.esPersonalSoda &&
+    auth.usuario.rol === 'objetos' &&
+    hacia.name === 'admin-resumen'
+  ) {
+    return { name: 'admin-objetos' }
+  }
+
+  // La soda y objetos perdidos trabajan solo en el panel.
+  if (
+    haySesion &&
+    auth.soloPanel &&
     !hacia.path.startsWith('/admin') &&
     !hacia.meta.publica
   ) {
-    return {
-      name: auth.puede('pedidos.gestionar') ? 'admin-pedidos' : 'admin-resumen',
-    }
+    return auth.inicioDe()
   }
 
   return true

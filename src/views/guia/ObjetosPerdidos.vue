@@ -9,11 +9,11 @@ import {
   Search,
   Settings2,
 } from 'lucide-vue-next'
-import EncabezadoPagina from '@/components/EncabezadoPagina.vue'
-import EstadoVacio from '@/components/EstadoVacio.vue'
-import FotoComida from '@/components/FotoComida.vue'
-import Dialogo from '@/components/Dialogo.vue'
-import Campo from '@/components/Campo.vue'
+import EncabezadoPagina from '@/components/estructura/EncabezadoPagina.vue'
+import EstadoVacio from '@/components/avisos/EstadoVacio.vue'
+import FotoComida from '@/components/soda/FotoComida.vue'
+import Dialogo from '@/components/avisos/Dialogo.vue'
+import Campo from '@/components/formularios/Campo.vue'
 import { api } from '@/lib/api'
 import { useAuth } from '@/stores/auth'
 import { useAvisos } from '@/stores/avisos'

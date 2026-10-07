@@ -4,7 +4,7 @@
 
 <template>
   <img
-    src="/mapa-cit-portada.webp"
+    src="/mapa/mapa-cit-portada.webp"
     alt=""
     class="mini"
     width="726"

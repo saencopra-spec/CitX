@@ -52,7 +52,8 @@ export const PRODUCTOS = [
     precio: 1800,
     descripcion:
       'Gallo pinto recién hecho, huevo al gusto, natilla y una tortilla.',
-    foto: null,
+    // Foto: James Diggans, CC BY 2.0 (Wikimedia Commons).
+    foto: '/fotos/gallo-pinto.webp',
     estrellas: [5, 5, 4, 5],
   },
   {

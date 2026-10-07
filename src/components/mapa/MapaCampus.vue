@@ -294,7 +294,7 @@ onUnmounted(() => {
 
       <g :transform="transformacion">
         <image
-          href="/mapa-cit.webp"
+          href="/mapa/mapa-cit.webp"
           :width="LIENZO.ancho"
           :height="LIENZO.alto"
           class="mapa__fondo"

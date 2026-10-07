@@ -10,10 +10,10 @@ import {
   Megaphone,
   MapPin,
 } from 'lucide-vue-next'
-import MapaMiniatura from '@/components/MapaMiniatura.vue'
+import MapaMiniatura from '@/components/mapa/MapaMiniatura.vue'
 import { useAuth } from '@/stores/auth'
 import { useLugares } from '@/stores/lugares'
-import EscudoCit from '@/components/EscudoCit.vue'
+import EscudoCit from '@/components/marca/EscudoCit.vue'
 import { api } from '@/lib/api'
 import { entradaEscalonada } from '@/lib/movimiento'
 import {

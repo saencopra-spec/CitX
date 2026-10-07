@@ -1,8 +1,8 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { Plus, Pencil, Trash2 } from 'lucide-vue-next'
-import EncabezadoPanel from '@/components/EncabezadoPanel.vue'
-import FormularioEvento from '@/components/FormularioEvento.vue'
+import EncabezadoPanel from '@/components/estructura/EncabezadoPanel.vue'
+import FormularioEvento from '@/components/guia/FormularioEvento.vue'
 import { api } from '@/lib/api'
 import { useAvisos } from '@/stores/avisos'
 import { useConfirmar } from '@/stores/confirmar'

@@ -2,9 +2,9 @@
 import { ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { LogIn } from 'lucide-vue-next'
-import PantallaEntrada from '@/components/PantallaEntrada.vue'
-import Campo from '@/components/Campo.vue'
-import CampoContrasena from '@/components/CampoContrasena.vue'
+import PantallaEntrada from '@/components/estructura/PantallaEntrada.vue'
+import Campo from '@/components/formularios/Campo.vue'
+import CampoContrasena from '@/components/formularios/CampoContrasena.vue'
 import { useAuth } from '@/stores/auth'
 import { useAvisos } from '@/stores/avisos'
 import { usarErrores } from '@/lib/errores'
@@ -41,7 +41,7 @@ async function enviar() {
       route.query.seguir.startsWith('/')
         ? route.query.seguir
         : null
-    if (usuario.rol === 'soda') router.replace('/admin/pedidos')
+    if (auth.soloPanel) router.replace(auth.inicioDe(usuario))
     else router.replace(seguir ?? { name: 'menu' })
   } catch (e) {
     if (e.campos) mostrar(e, { aviso: false })
@@ -53,7 +53,10 @@ async function enviar() {
 </script>
 
 <template>
-  <PantallaEntrada titulo="Iniciá sesión en CitX">
+  <PantallaEntrada
+    titulo="Iniciá sesión en CitX"
+    bajada="Qué bueno verte de nuevo por el CIT."
+  >
     <form data-entra class="formulario" novalidate @submit.prevent="enviar">
       <p v-if="errorGeneral" class="error-general" role="alert">
         {{ errorGeneral }}

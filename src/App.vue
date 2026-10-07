@@ -3,11 +3,11 @@ import { onMounted, computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useConfiguracion } from '@/stores/configuracion'
 import { useAuth } from '@/stores/auth'
-import FiltrosDaltonismo from '@/components/FiltrosDaltonismo.vue'
-import AvisoSinConexion from '@/components/AvisoSinConexion.vue'
-import PilaDeAvisos from '@/components/PilaDeAvisos.vue'
-import DialogoConfirmar from '@/components/DialogoConfirmar.vue'
-import ArmazonApp from '@/components/ArmazonApp.vue'
+import FiltrosDaltonismo from '@/components/accesibilidad/FiltrosDaltonismo.vue'
+import AvisoSinConexion from '@/components/avisos/AvisoSinConexion.vue'
+import PilaDeAvisos from '@/components/avisos/PilaDeAvisos.vue'
+import DialogoConfirmar from '@/components/avisos/DialogoConfirmar.vue'
+import ArmazonApp from '@/components/estructura/ArmazonApp.vue'
 
 const configuracion = useConfiguracion()
 const auth = useAuth()
@@ -22,7 +22,7 @@ const conArmazon = computed(
     auth.haySesion &&
     !route.meta.soloInvitados &&
     !route.path.startsWith('/admin') &&
-    !auth.esPersonalSoda
+    !auth.soloPanel
 )
 
 /** Anuncio para lectores de pantalla cuando cambia de pagina. */

@@ -8,10 +8,10 @@ import {
   MessageSquareText,
   TriangleAlert,
 } from 'lucide-vue-next'
-import EncabezadoPagina from '@/components/EncabezadoPagina.vue'
-import EstadoVacio from '@/components/EstadoVacio.vue'
-import FotoComida from '@/components/FotoComida.vue'
-import Cantidad from '@/components/Cantidad.vue'
+import EncabezadoPagina from '@/components/estructura/EncabezadoPagina.vue'
+import EstadoVacio from '@/components/avisos/EstadoVacio.vue'
+import FotoComida from '@/components/soda/FotoComida.vue'
+import Cantidad from '@/components/formularios/Cantidad.vue'
 import { useCarrito } from '@/stores/carrito'
 import { api } from '@/lib/api'
 import { colones } from '@compartido/dinero.js'

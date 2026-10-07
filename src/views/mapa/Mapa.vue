@@ -11,8 +11,8 @@ import {
   ChevronRight,
   CircleAlert,
 } from 'lucide-vue-next'
-import MapaCampus from '@/components/MapaCampus.vue'
-import FotoComida from '@/components/FotoComida.vue'
+import MapaCampus from '@/components/mapa/MapaCampus.vue'
+import FotoComida from '@/components/soda/FotoComida.vue'
 import { useAuth } from '@/stores/auth'
 import { useAvisos } from '@/stores/avisos'
 import { useLugares } from '@/stores/lugares'
@@ -162,7 +162,7 @@ onMounted(async () => {
     <section class="panel" aria-label="Buscar y filtrar lugares">
       <div class="panel__encabezado">
         <img
-          src="/escudo-cit.webp"
+          src="/marca/escudo-cit.webp"
           alt=""
           class="panel__escudo"
           width="34"

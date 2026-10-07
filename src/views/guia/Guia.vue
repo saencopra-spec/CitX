@@ -9,7 +9,7 @@ import {
   HeartPulse,
   ChevronRight,
 } from 'lucide-vue-next'
-import EncabezadoPagina from '@/components/EncabezadoPagina.vue'
+import EncabezadoPagina from '@/components/estructura/EncabezadoPagina.vue'
 import { api } from '@/lib/api'
 import { useAuth } from '@/stores/auth'
 import { entradaEscalonada } from '@/lib/movimiento'

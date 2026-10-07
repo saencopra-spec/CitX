@@ -1,9 +1,9 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { Send, Trash2, MapPin, Megaphone } from 'lucide-vue-next'
-import EncabezadoPanel from '@/components/EncabezadoPanel.vue'
-import Campo from '@/components/Campo.vue'
-import EstadoVacio from '@/components/EstadoVacio.vue'
+import EncabezadoPanel from '@/components/estructura/EncabezadoPanel.vue'
+import Campo from '@/components/formularios/Campo.vue'
+import EstadoVacio from '@/components/avisos/EstadoVacio.vue'
 import { api } from '@/lib/api'
 import { usarErrores } from '@/lib/errores'
 import { useAvisos } from '@/stores/avisos'

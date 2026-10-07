@@ -1,7 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { api } from '@/lib/api'
-import { NOMBRE_ROL, puede as puedeRol } from '@compartido/permisos.js'
+import {
+  NOMBRE_ROL,
+  ROLES_SOLO_PANEL,
+  puede as puedeRol,
+} from '@compartido/permisos.js'
 import { useConfiguracion } from './configuracion'
 import { useNotificaciones } from './notificaciones'
 
@@ -16,6 +20,18 @@ export const useAuth = defineStore('auth', () => {
   const haySesion = computed(() => Boolean(usuario.value))
   const esAdmin = computed(() => usuario.value?.rol === 'admin')
   const esPersonalSoda = computed(() => usuario.value?.rol === 'soda')
+  /** Soda y objetos perdidos trabajan solo en el panel, en su seccion. */
+  const soloPanel = computed(() =>
+    ROLES_SOLO_PANEL.includes(usuario.value?.rol)
+  )
+
+  /** Adonde va cada persona al entrar. */
+  function inicioDe(u = usuario.value) {
+    if (!u) return { name: 'empieza' }
+    if (u.rol === 'soda') return { name: 'admin-pedidos' }
+    if (u.rol === 'objetos') return { name: 'admin-objetos' }
+    return { name: 'menu' }
+  }
   const esProfesor = computed(() => usuario.value?.rol === 'profesor')
   const esEstudiante = computed(() => usuario.value?.rol === 'estudiante')
   const puedeEntrarAlPanel = computed(() => puede('panel.entrar'))
@@ -111,6 +127,8 @@ export const useAuth = defineStore('auth', () => {
     haySesion,
     esAdmin,
     esPersonalSoda,
+    soloPanel,
+    inicioDe,
     esProfesor,
     esEstudiante,
     puedeEntrarAlPanel,

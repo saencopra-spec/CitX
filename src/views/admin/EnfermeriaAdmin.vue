@@ -1,8 +1,8 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { Plus, Trash2, Save } from 'lucide-vue-next'
-import EncabezadoPanel from '@/components/EncabezadoPanel.vue'
-import Campo from '@/components/Campo.vue'
+import EncabezadoPanel from '@/components/estructura/EncabezadoPanel.vue'
+import Campo from '@/components/formularios/Campo.vue'
 import { api } from '@/lib/api'
 import { useAvisos } from '@/stores/avisos'
 import { usarErrores } from '@/lib/errores'

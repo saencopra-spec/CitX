@@ -10,7 +10,7 @@ defineProps({
 
 <template>
   <img
-    :src="tamano > 120 ? '/escudo-cit.png' : '/escudo-cit.webp'"
+    :src="tamano > 120 ? '/marca/escudo-cit.png' : '/marca/escudo-cit.webp'"
     :alt="alternativo"
     class="escudo"
     :style="{ height: `${tamano}px` }"

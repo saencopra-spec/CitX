@@ -1,8 +1,8 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue'
 import { Search, ScrollText } from 'lucide-vue-next'
-import EncabezadoPanel from '@/components/EncabezadoPanel.vue'
-import EstadoVacio from '@/components/EstadoVacio.vue'
+import EncabezadoPanel from '@/components/estructura/EncabezadoPanel.vue'
+import EstadoVacio from '@/components/avisos/EstadoVacio.vue'
 import { api } from '@/lib/api'
 import { useAvisos } from '@/stores/avisos'
 import { fechaRelativa, horaDe } from '@compartido/hora.js'

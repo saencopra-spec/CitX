@@ -10,6 +10,8 @@ import {
   Info,
   ChevronRight,
   CircleAlert,
+  Eye,
+  EyeOff,
 } from 'lucide-vue-next'
 import MapaCampus from '@/components/mapa/MapaCampus.vue'
 import FotoComida from '@/components/soda/FotoComida.vue'
@@ -33,6 +35,31 @@ const filtro = ref('todo')
 const seleccionada = ref(null)
 const mostrarResultados = ref(false)
 const verLeyenda = ref(false)
+
+/**
+ * Cada persona puede ocultar los pines para ver el mapa limpio. Se recuerda
+ * en este dispositivo. Si elige un lugar de la lista, ese pin si se muestra.
+ */
+const CLAVE_PINES = 'citx:mapa-pines'
+function leerPreferencia() {
+  try {
+    return localStorage.getItem(CLAVE_PINES) !== 'ocultos'
+  } catch {
+    return true
+  }
+}
+const mostrarPines = ref(leerPreferencia())
+function alternarPines() {
+  mostrarPines.value = !mostrarPines.value
+  try {
+    localStorage.setItem(
+      CLAVE_PINES,
+      mostrarPines.value ? 'visibles' : 'ocultos'
+    )
+  } catch {
+    // Sin almacenamiento: la preferencia dura mientras la pagina este abierta.
+  }
+}
 
 const lista = computed(() =>
   [...lugaresStore.lista].sort(
@@ -81,6 +108,12 @@ const resaltadas = computed(() => {
   if (!busqueda.value && filtro.value === 'todo') return null
   return new Set(filtrados.value.map((l) => l.clave))
 })
+
+const pinesVisibles = computed(() =>
+  mostrarPines.value
+    ? lista.value
+    : lista.value.filter((l) => l.clave === seleccionada.value)
+)
 
 const lugar = computed(
   () => lista.value.find((l) => l.clave === seleccionada.value) ?? null
@@ -307,12 +340,26 @@ onMounted(async () => {
     <div class="lienzo">
       <MapaCampus
         ref="mapa"
-        :lugares="lista"
+        :lugares="pinesVisibles"
         :seleccionada="seleccionada"
         :resaltadas="resaltadas"
         :favoritos="auth.usuario?.favoritos ?? []"
         @elegir="elegir"
       />
+
+      <button
+        type="button"
+        class="alternar-pines"
+        :aria-pressed="!mostrarPines"
+        @click="alternarPines"
+      >
+        <component
+          :is="mostrarPines ? EyeOff : Eye"
+          :size="18"
+          aria-hidden="true"
+        />
+        {{ mostrarPines ? 'Solo el mapa' : 'Mostrar lugares' }}
+      </button>
 
       <div class="leyenda" :class="{ 'es-abierta': verLeyenda }">
         <button
@@ -573,6 +620,28 @@ onMounted(async () => {
   position: relative;
   flex: 1;
   min-height: 0;
+}
+
+.alternar-pines {
+  position: absolute;
+  top: var(--e-3);
+  right: var(--e-3);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  min-height: var(--objetivo-tactil);
+  padding: 0 var(--e-4);
+  border-radius: var(--radio-pildora);
+  background: var(--fondo-elevado);
+  box-shadow: var(--sombra-3);
+  font-size: var(--txt-sm);
+  font-weight: var(--peso-semi);
+}
+
+.alternar-pines[aria-pressed='true'] {
+  background: var(--marca);
+  color: #ffffff;
 }
 
 .leyenda {

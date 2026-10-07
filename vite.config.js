@@ -34,6 +34,10 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // La version nueva toma el control apenas se publica, sin esperar.
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,svg,woff2}'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         navigateFallbackDenylist: [/^\/api/],
@@ -55,7 +59,7 @@ export default defineConfig({
             urlPattern: /\/fotos\/.*\.(?:png|jpg|jpeg|webp|avif)$/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'citx-fotos',
+              cacheName: 'citx-fotos-v2',
               expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },

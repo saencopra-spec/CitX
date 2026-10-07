@@ -2,15 +2,16 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  Sun,
-  Moon,
-  MonitorSmartphone,
   LogOut,
   RotateCcw,
   Volume2,
   Bell,
   UserRound,
   KeyRound,
+  ChevronDown,
+  Accessibility,
+  Palette,
+  BadgeCheck,
 } from 'lucide-vue-next'
 import EncabezadoPagina from '@/components/estructura/EncabezadoPagina.vue'
 import EscudoCit from '@/components/marca/EscudoCit.vue'
@@ -45,67 +46,71 @@ function cambiar(clave, valor) {
 }
 
 const temas = [
-  { valor: 'claro', texto: 'Claro', icono: Sun },
-  { valor: 'oscuro', texto: 'Oscuro', icono: Moon },
-  { valor: 'sistema', texto: 'Automático', icono: MonitorSmartphone },
+  { valor: 'sistema', texto: 'Automático (como tu dispositivo)' },
+  { valor: 'claro', texto: 'Claro' },
+  { valor: 'oscuro', texto: 'Oscuro' },
 ]
 
 const tamanos = [
-  { valor: 'normal', texto: 'Normal', escala: 1 },
-  { valor: 'grande', texto: 'Grande', escala: 1.125 },
-  { valor: 'mas-grande', texto: 'Más grande', escala: 1.25 },
-  { valor: 'enorme', texto: 'Enorme', escala: 1.4 },
+  { valor: 'normal', texto: 'Normal' },
+  { valor: 'grande', texto: 'Grande' },
+  { valor: 'mas-grande', texto: 'Más grande' },
+  { valor: 'enorme', texto: 'Enorme' },
 ]
 
 const daltonismos = [
   { valor: 'ninguno', texto: 'Sin filtro' },
-  { valor: 'protanopia', texto: 'Protanopia', detalle: 'Cuesta ver el rojo.' },
-  {
-    valor: 'deuteranopia',
-    texto: 'Deuteranopia',
-    detalle: 'Cuesta ver el verde.',
-  },
-  {
-    valor: 'tritanopia',
-    texto: 'Tritanopia',
-    detalle: 'Cuesta ver el azul y el amarillo.',
-  },
+  { valor: 'protanopia', texto: 'Protanopia (cuesta ver el rojo)' },
+  { valor: 'deuteranopia', texto: 'Deuteranopia (cuesta ver el verde)' },
+  { valor: 'tritanopia', texto: 'Tritanopia (cuesta ver azul y amarillo)' },
 ]
 
 const movimientos = [
-  { valor: 'sistema', texto: 'Automático' },
-  { valor: 'si', texto: 'Reducir' },
-  { valor: 'no', texto: 'Normal' },
+  { valor: 'sistema', texto: 'Automático (como tu dispositivo)' },
+  { valor: 'si', texto: 'Reducir animaciones' },
+  { valor: 'no', texto: 'Animaciones normales' },
 ]
 
-/** Interruptores sencillos: clave, titulo y explicacion de una linea. */
+/** Interruptores de las opciones avanzadas, con una linea que explica para que sirven. */
 const interruptores = [
   {
     clave: 'altoContraste',
     titulo: 'Alto contraste',
-    explica:
-      'Pone el texto más oscuro y los bordes más marcados para leer mejor con mucha luz o poca vista.',
+    explica: 'Texto más oscuro y bordes más marcados.',
   },
   {
     clave: 'dislexia',
     titulo: 'Letra para dislexia',
-    explica:
-      'Cambia a una letra donde cada carácter se distingue mejor y no se confunden la b y la d.',
+    explica: 'Letras que se distinguen mejor entre sí.',
   },
   {
     clave: 'botonesGrandes',
     titulo: 'Botones más grandes',
-    explica:
-      'Agranda los botones y las zonas que se tocan, por si cuesta atinarles con el dedo.',
+    explica: 'Más fácil atinarle con el dedo.',
   },
   {
     clave: 'lecturaVoz',
     titulo: 'Leer en voz alta',
-    explica:
-      'Muestra un botón para que tu celular o computadora lea en voz alta lo que hay en la pantalla.',
+    explica: 'Aparece un botón que lee la pantalla.',
     disponible: vozDisponible,
   },
 ]
+
+/** Cuantas opciones avanzadas estan activas, para mostrarlo sin abrir la seccion. */
+const activasAvanzadas = computed(
+  () =>
+    interruptores.filter((i) => a.value[i.clave]).length +
+    (a.value.daltonismo !== 'ninguno' ? 1 : 0) +
+    (a.value.reducirMovimiento !== 'sistema' ? 1 : 0)
+)
+
+const iniciales = computed(() =>
+  (auth.usuario?.nombre ?? '')
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? '')
+    .join('')
+)
 
 // Notificaciones del navegador
 const permiso = ref(permisoNotificaciones())
@@ -224,239 +229,268 @@ onMounted(() => entradaEscalonada(raiz.value))
   <div ref="raiz" class="pagina configuracion">
     <EncabezadoPagina
       titulo="Configuración"
-      bajada="Ajustá CitX a tu gusto. Se guarda en este dispositivo y en tu cuenta."
-      :volver="auth.haySesion ? { name: 'menu' } : { name: 'empieza' }"
+      bajada="Se guarda en este dispositivo y en tu cuenta."
+      :volver="auth.haySesion ? auth.inicioDe() : { name: 'empieza' }"
     />
 
-    <div class="columnas">
-      <section data-entra class="bloque" aria-labelledby="t-apariencia">
-        <h2 id="t-apariencia" class="subtitulo">Cómo se ve</h2>
-
-        <div class="opcion">
-          <div class="opcion__texto">
-            <p id="o-tema" class="opcion__titulo">Tema</p>
-            <p class="opcion__explica">
-              El modo oscuro cansa menos la vista de noche. «Automático» usa el
-              mismo modo que tu celular o computadora.
-            </p>
-          </div>
-          <div class="segmentos" role="group" aria-labelledby="o-tema">
-            <button
-              v-for="t in temas"
-              :key="t.valor"
-              type="button"
-              :aria-pressed="a.tema === t.valor"
-              @click="cambiar('tema', t.valor)"
-            >
-              <component :is="t.icono" :size="16" aria-hidden="true" />
-              {{ t.texto }}
-            </button>
-          </div>
-        </div>
-
-        <div class="opcion">
-          <div class="opcion__texto">
-            <p id="o-texto" class="opcion__titulo">Tamaño del texto</p>
-            <p class="opcion__explica">
-              Agranda todas las letras de la app sin que nada se desacomode.
-            </p>
-          </div>
-          <div class="tamanos" role="group" aria-labelledby="o-texto">
-            <button
-              v-for="t in tamanos"
-              :key="t.valor"
-              type="button"
-              class="tamano"
-              :aria-pressed="a.tamanoTexto === t.valor"
-              @click="cambiar('tamanoTexto', t.valor)"
-            >
-              <span
-                class="tamano__muestra"
-                :style="{ fontSize: `${t.escala * 1.1}rem` }"
-                aria-hidden="true"
-                >Aa</span
-              >
-              <span>{{ t.texto }}</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="opcion">
-          <div class="opcion__texto">
-            <p id="o-color" class="opcion__titulo">Filtro para daltonismo</p>
-            <p class="opcion__explica">
-              Ajusta los colores para quien los distingue distinto. Igual, en
-              CitX nada depende solo del color: todo lleva texto o icono.
-            </p>
-          </div>
-          <div class="lista-radio" role="radiogroup" aria-labelledby="o-color">
-            <label v-for="d in daltonismos" :key="d.valor" class="radio">
-              <input
-                type="radio"
-                name="daltonismo"
-                :value="d.valor"
-                :checked="a.daltonismo === d.valor"
-                @change="cambiar('daltonismo', d.valor)"
-              />
-              <span>
-                {{ d.texto }}
-                <small v-if="d.detalle">{{ d.detalle }}</small>
-              </span>
-            </label>
-          </div>
-        </div>
-      </section>
-
-      <section data-entra class="bloque" aria-labelledby="t-uso">
-        <h2 id="t-uso" class="subtitulo">Lectura y uso</h2>
-
-        <div
-          v-for="i in interruptores.filter((x) => x.disponible !== false)"
-          :key="i.clave"
-          class="opcion opcion--fila"
-        >
-          <div class="opcion__texto">
-            <p :id="`o-${i.clave}`" class="opcion__titulo">{{ i.titulo }}</p>
-            <p class="opcion__explica">{{ i.explica }}</p>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            class="interruptor"
-            :aria-checked="a[i.clave]"
-            :aria-labelledby="`o-${i.clave}`"
-            @click="cambiar(i.clave, !a[i.clave])"
-          />
-        </div>
-
-        <button
-          v-if="a.lecturaVoz && vozDisponible"
-          type="button"
-          class="boton boton--suave boton--pequeno probar-voz"
-          @click="leerEnVoz('Hola. Así suena la lectura en voz alta de CitX.')"
-        >
-          <Volume2 :size="16" aria-hidden="true" /> Probar la voz
-        </button>
-
-        <div class="opcion">
-          <div class="opcion__texto">
-            <p id="o-mov" class="opcion__titulo">Movimiento</p>
-            <p class="opcion__explica">
-              Quita las animaciones si te marean o si el dispositivo va lento.
-              «Automático» sigue lo que tengas configurado en tu celular o
-              computadora.
-            </p>
-          </div>
-          <div class="segmentos" role="group" aria-labelledby="o-mov">
-            <button
-              v-for="m in movimientos"
-              :key="m.valor"
-              type="button"
-              :aria-pressed="a.reducirMovimiento === m.valor"
-              @click="cambiar('reducirMovimiento', m.valor)"
-            >
-              {{ m.texto }}
-            </button>
-          </div>
-        </div>
-
-        <div
-          v-if="notificacionesSoportadas && auth.haySesion"
-          class="opcion opcion--fila"
-        >
-          <div class="opcion__texto">
-            <p class="opcion__titulo">Avisos del navegador</p>
-            <p class="opcion__explica">
-              {{
-                permiso === 'granted'
-                  ? 'Activados. Te avisamos cuando tu pedido esté listo aunque estés en otra pestaña o app.'
-                  : permiso === 'denied'
-                    ? 'Bloqueados en el navegador. Se activan desde los ajustes del navegador.'
-                    : 'Te avisamos cuando tu pedido esté listo aunque estés en otra pestaña o app.'
-              }}
-            </p>
-          </div>
-          <button
-            v-if="permiso === 'default'"
-            type="button"
-            class="boton boton--contorno boton--pequeno"
-            @click="activarNotificaciones"
-          >
-            <Bell :size="16" aria-hidden="true" /> Activar
-          </button>
-        </div>
-
-        <button
-          type="button"
-          class="boton boton--texto restablecer"
-          @click="restablecer"
-        >
-          <RotateCcw :size="16" aria-hidden="true" /> Volver a los ajustes de
-          fábrica
-        </button>
-      </section>
-
+    <div class="columna">
+      <!-- Cuenta -->
       <section
         v-if="auth.haySesion"
         data-entra
-        class="bloque"
-        aria-labelledby="t-cuenta"
+        class="tarjeta-cuenta"
+        aria-label="Tu cuenta"
       >
-        <h2 id="t-cuenta" class="subtitulo">Tu cuenta</h2>
-        <dl class="datos">
-          <div>
-            <dt>Nombre</dt>
-            <dd>{{ auth.usuario.nombre }}</dd>
-          </div>
-          <div>
-            <dt>Correo</dt>
-            <dd>{{ auth.usuario.correo }}</dd>
-          </div>
-          <div>
-            <dt>Tipo de cuenta</dt>
-            <dd>{{ auth.nombreRol }}</dd>
-          </div>
-          <div v-if="auth.usuario.seccion">
-            <dt>Sección</dt>
-            <dd>{{ auth.usuario.seccion }}</dd>
-          </div>
-        </dl>
-        <div class="fila-botones">
+        <span class="avatar" aria-hidden="true">{{ iniciales }}</span>
+        <div class="tarjeta-cuenta__datos">
+          <p class="tarjeta-cuenta__nombre">{{ auth.usuario.nombre }}</p>
+          <p class="tarjeta-cuenta__detalle">
+            {{ auth.nombreRol
+            }}<template v-if="auth.usuario.seccion">
+              · {{ auth.usuario.seccion }}</template
+            >
+          </p>
+          <p class="tarjeta-cuenta__detalle">{{ auth.usuario.correo }}</p>
+        </div>
+        <div class="tarjeta-cuenta__acciones">
           <button
             type="button"
-            class="boton boton--contorno"
+            class="boton boton--contorno boton--pequeno"
             @click="abrirPerfil"
           >
-            <UserRound :size="18" aria-hidden="true" /> Editar perfil
+            <UserRound :size="16" aria-hidden="true" /> Editar perfil
           </button>
           <button
             type="button"
-            class="boton boton--contorno"
+            class="boton boton--contorno boton--pequeno"
             @click="cambiandoClave = true"
           >
-            <KeyRound :size="18" aria-hidden="true" /> Cambiar contraseña
+            <KeyRound :size="16" aria-hidden="true" /> Contraseña
           </button>
         </div>
-        <p v-if="auth.usuario.debeCambiarContrasena" class="nota nota--aviso">
+        <p
+          v-if="auth.usuario.debeCambiarContrasena"
+          class="nota nota--aviso tarjeta-cuenta__aviso"
+        >
           <KeyRound :size="18" aria-hidden="true" />
           <span
-            >Estás usando una contraseña temporal. Cambiala por una tuya con el
-            botón «Cambiar contraseña».</span
+            >Estás usando una contraseña temporal. Cambiala con el botón
+            «Contraseña».</span
           >
         </p>
+      </section>
 
+      <!-- Lo esencial -->
+      <section data-entra class="bloque" aria-labelledby="t-apariencia">
+        <h2 id="t-apariencia" class="bloque__titulo">
+          <Palette :size="18" aria-hidden="true" /> Apariencia
+        </h2>
+        <div class="fila">
+          <label class="fila__texto" for="cfg-tema">
+            <span class="fila__titulo">Tema</span>
+            <span class="fila__explica"
+              >Claro, oscuro o igual que tu dispositivo.</span
+            >
+          </label>
+          <select
+            id="cfg-tema"
+            class="campo__control fila__control"
+            :value="a.tema"
+            @change="(e) => cambiar('tema', e.target.value)"
+          >
+            <option v-for="t in temas" :key="t.valor" :value="t.valor">
+              {{ t.texto }}
+            </option>
+          </select>
+        </div>
+        <div class="fila">
+          <label class="fila__texto" for="cfg-texto">
+            <span class="fila__titulo">Tamaño del texto</span>
+            <span class="fila__explica"
+              >Agranda todas las letras de la app.</span
+            >
+          </label>
+          <select
+            id="cfg-texto"
+            class="campo__control fila__control"
+            :value="a.tamanoTexto"
+            @change="(e) => cambiar('tamanoTexto', e.target.value)"
+          >
+            <option v-for="t in tamanos" :key="t.valor" :value="t.valor">
+              {{ t.texto }}
+            </option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Opciones avanzadas -->
+      <details data-entra class="desplegable">
+        <summary>
+          <Accessibility :size="18" aria-hidden="true" />
+          <span class="desplegable__titulo"
+            >Opciones avanzadas de accesibilidad</span
+          >
+          <span v-if="activasAvanzadas" class="etiqueta etiqueta--principal"
+            >{{ activasAvanzadas }} activas</span
+          >
+          <ChevronDown
+            :size="18"
+            aria-hidden="true"
+            class="desplegable__flecha"
+          />
+        </summary>
+        <div class="desplegable__cuerpo">
+          <div
+            v-for="i in interruptores.filter((x) => x.disponible !== false)"
+            :key="i.clave"
+            class="fila"
+          >
+            <div class="fila__texto">
+              <span :id="`o-${i.clave}`" class="fila__titulo">{{
+                i.titulo
+              }}</span>
+              <span class="fila__explica">{{ i.explica }}</span>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              class="interruptor"
+              :aria-checked="a[i.clave]"
+              :aria-labelledby="`o-${i.clave}`"
+              @click="cambiar(i.clave, !a[i.clave])"
+            />
+          </div>
+          <button
+            v-if="a.lecturaVoz && vozDisponible"
+            type="button"
+            class="boton boton--texto boton--pequeno probar-voz"
+            @click="
+              leerEnVoz('Hola. Así suena la lectura en voz alta de CitX.')
+            "
+          >
+            <Volume2 :size="16" aria-hidden="true" /> Probar la voz
+          </button>
+          <div class="fila">
+            <label class="fila__texto" for="cfg-color">
+              <span class="fila__titulo">Filtro para daltonismo</span>
+              <span class="fila__explica"
+                >Ajusta los colores. Nada depende solo del color.</span
+              >
+            </label>
+            <select
+              id="cfg-color"
+              class="campo__control fila__control"
+              :value="a.daltonismo"
+              @change="(e) => cambiar('daltonismo', e.target.value)"
+            >
+              <option v-for="d in daltonismos" :key="d.valor" :value="d.valor">
+                {{ d.texto }}
+              </option>
+            </select>
+          </div>
+          <div class="fila">
+            <label class="fila__texto" for="cfg-mov">
+              <span class="fila__titulo">Movimiento</span>
+              <span class="fila__explica"
+                >Quita las animaciones si te marean.</span
+              >
+            </label>
+            <select
+              id="cfg-mov"
+              class="campo__control fila__control"
+              :value="a.reducirMovimiento"
+              @change="(e) => cambiar('reducirMovimiento', e.target.value)"
+            >
+              <option v-for="m in movimientos" :key="m.valor" :value="m.valor">
+                {{ m.texto }}
+              </option>
+            </select>
+          </div>
+          <button
+            type="button"
+            class="boton boton--texto boton--pequeno"
+            @click="restablecer"
+          >
+            <RotateCcw :size="16" aria-hidden="true" /> Volver a los ajustes de
+            fábrica
+          </button>
+        </div>
+      </details>
+
+      <!-- Avisos del navegador -->
+      <details
+        v-if="notificacionesSoportadas && auth.haySesion"
+        data-entra
+        class="desplegable"
+      >
+        <summary>
+          <Bell :size="18" aria-hidden="true" />
+          <span class="desplegable__titulo">Avisos del navegador</span>
+          <span
+            class="etiqueta"
+            :class="
+              permiso === 'granted' ? 'etiqueta--exito' : 'etiqueta--neutra'
+            "
+          >
+            {{
+              permiso === 'granted'
+                ? 'Activados'
+                : permiso === 'denied'
+                  ? 'Bloqueados'
+                  : 'Apagados'
+            }}
+          </span>
+          <ChevronDown
+            :size="18"
+            aria-hidden="true"
+            class="desplegable__flecha"
+          />
+        </summary>
+        <div class="desplegable__cuerpo">
+          <p class="fila__explica">
+            {{
+              permiso === 'granted'
+                ? 'Te avisamos cuando tu pedido esté listo, aunque estés en otra pestaña o app.'
+                : permiso === 'denied'
+                  ? 'El navegador los bloqueó. Se activan desde los ajustes del navegador.'
+                  : 'Te avisamos cuando tu pedido esté listo, aunque estés en otra pestaña o app.'
+            }}
+          </p>
+          <button
+            v-if="permiso === 'default'"
+            type="button"
+            class="boton boton--accion boton--pequeno"
+            @click="activarNotificaciones"
+          >
+            <Bell :size="16" aria-hidden="true" /> Activar avisos
+          </button>
+        </div>
+      </details>
+
+      <!-- Codigo de invitacion -->
+      <details
+        v-if="auth.usuario?.rol === 'estudiante'"
+        data-entra
+        class="desplegable"
+      >
+        <summary>
+          <BadgeCheck :size="18" aria-hidden="true" />
+          <span class="desplegable__titulo">¿Sos personal del colegio?</span>
+          <ChevronDown
+            :size="18"
+            aria-hidden="true"
+            class="desplegable__flecha"
+          />
+        </summary>
         <form
-          v-if="auth.usuario.rol === 'estudiante'"
-          class="canjear"
+          class="desplegable__cuerpo"
           novalidate
           @submit.prevent="canjearCodigo"
         >
-          <p class="opcion__titulo">¿Sos personal del colegio?</p>
-          <p class="opcion__explica">
-            Si la administración te dio un código de invitación, escribilo aquí
-            para pasar tu cuenta a personal.
+          <p class="fila__explica">
+            Si la administración te dio un código de invitación, escribilo aquí.
           </p>
-          <div class="canjear__fila">
+          <div class="canjear">
             <label class="solo-lectores" for="codigo-invitacion"
               >Código de invitación</label
             >
@@ -478,19 +512,21 @@ onMounted(() => entradaEscalonada(raiz.value))
             </button>
           </div>
         </form>
+      </details>
 
-        <button
-          type="button"
-          class="boton boton--peligro boton--ancho salir"
-          @click="salir"
-        >
-          <LogOut :size="18" aria-hidden="true" /> Cerrar sesión
-        </button>
-      </section>
+      <button
+        v-if="auth.haySesion"
+        data-entra
+        type="button"
+        class="boton boton--peligro boton--ancho salir"
+        @click="salir"
+      >
+        <LogOut :size="18" aria-hidden="true" /> Cerrar sesión
+      </button>
     </div>
 
     <footer class="pie-colegio">
-      <EscudoCit :tamano="44" alternativo="" />
+      <EscudoCit :tamano="40" alternativo="" />
       <p>
         CitX · Complejo Educativo CIT<br />La Asunción de Belén, Heredia<br />
         <small>Foto del gallo pinto: James Diggans, CC BY 2.0.</small>
@@ -597,165 +633,164 @@ onMounted(() => entradaEscalonada(raiz.value))
   padding-bottom: var(--e-8);
 }
 
-.columnas {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--e-5);
-  align-items: start;
-}
-
-.bloque {
-  min-width: 0;
+.columna {
   display: flex;
   flex-direction: column;
-  gap: var(--e-5);
+  gap: var(--e-3);
+  max-width: 40rem;
+}
+
+.tarjeta-cuenta {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--e-3) var(--e-4);
+  align-items: center;
   padding: var(--e-5);
+  border-radius: var(--radio-lg);
   background: var(--superficie);
   border: 1px solid var(--borde);
-  border-radius: var(--radio-lg);
 }
 
-.opcion {
-  display: flex;
-  flex-direction: column;
-  gap: var(--e-3);
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--marca);
+  color: #ffffff;
+  font-weight: var(--peso-extra);
+  font-size: var(--txt-lg);
 }
 
-.opcion--fila {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--e-4);
+:root[data-tema='oscuro'] .avatar {
+  color: var(--gris-950);
 }
 
-.opcion__titulo {
-  font-weight: var(--peso-semi);
+.tarjeta-cuenta__datos {
+  min-width: 0;
 }
 
-.opcion__explica {
+.tarjeta-cuenta__nombre {
+  font-weight: var(--peso-fuerte);
+  font-size: var(--txt-md);
+}
+
+.tarjeta-cuenta__detalle {
   font-size: var(--txt-sm);
   color: var(--texto-suave);
-  max-width: 52ch;
-}
-
-.segmentos button {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--e-2);
-}
-
-.tamanos {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(4.75rem, 1fr));
-  gap: var(--e-2);
-}
-
-.tamano {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--e-1);
-  min-height: 76px;
-  padding: var(--e-2) var(--e-1);
-  border: 1.5px solid var(--borde-fuerte);
-  border-radius: var(--radio-md);
-  font-size: var(--txt-xs);
-  font-weight: var(--peso-semi);
-  color: var(--texto-suave);
-  text-align: center;
-}
-
-.tamano__muestra {
-  font-weight: var(--peso-fuerte);
-  color: var(--texto);
-  line-height: 1;
-}
-
-.tamano[aria-pressed='true'] {
-  border-color: var(--principal);
-  background: var(--principal-suave);
-  color: var(--texto);
-}
-
-.lista-radio {
-  display: grid;
-  gap: var(--e-2);
-}
-
-.radio {
-  display: flex;
-  align-items: center;
-  gap: var(--e-3);
-  min-height: var(--objetivo-tactil);
-  padding: var(--e-2) var(--e-3);
-  border-radius: var(--radio-md);
-  border: 1.5px solid var(--borde);
-  cursor: pointer;
-}
-
-.radio:has(input:checked) {
-  border-color: var(--principal);
-  background: var(--principal-suave);
-}
-
-.radio input {
-  width: 20px;
-  height: 20px;
-  accent-color: var(--principal-fuerte);
-  flex-shrink: 0;
-}
-
-.radio small {
-  display: block;
-  color: var(--texto-suave);
-  font-size: var(--txt-xs);
-}
-
-.probar-voz {
-  align-self: flex-start;
-  margin-top: calc(var(--e-2) * -1);
-}
-
-.restablecer {
-  align-self: flex-start;
-}
-
-.datos {
-  display: grid;
-  gap: var(--e-3);
-}
-
-.datos div {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: var(--e-1) var(--e-3);
-  padding-bottom: var(--e-3);
-  border-bottom: 1px solid var(--borde-sutil);
-}
-
-.datos dt {
-  color: var(--texto-suave);
-}
-
-.datos dd {
-  margin: 0;
-  font-weight: var(--peso-semi);
   overflow-wrap: anywhere;
 }
 
-.canjear {
-  display: flex;
-  flex-direction: column;
-  gap: var(--e-2);
-  padding: var(--e-4);
-  border-radius: var(--radio-md);
-  background: var(--superficie-2);
-  border: 1px dashed var(--borde-fuerte);
+.tarjeta-cuenta__acciones,
+.tarjeta-cuenta__aviso {
+  grid-column: 1 / -1;
 }
 
-.canjear__fila {
+.tarjeta-cuenta__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-2);
+}
+
+.bloque,
+.desplegable {
+  border-radius: var(--radio-lg);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+}
+
+.bloque {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-4);
+  padding: var(--e-5);
+}
+
+.bloque__titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  font-size: var(--txt-md);
+}
+
+.fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-2) var(--e-4);
+}
+
+.fila__texto {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.fila__titulo {
+  font-weight: var(--peso-semi);
+}
+
+.fila__explica {
+  font-size: var(--txt-sm);
+  color: var(--texto-suave);
+}
+
+.fila__control {
+  flex: 0 1 15rem;
+  min-width: 11rem;
+  width: auto;
+}
+
+.desplegable summary {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  min-height: 56px;
+  padding: var(--e-2) var(--e-5);
+  cursor: pointer;
+  list-style: none;
+  font-weight: var(--peso-semi);
+}
+
+.desplegable summary::-webkit-details-marker {
+  display: none;
+}
+
+.desplegable__titulo {
+  flex: 1;
+}
+
+.desplegable__flecha {
+  color: var(--texto-tenue);
+  transition: transform var(--dur-media) var(--curva);
+}
+
+.desplegable[open] .desplegable__flecha {
+  transform: rotate(180deg);
+}
+
+.desplegable__cuerpo {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--e-4);
+  padding: var(--e-2) var(--e-5) var(--e-5);
+  border-top: 1px solid var(--borde-sutil);
+  padding-top: var(--e-4);
+}
+
+.desplegable__cuerpo > .boton {
+  align-self: flex-start;
+}
+
+.probar-voz {
+  margin-top: calc(var(--e-3) * -1);
+}
+
+.canjear {
   display: flex;
   flex-wrap: wrap;
   gap: var(--e-2);
@@ -767,10 +802,13 @@ onMounted(() => entradaEscalonada(raiz.value))
   letter-spacing: 0.05em;
 }
 
+.salir {
+  margin-top: var(--e-3);
+}
+
 .pie-colegio {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: var(--e-3);
   margin-top: var(--e-8);
   color: var(--texto-tenue);
@@ -778,23 +816,9 @@ onMounted(() => entradaEscalonada(raiz.value))
   line-height: 1.4;
 }
 
-.salir {
-  margin-top: var(--e-2);
-}
-
 .formulario {
   display: flex;
   flex-direction: column;
   gap: var(--e-5);
-}
-
-@media (min-width: 1024px) {
-  .columnas {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .columnas > .bloque:last-child:nth-child(3) {
-    grid-column: span 2;
-  }
 }
 </style>

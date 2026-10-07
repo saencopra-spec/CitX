@@ -134,23 +134,30 @@ async function main() {
     nombre: 'Administración CIT',
   }
   const eventos = base.collection(COLECCIONES.eventos)
-  await eventos.deleteMany({ demo: true })
-  await eventos.insertMany(
-    EVENTOS.map(({ dias, ...e }) => {
-      const fecha = sumarDias(hoy, dias)
-      return {
-        ...e,
-        lugarTexto: '',
-        fecha,
-        inicio: fechaDesdeCR(fecha, e.hora),
-        autorId: String(autor._id),
-        autorNombre: autor.nombre,
-        demo: true,
-        creadoEn: ahora,
-      }
-    })
-  )
-  console.log(`Eventos: ${EVENTOS.length}`)
+  const hayEventos = (await eventos.countDocuments()) > 0
+  if (hayEventos && !opcion('--reiniciar-eventos')) {
+    console.log(
+      'Eventos: se conservan los que ya hay (usá --reiniciar-eventos para renovarlos)'
+    )
+  } else {
+    await eventos.deleteMany({ demo: true })
+    await eventos.insertMany(
+      EVENTOS.map(({ dias, ...e }) => {
+        const fecha = sumarDias(hoy, dias)
+        return {
+          ...e,
+          lugarTexto: '',
+          fecha,
+          inicio: fechaDesdeCR(fecha, e.hora),
+          autorId: String(autor._id),
+          autorNombre: autor.nombre,
+          demo: true,
+          creadoEn: ahora,
+        }
+      })
+    )
+    console.log(`Eventos: ${EVENTOS.length}`)
+  }
 
   // Objetos perdidos de ejemplo
   const objetos = base.collection(COLECCIONES.objetosPerdidos)

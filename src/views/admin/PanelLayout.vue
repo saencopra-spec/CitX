@@ -377,7 +377,6 @@ async function salir() {
     height: 100dvh;
     padding: var(--e-5) var(--e-3);
     gap: var(--e-4);
-    overflow-y: auto;
   }
 
   .lateral__marca {
@@ -386,7 +385,9 @@ async function salir() {
 
   .lateral__nav {
     flex-direction: column;
-    overflow: visible;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     padding: 0;
   }
 

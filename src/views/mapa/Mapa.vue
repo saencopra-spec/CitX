@@ -7,7 +7,6 @@ import {
   Star,
   Clock,
   Lock,
-  Info,
   ChevronRight,
   CircleAlert,
   Eye,
@@ -34,7 +33,6 @@ const busqueda = ref(
 const filtro = ref('todo')
 const seleccionada = ref(null)
 const mostrarResultados = ref(false)
-const verLeyenda = ref(false)
 
 /**
  * Cada persona puede ocultar los pines para ver el mapa limpio. Se recuerda
@@ -361,34 +359,6 @@ onMounted(async () => {
         {{ mostrarPines ? 'Solo el mapa' : 'Mostrar lugares' }}
       </button>
 
-      <div class="leyenda" :class="{ 'es-abierta': verLeyenda }">
-        <button
-          type="button"
-          class="leyenda__boton"
-          :aria-expanded="verLeyenda"
-          @click="verLeyenda = !verLeyenda"
-        >
-          <Info :size="16" aria-hidden="true" /> Leyenda
-        </button>
-        <ul v-if="verLeyenda" class="leyenda__lista">
-          <li v-for="(c, clave) in CATEGORIAS" :key="clave">
-            <span
-              class="punto"
-              :style="{ background: c.color }"
-              aria-hidden="true"
-            />
-            {{ c.nombre }}
-          </li>
-          <li>
-            <Lock :size="14" aria-hidden="true" class="icono-restringido" />
-            Acceso restringido (pin rayado)
-          </li>
-          <li>
-            <Star :size="14" aria-hidden="true" class="icono-favorito" /> Tus
-            favoritos
-          </li>
-        </ul>
-      </div>
 
       <p v-if="lugaresStore.sinConexion" class="sin-datos" role="status">
         Sin conexión: se muestran los lugares guardados en la app.
@@ -644,37 +614,6 @@ onMounted(async () => {
   color: #ffffff;
 }
 
-.leyenda {
-  position: absolute;
-  left: var(--e-3);
-  bottom: var(--e-3);
-  max-width: calc(100% - 80px);
-  background: var(--fondo-elevado);
-  border-radius: var(--radio-md);
-  box-shadow: var(--sombra-3);
-  font-size: var(--txt-sm);
-}
-
-.leyenda__boton {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--e-2);
-  min-height: var(--objetivo-tactil);
-  padding: 0 var(--e-3);
-  font-weight: var(--peso-semi);
-}
-
-.leyenda__lista {
-  display: grid;
-  gap: var(--e-2);
-  padding: 0 var(--e-3) var(--e-3);
-}
-
-.leyenda__lista li {
-  display: flex;
-  align-items: center;
-  gap: var(--e-2);
-}
 
 .icono-restringido {
   color: var(--error);

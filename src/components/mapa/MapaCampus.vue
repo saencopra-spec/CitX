@@ -27,7 +27,7 @@ const props = defineProps({
 const emit = defineEmits(['elegir', 'colocar'])
 
 const MIN = 1
-const MAX = 4
+const MAX = 3
 const svg = ref(null)
 const vista = reactive({ x: 0, y: 0, k: 1 })
 let animacion = null

@@ -100,7 +100,12 @@ async function calificar(item, estrellas) {
     pedido.value.calificados = [...pedido.value.calificados, item.productoId]
     avisos.exito(`Gracias por calificar ${item.nombre}.`)
   } catch (e) {
-    avisos.error(e.message)
+    if (e.estado === 409) {
+      pedido.value.calificados = [...pedido.value.calificados, item.productoId]
+      avisos.info(e.message)
+    } else {
+      avisos.error(e.message)
+    }
   }
 }
 

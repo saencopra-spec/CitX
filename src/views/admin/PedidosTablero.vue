@@ -20,7 +20,12 @@ import { sonarCampana } from '@/lib/avisosNavegador'
 import { useAvisos } from '@/stores/avisos'
 import { useConfiguracion } from '@/stores/configuracion'
 import { colones } from '@compartido/dinero.js'
-import { horaDe, horaLegible, fechaIsoLegible } from '@compartido/hora.js'
+import {
+  horaDe,
+  horaLegible,
+  fechaIsoLegible,
+  partesCR,
+} from '@compartido/hora.js'
 import {
   ESTADOS_PEDIDO,
   NOMBRE_ESTADO,
@@ -42,6 +47,12 @@ const cambiando = ref(new Set())
 const resaltado = ref(null)
 let conocidos = null
 
+/** Entregado hoy segun la hora de Costa Rica (no la fecha de retiro). */
+function entregadoHoy(p) {
+  const paso = [...p.historial].reverse().find((h) => h.estado === 'entregado')
+  return paso ? partesCR(paso.en).iso === hoy.value : false
+}
+
 const accionPara = {
   recibido: 'Empezar a preparar',
   preparacion: 'Marcar como listo',
@@ -54,7 +65,7 @@ const columnas = computed(() =>
     titulo: estado === 'entregado' ? 'Entregados hoy' : NOMBRE_ESTADO[estado],
     pedidos: pedidos.value
       .filter((p) => p.estado === estado)
-      .filter((p) => estado !== 'entregado' || p.franja.fecha === hoy.value)
+      .filter((p) => estado !== 'entregado' || entregadoHoy(p))
       .filter(
         (p) =>
           !busqueda.value ||

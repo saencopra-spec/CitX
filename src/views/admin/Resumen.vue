@@ -130,7 +130,7 @@ const hoy = fechaLarga(new Date())
 <style scoped>
 .cifras {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
   gap: var(--e-3);
 }
 
@@ -207,6 +207,7 @@ a.cifra--principal:hover {
 
 .bloques {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--e-3);
   margin-top: var(--e-5);
 }

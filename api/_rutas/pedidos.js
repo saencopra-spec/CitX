@@ -20,7 +20,7 @@ import {
   nombreFranja,
   inicioFranja,
 } from '../../compartido/jornada.js'
-import { partesCR } from '../../compartido/hora.js'
+import { partesCR, fechaDesdeCR } from '../../compartido/hora.js'
 import {
   validarTarjeta,
   marcaTarjeta,
@@ -230,7 +230,19 @@ registrar('GET', '/pedidos', async ({ req, res }) => {
   const pedidos = await col(COLECCIONES.pedidos)
   const lista = await pedidos
     .find({
-      $or: [{ 'franja.fecha': hoy }, { estado: { $ne: 'entregado' } }],
+      $or: [
+        { 'franja.fecha': hoy },
+        { estado: { $ne: 'entregado' } },
+        // Lo que se entrego hoy, aunque fuera para otro dia.
+        {
+          historial: {
+            $elemMatch: {
+              estado: 'entregado',
+              en: { $gte: fechaDesdeCR(hoy, '00:00') },
+            },
+          },
+        },
+      ],
     })
     .sort({ creadoEn: 1 })
     .limit(300)
@@ -249,6 +261,23 @@ registrar('GET', '/pedidos/:codigo', async ({ req, res, params }) => {
   if (!pedido || (!personal && pedido.usuarioId !== String(usuario._id))) {
     throw noExiste('No encontramos un pedido con ese código.')
   }
+  // Cada persona califica un producto una sola vez, aunque lo pida varias veces.
+  const calificaciones = await col(COLECCIONES.calificaciones)
+  const yaCalificados = await calificaciones
+    .find(
+      {
+        usuarioId: pedido.usuarioId,
+        productoId: { $in: pedido.items.map((i) => i.productoId) },
+      },
+      { projection: { productoId: 1 } }
+    )
+    .toArray()
+  pedido.calificados = [
+    ...new Set([
+      ...(pedido.calificados ?? []),
+      ...yaCalificados.map((c) => c.productoId),
+    ]),
+  ]
   ok(res, { pedido: pedidoPublico(pedido, { personal }) })
 })
 

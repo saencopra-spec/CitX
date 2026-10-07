@@ -527,11 +527,13 @@ onMounted(() => entradaEscalonada(raiz.value))
 
 .columnas {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--e-5);
   align-items: start;
 }
 
 .bloque {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--e-5);
@@ -572,7 +574,7 @@ onMounted(() => entradaEscalonada(raiz.value))
 
 .tamanos {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(4.75rem, 1fr));
   gap: var(--e-2);
 }
 

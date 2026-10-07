@@ -21,11 +21,8 @@ import {
 } from 'lucide-vue-next'
 import LogoCitx from '@/components/marca/LogoCitx.vue'
 import EscudoCit from '@/components/marca/EscudoCit.vue'
-import CampanaAvisos from '@/components/avisos/CampanaAvisos.vue'
 import { useAuth } from '@/stores/auth'
-import { useNotificaciones } from '@/stores/notificaciones'
 import { useConfirmar } from '@/stores/confirmar'
-import { usarSondeo } from '@/lib/sondeo'
 
 defineOptions({ inheritAttrs: false })
 
@@ -33,7 +30,6 @@ const auth = useAuth()
 const route = useRoute()
 const router = useRouter()
 const confirmar = useConfirmar()
-const notificaciones = useNotificaciones()
 
 const grupos = [
   {
@@ -149,8 +145,6 @@ const visibles = computed(() =>
     .filter((g) => g.enlaces.length)
 )
 
-usarSondeo(() => notificaciones.cargar(), 30000)
-
 async function salir() {
   const si = await confirmar.preguntar({
     titulo: '¿Cerrar sesión?',
@@ -178,9 +172,6 @@ async function salir() {
             alternativo=""
           />
           <span class="lateral__etiqueta">Panel de administración</span>
-        </div>
-        <div class="lateral__campana">
-          <CampanaAvisos />
         </div>
         <RouterLink
           v-if="!auth.soloPanel"
@@ -281,17 +272,6 @@ async function salir() {
   font-weight: var(--peso-semi);
 }
 
-.lateral__campana :deep(.campana__boton) {
-  color: #ffffff;
-}
-
-.lateral__campana :deep(.campana__boton:hover) {
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.lateral__campana :deep(.campana__cuenta) {
-  border-color: var(--marino-800);
-}
 
 .lateral__volver-movil {
   display: grid;

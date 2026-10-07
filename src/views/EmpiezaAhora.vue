@@ -17,7 +17,7 @@ const raiz = ref(null)
  */
 function proximamente(servicio) {
   avisos.aviso(
-    `Entrar con ${servicio} todavia no esta disponible. Por ahora usa tu correo.`
+    `Entrar con ${servicio} todavía no está disponible. Por ahora usá tu correo.`
   )
 }
 
@@ -41,7 +41,7 @@ onMounted(() => {
 
     <div class="empieza__cuerpo">
       <h1 data-entra class="empieza__titulo titulo-manuscrito">
-        Empieza ahora
+        ¡Empieza ahora!
       </h1>
 
       <div class="empieza__botones">
@@ -106,7 +106,7 @@ onMounted(() => {
       </div>
 
       <p data-entra class="empieza__pie">
-        Todavia no tenes cuenta?
+        ¿Todavía no tenés cuenta?
         <RouterLink :to="{ name: 'registro' }" class="empieza__enlace">
           Crear cuenta
         </RouterLink>

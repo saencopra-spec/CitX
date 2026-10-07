@@ -516,8 +516,6 @@ select.campo__control {
   transition:
     opacity var(--dur-rapida) var(--curva),
     transform var(--dur-rapida) var(--curva);
-  position: absolute;
-  inset: 0;
 }
 
 .pagina-enter-from {
@@ -557,4 +555,218 @@ select.campo__control {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--texto-tenue);
+}
+
+/* --------------------------------------------------------------------------
+   Pagina: ancho y margenes comunes de cada pantalla
+   -------------------------------------------------------------------------- */
+.pagina {
+  width: 100%;
+  max-width: var(--ancho-contenido);
+  margin-inline: auto;
+  padding-inline: var(--margen-lateral);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --margen-lateral: 1.5rem;
+  }
+}
+
+@media (min-width: 1440px) {
+  :root {
+    --margen-lateral: 2.5rem;
+  }
+}
+
+.subtitulo {
+  font-size: var(--txt-lg);
+  font-weight: var(--peso-fuerte);
+}
+
+.texto-suave {
+  color: var(--texto-suave);
+}
+
+.fila-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-3);
+}
+
+/* Chips para filtros (categorias, estados). */
+.chips {
+  display: flex;
+  gap: var(--e-2);
+  overflow-x: auto;
+  padding-block: 2px var(--e-2);
+  margin-inline: calc(var(--margen-lateral) * -1);
+  padding-inline: var(--margen-lateral);
+  scrollbar-width: none;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  min-height: 40px;
+  padding: 0 var(--e-4);
+  border-radius: var(--radio-pildora);
+  border: 1.5px solid var(--borde-fuerte);
+  background: var(--superficie);
+  color: var(--texto-suave);
+  font-size: var(--txt-sm);
+  font-weight: var(--peso-semi);
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-rapida) var(--curva-suave),
+    border-color var(--dur-rapida) var(--curva-suave),
+    color var(--dur-rapida) var(--curva-suave);
+}
+
+:root[data-tactil='grande'] .chip {
+  min-height: var(--objetivo-tactil);
+}
+
+.chip:hover {
+  border-color: var(--texto-tenue);
+  color: var(--texto);
+}
+
+.chip[aria-pressed='true'],
+.chip[aria-selected='true'] {
+  background: var(--marca);
+  border-color: var(--marca);
+  color: #ffffff;
+}
+
+:root[data-tema='oscuro'] .chip[aria-pressed='true'],
+:root[data-tema='oscuro'] .chip[aria-selected='true'] {
+  color: var(--gris-950);
+}
+
+/* Buscador con icono. */
+.buscador {
+  position: relative;
+}
+
+.buscador svg {
+  position: absolute;
+  left: var(--e-4);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--texto-tenue);
+  pointer-events: none;
+}
+
+.buscador .entrada {
+  padding-left: calc(var(--e-4) + 28px);
+  border-radius: var(--radio-pildora);
+}
+
+/* Grupo de opciones como botones segmentados. */
+.segmentos {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radio-md);
+  background: var(--superficie-3);
+}
+
+.segmentos button {
+  min-height: 40px;
+  padding: 0 var(--e-4);
+  border-radius: var(--radio-sm);
+  font-size: var(--txt-sm);
+  font-weight: var(--peso-semi);
+  color: var(--texto-suave);
+}
+
+:root[data-tactil='grande'] .segmentos button {
+  min-height: var(--objetivo-tactil);
+}
+
+.segmentos button[aria-pressed='true'] {
+  background: var(--superficie);
+  color: var(--texto);
+  box-shadow: var(--sombra-1);
+}
+
+/* Interruptor de encendido o apagado. */
+.interruptor {
+  position: relative;
+  flex-shrink: 0;
+  width: 52px;
+  height: 30px;
+  border-radius: var(--radio-pildora);
+  background: var(--borde-fuerte);
+  transition: background-color var(--dur-media) var(--curva);
+}
+
+.interruptor::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: var(--sombra-1);
+  transition: transform var(--dur-media) var(--curva);
+}
+
+.interruptor[aria-checked='true'] {
+  background: var(--principal-fuerte);
+}
+
+.interruptor[aria-checked='true']::after {
+  transform: translateX(22px);
+}
+
+/* Lista de errores o avisos dentro de un formulario. */
+.nota {
+  display: flex;
+  gap: var(--e-3);
+  padding: var(--e-3) var(--e-4);
+  border-radius: var(--radio-md);
+  background: var(--info-fondo);
+  color: var(--texto);
+  font-size: var(--txt-sm);
+  line-height: var(--alto-normal);
+}
+
+.nota svg {
+  flex-shrink: 0;
+  color: var(--info);
+  margin-top: 2px;
+}
+
+.nota--aviso {
+  background: var(--aviso-fondo);
+}
+
+.nota--aviso svg {
+  color: var(--aviso);
+}
+
+.nota--exito {
+  background: var(--exito-fondo);
+}
+
+.nota--exito svg {
+  color: var(--exito);
+}
+
+/* Etiqueta de seccion pequena encima de un bloque. */
+.antetitulo {
+  font-size: var(--txt-sm);
+  font-weight: var(--peso-semi);
+  color: var(--texto-tenue);
 }

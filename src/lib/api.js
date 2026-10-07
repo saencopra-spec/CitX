@@ -48,7 +48,7 @@ async function pedir(metodo, ruta, cuerpo, opciones = {}) {
   } catch (e) {
     if (e.name === 'AbortError') throw e
     throw new ErrorApi(
-      'No se pudo conectar. Revisa tu conexion a internet.',
+      'No se pudo conectar. Revisá tu conexión a internet.',
       0,
       null
     )
@@ -61,7 +61,7 @@ async function pedir(metodo, ruta, cuerpo, opciones = {}) {
 
   if (!respuesta.ok) {
     throw new ErrorApi(
-      datos?.mensaje || 'Ocurrio un error inesperado. Intenta de nuevo.',
+      datos?.mensaje || 'Ocurrió un error inesperado. Intentá de nuevo.',
       respuesta.status,
       datos
     )

@@ -30,8 +30,8 @@ onUnmounted(() => {
     >
       <WifiOff :size="18" aria-hidden="true" />
       <p>
-        Estas sin internet. Podes ver el mapa y la guia, pero no se pueden hacer
-        pedidos hasta que vuelva la conexion.
+        Estás sin internet. Podés ver el mapa y la guía, pero los pedidos y los
+        cambios tienen que esperar a que vuelva la conexión.
       </p>
     </div>
   </Transition>

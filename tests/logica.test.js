@@ -1,0 +1,288 @@
+import { describe, it, expect } from 'vitest'
+import { colones, calcularTotal, contarUnidades } from '../compartido/dinero.js'
+import {
+  pasaLuhn,
+  marcaTarjeta,
+  validarTarjeta,
+  vencimientoValido,
+  formatearNumeroTarjeta,
+  comprobanteSinpeValido,
+  TARJETA_PRUEBA,
+} from '../compartido/pagos.js'
+import { puede, seccionValida, SECCIONES } from '../compartido/permisos.js'
+import { estadoEnfermeria } from '../compartido/enfermeria.js'
+import { partesCR, horaLegible, sumarDias } from '../compartido/hora.js'
+import {
+  franjasDeRetiro,
+  franjaValida,
+  bloqueActual,
+} from '../compartido/jornada.js'
+import {
+  cambioDeEstadoPermitido,
+  siguienteEstado,
+  generarCodigo,
+  codigoValido,
+  codigoDesdeQR,
+  textoQR,
+} from '../compartido/pedidos.js'
+import { coincide, normalizar } from '../compartido/texto.js'
+
+/** Crea un Date a partir de una hora de Costa Rica (UTC-6). */
+const cr = (texto) => new Date(`${texto}:00-06:00`)
+
+describe('Montos y totales', () => {
+  it('formatea colones con espacio de miles', () => {
+    expect(colones(3300)).toBe('₡3 300')
+    expect(colones(600)).toBe('₡600')
+    expect(colones(1250000)).toBe('₡1 250 000')
+    expect(colones(0)).toBe('₡0')
+  })
+
+  it('calcula el total del carrito', () => {
+    const items = [
+      { precio: 3300, cantidad: 2 },
+      { precio: 600, cantidad: 3 },
+    ]
+    expect(calcularTotal(items)).toBe(8400)
+    expect(contarUnidades(items)).toBe(5)
+  })
+
+  it('ignora cantidades negativas, decimales raros y datos invalidos', () => {
+    expect(calcularTotal([{ precio: 1000, cantidad: -2 }])).toBe(0)
+    expect(calcularTotal([{ precio: '1500', cantidad: '2' }])).toBe(3000)
+    expect(calcularTotal([{ precio: 1000, cantidad: 1.9 }])).toBe(1000)
+    expect(calcularTotal(null)).toBe(0)
+    expect(calcularTotal([])).toBe(0)
+  })
+})
+
+describe('Validacion de tarjeta', () => {
+  it('acepta la tarjeta de prueba', () => {
+    expect(pasaLuhn(TARJETA_PRUEBA.numero)).toBe(true)
+    expect(marcaTarjeta(TARJETA_PRUEBA.numero)).toBe('visa')
+  })
+
+  it('rechaza numeros que no pasan Luhn', () => {
+    expect(pasaLuhn('4242 4242 4242 4241')).toBe(false)
+    expect(pasaLuhn('1234')).toBe(false)
+  })
+
+  it('detecta la marca', () => {
+    expect(marcaTarjeta('5555 5555 5555 4444')).toBe('mastercard')
+    expect(marcaTarjeta('2223 0031 2200 3222')).toBe('mastercard')
+    expect(marcaTarjeta('3782 822463 10005')).toBe('amex')
+    expect(marcaTarjeta('6011 1111 1111 1117')).toBe(null)
+  })
+
+  it('formatea el numero por grupos', () => {
+    expect(formatearNumeroTarjeta('4242424242424242')).toBe(
+      '4242 4242 4242 4242'
+    )
+    expect(formatearNumeroTarjeta('378282246310005')).toBe('3782 822463 10005')
+  })
+
+  it('valida el vencimiento contra la fecha actual', () => {
+    const hoy = cr('2026-10-06T10:00')
+    expect(vencimientoValido('10/26', hoy)).toBe(true)
+    expect(vencimientoValido('09/26', hoy)).toBe(false)
+    expect(vencimientoValido('13/27', hoy)).toBe(false)
+    expect(vencimientoValido('1227', hoy)).toBe(false)
+  })
+
+  it('devuelve errores por campo', () => {
+    const hoy = cr('2026-10-06T10:00')
+    expect(
+      validarTarjeta(
+        {
+          numero: TARJETA_PRUEBA.numero,
+          titular: 'Ana Prueba',
+          vencimiento: '12/30',
+          cvv: '123',
+        },
+        hoy
+      )
+    ).toEqual({})
+
+    const errores = validarTarjeta(
+      {
+        numero: '4242 4242 4242 4241',
+        titular: '',
+        vencimiento: '01/20',
+        cvv: '12',
+      },
+      hoy
+    )
+    expect(Object.keys(errores).sort()).toEqual(
+      ['cvv', 'numero', 'titular', 'vencimiento'].sort()
+    )
+  })
+
+  it('pide 4 digitos de CVV en American Express', () => {
+    const hoy = cr('2026-10-06T10:00')
+    const base = {
+      numero: '3782 822463 10005',
+      titular: 'Ana Prueba',
+      vencimiento: '12/30',
+    }
+    expect(validarTarjeta({ ...base, cvv: '123' }, hoy).cvv).toBeTruthy()
+    expect(validarTarjeta({ ...base, cvv: '1234' }, hoy)).toEqual({})
+  })
+
+  it('valida el comprobante SINPE', () => {
+    expect(comprobanteSinpeValido('20261006123456')).toBe(true)
+    expect(comprobanteSinpeValido('123')).toBe(false)
+    expect(comprobanteSinpeValido('abc123456')).toBe(false)
+  })
+})
+
+describe('Permisos por rol', () => {
+  it('solo admin y soda entran al panel y gestionan pedidos', () => {
+    for (const rol of ['admin', 'soda']) {
+      expect(puede(rol, 'panel.entrar')).toBe(true)
+      expect(puede(rol, 'pedidos.gestionar')).toBe(true)
+    }
+    for (const rol of ['estudiante', 'profesor', 'administrativo']) {
+      expect(puede(rol, 'panel.entrar')).toBe(false)
+      expect(puede(rol, 'pedidos.gestionar')).toBe(false)
+    }
+  })
+
+  it('profesores y admin publican eventos; estudiantes no', () => {
+    expect(puede('profesor', 'eventos.publicar')).toBe(true)
+    expect(puede('admin', 'eventos.publicar')).toBe(true)
+    expect(puede('estudiante', 'eventos.publicar')).toBe(false)
+    expect(puede('soda', 'eventos.publicar')).toBe(false)
+  })
+
+  it('la soda no puede administrar usuarios ni lugares', () => {
+    expect(puede('soda', 'usuarios.gestionar')).toBe(false)
+    expect(puede('soda', 'lugares.editar')).toBe(false)
+    expect(puede('admin', 'usuarios.gestionar')).toBe(true)
+  })
+
+  it('niega acciones desconocidas o roles inventados', () => {
+    expect(puede('admin', 'algo.inventado')).toBe(false)
+    expect(puede('superusuario', 'panel.entrar')).toBe(false)
+    expect(puede(undefined, 'panel.entrar')).toBe(false)
+  })
+
+  it('las secciones van de 7-1 a 12-6', () => {
+    expect(SECCIONES).toHaveLength(36)
+    expect(seccionValida('10-1')).toBe(true)
+    expect(seccionValida('13-1')).toBe(false)
+    expect(seccionValida('Contraseña...')).toBe(false)
+  })
+})
+
+describe('Enfermeria abierta o cerrada', () => {
+  it('abierta un martes a media manana', () => {
+    expect(estadoEnfermeria(cr('2026-10-06T10:00')).abierta).toBe(true)
+  })
+
+  it('abre justo a las 7:00 y cierra a las 3:30', () => {
+    expect(estadoEnfermeria(cr('2026-10-06T06:59')).abierta).toBe(false)
+    expect(estadoEnfermeria(cr('2026-10-06T07:00')).abierta).toBe(true)
+    expect(estadoEnfermeria(cr('2026-10-06T15:29')).abierta).toBe(true)
+    expect(estadoEnfermeria(cr('2026-10-06T15:30')).abierta).toBe(false)
+  })
+
+  it('avisa cuando esta por cerrar', () => {
+    expect(estadoEnfermeria(cr('2026-10-06T15:10')).mensaje).toContain(
+      '20 minutos'
+    )
+  })
+
+  it('cerrada el fin de semana y el viernes en la tarde dice lunes', () => {
+    expect(estadoEnfermeria(cr('2026-10-10T10:00')).abierta).toBe(false)
+    expect(estadoEnfermeria(cr('2026-10-09T16:00')).mensaje).toContain(
+      'el lunes'
+    )
+  })
+
+  it('usa la hora de Costa Rica aunque la fecha venga en UTC', () => {
+    // 20:00 UTC = 2:00 p. m. en Costa Rica: abierta.
+    expect(estadoEnfermeria(new Date('2026-10-06T20:00:00Z')).abierta).toBe(
+      true
+    )
+    // 22:00 UTC = 4:00 p. m. en Costa Rica: cerrada.
+    expect(estadoEnfermeria(new Date('2026-10-06T22:00:00Z')).abierta).toBe(
+      false
+    )
+  })
+})
+
+describe('Horas y jornada', () => {
+  it('descompone la hora en Costa Rica', () => {
+    const p = partesCR(new Date('2026-10-09T15:30:00Z'))
+    expect(p.iso).toBe('2026-10-09')
+    expect(p.hora).toBe(9)
+    expect(p.nombreDia).toBe('viernes')
+  })
+
+  it('escribe las horas como en Costa Rica', () => {
+    expect(horaLegible('07:00')).toBe('7:00 a. m.')
+    expect(horaLegible('15:30')).toBe('3:30 p. m.')
+    expect(horaLegible('12:00')).toBe('12:00 p. m.')
+  })
+
+  it('suma dias cruzando de mes', () => {
+    expect(sumarDias('2026-10-31', 1)).toBe('2026-11-01')
+  })
+
+  it('ofrece las franjas de retiro que todavia no pasaron', () => {
+    const franjas = franjasDeRetiro(cr('2026-10-06T10:00'))
+    expect(franjas.map((f) => f.clave)).toEqual(['almuerzo', 'recreo-tarde'])
+    expect(franjas.every((f) => f.hoy)).toBe(true)
+  })
+
+  it('pasa al siguiente dia lectivo cuando ya no hay franjas', () => {
+    const viernesTarde = franjasDeRetiro(cr('2026-10-09T15:00'))
+    expect(viernesTarde[0].fecha).toBe('2026-10-12')
+    expect(viernesTarde).toHaveLength(3)
+  })
+
+  it('valida la franja elegida', () => {
+    const ahora = cr('2026-10-06T10:00')
+    expect(franjaValida('2026-10-06', 'almuerzo', ahora)).toBe(true)
+    expect(franjaValida('2026-10-06', 'recreo-manana', ahora)).toBe(false)
+  })
+
+  it('reconoce la leccion en curso', () => {
+    expect(bloqueActual(cr('2026-10-06T07:10')).numero).toBe(1)
+    expect(bloqueActual(cr('2026-10-06T12:05')).clave).toBe('almuerzo')
+    expect(bloqueActual(cr('2026-10-06T16:00'))).toBe(null)
+  })
+})
+
+describe('Pedidos', () => {
+  it('avanza de estado en orden', () => {
+    expect(siguienteEstado('recibido')).toBe('preparacion')
+    expect(siguienteEstado('entregado')).toBe(null)
+    expect(cambioDeEstadoPermitido('recibido', 'preparacion')).toBe(true)
+    expect(cambioDeEstadoPermitido('recibido', 'entregado')).toBe(false)
+    expect(cambioDeEstadoPermitido('listo', 'preparacion')).toBe(true)
+  })
+
+  it('genera codigos cortos y legibles', () => {
+    for (let i = 0; i < 50; i++) {
+      const c = generarCodigo()
+      expect(codigoValido(c)).toBe(true)
+      expect(c).not.toMatch(/[01IOL]/)
+    }
+  })
+
+  it('lee el codigo desde el QR', () => {
+    expect(codigoDesdeQR(textoQR('AB2CD'))).toBe('AB2CD')
+    expect(codigoDesdeQR('ab2cd')).toBe('AB2CD')
+    expect(codigoDesdeQR('https://otra-cosa.com')).toBe(null)
+  })
+})
+
+describe('Busqueda sin tildes', () => {
+  it('encuentra aunque falten tildes', () => {
+    expect(normalizar('Enfermería')).toBe('enfermeria')
+    expect(coincide('enfermeria', 'Enfermería')).toBe(true)
+    expect(coincide('soda armonia', 'Soda Armonía', 'comida')).toBe(true)
+    expect(coincide('piscina', 'Canchas')).toBe(false)
+  })
+})

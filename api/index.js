@@ -1,52 +1,10 @@
 import { responderError, json } from './_lib/respuesta.js'
+import { registrar, buscar } from './_lib/enrutador.js'
 
 /**
- * Unica funcion de la API.
- *
- * El plan Hobby de Vercel limita cuantas funciones se pueden desplegar, asi que
- * en vez de un archivo por endpoint tenemos este enrutador interno. En
- * vercel.json reescribimos /api/(.*) hacia aqui.
+ * Unica funcion de la API. En vercel.json reescribimos /api/(.*) hacia aqui
+ * y el enrutador interno decide que modulo atiende cada direccion.
  */
-
-/** Convierte '/soda/pedido/:codigo' en una expresion regular con grupos. */
-function compilar(patron) {
-  const nombres = []
-  const fuente = patron
-    .split('/')
-    .map((parte) => {
-      if (!parte) return ''
-      if (parte.startsWith(':')) {
-        nombres.push(parte.slice(1))
-        return '/([^/]+)'
-      }
-      return '/' + parte.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    })
-    .join('')
-  return { regex: new RegExp(`^${fuente || '/'}$`), nombres }
-}
-
-const tabla = []
-
-/** Registra una ruta. `manejar(contexto)` recibe req, res, params y query. */
-export function registrar(metodo, patron, manejar) {
-  tabla.push({ metodo, ...compilar(patron), manejar })
-}
-
-function buscar(metodo, ruta) {
-  let coincideRuta = false
-  for (const entrada of tabla) {
-    const m = entrada.regex.exec(ruta)
-    if (!m) continue
-    coincideRuta = true
-    if (entrada.metodo !== metodo) continue
-    const params = {}
-    entrada.nombres.forEach((nombre, i) => {
-      params[nombre] = decodeURIComponent(m[i + 1])
-    })
-    return { entrada, params }
-  }
-  return { entrada: null, params: null, coincideRuta }
-}
 
 // Las rutas se registran al importar cada modulo.
 import './_rutas/auth.js'
@@ -62,6 +20,7 @@ import './_rutas/enfermeria.js'
 import './_rutas/notificaciones.js'
 import './_rutas/usuarios.js'
 import './_rutas/resumen.js'
+import './_rutas/imagenes.js'
 
 registrar('GET', '/salud', async ({ res }) => {
   json(res, 200, {
@@ -76,7 +35,7 @@ export default async function handler(req, res) {
   try {
     const url = new URL(req.url, `http://${req.headers.host || 'local'}`)
 
-    // Quitamos el prefijo /api que agrega la reescritura de Vercel.
+    // Quitamos el prefijo /api que deja la reescritura de Vercel.
     let ruta = url.pathname.replace(/^\/api/, '') || '/'
     if (ruta.length > 1 && ruta.endsWith('/')) ruta = ruta.slice(0, -1)
 
@@ -85,8 +44,8 @@ export default async function handler(req, res) {
     if (!entrada) {
       return json(res, coincideRuta ? 405 : 404, {
         mensaje: coincideRuta
-          ? 'Ese metodo no esta permitido en esta direccion.'
-          : 'Esa direccion de la API no existe.',
+          ? 'Ese método no está permitido en esta dirección.'
+          : 'Esa dirección de la API no existe.',
       })
     }
 

@@ -26,9 +26,9 @@ export class ErrorHttp extends Error {
 
 export const malaPeticion = (mensaje, campos) =>
   new ErrorHttp(400, mensaje, campos)
-export const noAutenticado = (mensaje = 'Necesitas iniciar sesion.') =>
+export const noAutenticado = (mensaje = 'Necesitás iniciar sesión.') =>
   new ErrorHttp(401, mensaje)
-export const sinPermiso = (mensaje = 'No tenes permiso para hacer esto.') =>
+export const sinPermiso = (mensaje = 'No tenés permiso para hacer esto.') =>
   new ErrorHttp(403, mensaje)
 export const noExiste = (mensaje = 'No encontramos lo que buscabas.') =>
   new ErrorHttp(404, mensaje)
@@ -39,7 +39,7 @@ export const demasiados = (mensaje) => new ErrorHttp(429, mensaje)
 /** Traduce cualquier error a una respuesta JSON entendible. */
 export function responderError(res, error) {
   if (error instanceof ErrorHttp) {
-    const cuerpo = { mensaje: error.mensaje ?? error.message }
+    const cuerpo = { mensaje: error.message }
     if (error.campos) cuerpo.campos = error.campos
     return json(res, error.estado, cuerpo)
   }
@@ -51,7 +51,7 @@ export function responderError(res, error) {
       if (!campos[clave]) campos[clave] = problema.message
     }
     return json(res, 400, {
-      mensaje: 'Revisa los datos del formulario.',
+      mensaje: 'Revisá los datos del formulario.',
       campos,
     })
   }
@@ -61,9 +61,24 @@ export function responderError(res, error) {
     return json(res, 409, { mensaje: 'Ese registro ya existe.' })
   }
 
+  if (String(error?.message || '').includes('MONGODB_URI')) {
+    return json(res, 503, {
+      mensaje:
+        'La base de datos todavía no está configurada. Avisale a quien administra CitX.',
+    })
+  }
+
+  if (error?.name?.startsWith?.('Mongo')) {
+    console.error('[citx] Error de base de datos:', error)
+    return json(res, 503, {
+      mensaje:
+        'No pudimos hablar con la base de datos. Intentá de nuevo en un momento.',
+    })
+  }
+
   console.error('[citx] Error no controlado:', error)
   return json(res, 500, {
-    mensaje: 'Algo salio mal de nuestro lado. Intenta de nuevo en un momento.',
+    mensaje: 'Algo salió mal de nuestro lado. Intentá de nuevo en un momento.',
   })
 }
 
@@ -74,7 +89,7 @@ export async function leerCuerpo(req) {
       try {
         return JSON.parse(req.body)
       } catch {
-        throw malaPeticion('El cuerpo de la peticion no es JSON valido.')
+        throw malaPeticion('Los datos enviados no tienen un formato válido.')
       }
     }
     return req.body
@@ -86,7 +101,7 @@ export async function leerCuerpo(req) {
     tamano += trozo.length
     // Tope de 6 MB: las fotos ya vienen comprimidas desde el navegador.
     if (tamano > 6 * 1024 * 1024) {
-      throw malaPeticion('El contenido enviado es demasiado grande.')
+      throw malaPeticion('Lo que enviaste es demasiado grande.')
     }
     trozos.push(trozo)
   }
@@ -96,6 +111,6 @@ export async function leerCuerpo(req) {
   try {
     return JSON.parse(Buffer.concat(trozos).toString('utf8'))
   } catch {
-    throw malaPeticion('El cuerpo de la peticion no es JSON valido.')
+    throw malaPeticion('Los datos enviados no tienen un formato válido.')
   }
 }

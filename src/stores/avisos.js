@@ -28,10 +28,11 @@ export const useAvisos = defineStore('avisos', () => {
   const exito = (m, o) => mostrar(m, { ...o, tipo: 'exito' })
   const error = (m, o) => mostrar(m, { ...o, tipo: 'error', duracion: 6000 })
   const aviso = (m, o) => mostrar(m, { ...o, tipo: 'aviso' })
+  const info = (m, o) => mostrar(m, { ...o, tipo: 'info' })
 
   function cerrar(id) {
     lista.value = lista.value.filter((a) => a.id !== id)
   }
 
-  return { lista, mostrar, exito, error, aviso, cerrar }
+  return { lista, mostrar, exito, error, aviso, info, cerrar }
 })

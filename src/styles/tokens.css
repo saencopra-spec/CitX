@@ -212,6 +212,24 @@
   --z-modal: 80;
   --z-aviso: 100;
 
+  /* --- Mapa del campus --- */
+  --mapa-suelo: #eef3ee;
+  --mapa-camino: #ffffff;
+  --mapa-borde: #ffffff;
+  --mapa-texto: #1c2e62;
+  --mapa-naturaleza: #bfe3c4;
+  --mapa-arbol: #7cbf86;
+  --mapa-academico: #c8dcef;
+  --mapa-servicios: #bfe7e4;
+  --mapa-alimentacion: #f6dcae;
+  --mapa-deporte: #d3d0f2;
+  --mapa-administracion: #d9dde8;
+  --mapa-acceso: #e4e6ea;
+  --mapa-otro: #e4e6ea;
+  --mapa-agua: #9fd3ec;
+  --mapa-rayado: #c42b2b;
+  --mapa-seleccion: #0b7fa0;
+
   color-scheme: light;
 }
 
@@ -264,6 +282,23 @@
   --sombra-3: 0 6px 16px rgba(0, 0, 0, 0.55);
   --sombra-4: 0 14px 34px rgba(0, 0, 0, 0.6);
   --sombra-interior: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+
+  --mapa-suelo: #131a20;
+  --mapa-camino: #232c36;
+  --mapa-borde: #0d1117;
+  --mapa-texto: #e9edf3;
+  --mapa-naturaleza: #1f3d2a;
+  --mapa-arbol: #2f6a40;
+  --mapa-academico: #1d3550;
+  --mapa-servicios: #154441;
+  --mapa-alimentacion: #4a3a1c;
+  --mapa-deporte: #2e2a55;
+  --mapa-administracion: #2a3040;
+  --mapa-acceso: #262c36;
+  --mapa-otro: #262c36;
+  --mapa-agua: #1b4c66;
+  --mapa-rayado: #f08585;
+  --mapa-seleccion: #4fc8c2;
 
   color-scheme: dark;
 }

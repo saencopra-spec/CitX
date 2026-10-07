@@ -2,16 +2,27 @@
 import { onMounted, computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useConfiguracion } from '@/stores/configuracion'
+import { useAuth } from '@/stores/auth'
 import FiltrosDaltonismo from '@/components/FiltrosDaltonismo.vue'
 import AvisoSinConexion from '@/components/AvisoSinConexion.vue'
 import PilaDeAvisos from '@/components/PilaDeAvisos.vue'
+import DialogoConfirmar from '@/components/DialogoConfirmar.vue'
+import ArmazonApp from '@/components/ArmazonApp.vue'
 
 const configuracion = useConfiguracion()
+const auth = useAuth()
 const route = useRoute()
 
-/** Las pantallas de bienvenida y el panel traen su propio armazon. */
-const sinArmazon = computed(
-  () => route.meta.publica || route.path.startsWith('/admin')
+/**
+ * Con sesion iniciada, la app lleva navegacion (barra inferior o lateral).
+ * Las pantallas de entrada y el panel de administracion traen la suya.
+ */
+const conArmazon = computed(
+  () =>
+    auth.haySesion &&
+    !route.meta.soloInvitados &&
+    !route.path.startsWith('/admin') &&
+    !auth.esPersonalSoda
 )
 
 /** Anuncio para lectores de pantalla cuando cambia de pagina. */
@@ -20,7 +31,7 @@ watch(
   () => route.fullPath,
   () => {
     anuncioRuta.value = route.meta.titulo
-      ? `${route.meta.titulo}. Pagina cargada.`
+      ? `${route.meta.titulo}. Página cargada.`
       : ''
   }
 )
@@ -38,15 +49,28 @@ onMounted(() => {
 
   <AvisoSinConexion />
 
-  <div class="aplicacion" :class="{ 'aplicacion--simple': sinArmazon }">
-    <RouterView v-slot="{ Component }">
+  <ArmazonApp v-if="conArmazon">
+    <RouterView v-slot="{ Component, route: r }">
       <Transition name="pagina" mode="out-in">
-        <component :is="Component" id="contenido" />
+        <component :is="Component" id="contenido" :key="r.path" />
+      </Transition>
+    </RouterView>
+  </ArmazonApp>
+
+  <div v-else class="aplicacion">
+    <RouterView v-slot="{ Component, route: r }">
+      <Transition name="pagina" mode="out-in">
+        <component
+          :is="Component"
+          id="contenido"
+          :key="r.matched[0]?.path ?? r.path"
+        />
       </Transition>
     </RouterView>
   </div>
 
   <PilaDeAvisos />
+  <DialogoConfirmar />
 
   <p class="solo-lectores" role="status" aria-live="polite">
     {{ anuncioRuta }}

@@ -76,6 +76,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@compartido': fileURLToPath(new URL('./compartido', import.meta.url)),
     },
   },
   server: {
@@ -94,7 +95,7 @@ export default defineConfig({
     include: ['tests/**/*.test.js'],
     coverage: {
       reporter: ['text', 'html'],
-      include: ['src/**/*.js', 'api/**/*.js'],
+      include: ['src/**/*.js', 'api/**/*.js', 'compartido/**/*.js'],
     },
   },
 })

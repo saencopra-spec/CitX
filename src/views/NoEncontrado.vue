@@ -6,13 +6,13 @@ import { Compass } from 'lucide-vue-next'
 <template>
   <section class="no-encontrado">
     <Compass :size="56" :stroke-width="1.5" aria-hidden="true" />
-    <h1>Esta pagina no existe</h1>
+    <h1>Esta página no existe</h1>
     <p>
-      Puede que el enlace este viejo o que lo hayas escrito con un error.
+      Puede que el enlace esté viejo o que se haya escrito con un error.
       Volvamos a un lugar conocido.
     </p>
     <RouterLink to="/menu" class="boton boton--principal">
-      Ir al menu principal
+      Ir al menú principal
     </RouterLink>
   </section>
 </template>

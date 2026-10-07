@@ -27,7 +27,7 @@ const rutas = [
     path: '/entrar',
     name: 'entrar',
     component: () => import('@/views/IniciarSesion.vue'),
-    meta: { publica: true, soloInvitados: true, titulo: 'Iniciar sesion' },
+    meta: { publica: true, soloInvitados: true, titulo: 'Iniciar sesión' },
   },
   {
     path: '/registro',
@@ -41,7 +41,7 @@ const rutas = [
     path: '/menu',
     name: 'menu',
     component: () => import('@/views/MenuPrincipal.vue'),
-    meta: { titulo: 'Menu principal' },
+    meta: { titulo: 'Menú principal' },
   },
   {
     path: '/mapa',
@@ -53,13 +53,13 @@ const rutas = [
     path: '/guia',
     name: 'guia',
     component: () => import('@/views/Guia.vue'),
-    meta: { titulo: 'Guia digital' },
+    meta: { titulo: 'Guía digital' },
   },
   {
     path: '/guia/eventos',
     name: 'eventos',
     component: () => import('@/views/guia/Eventos.vue'),
-    meta: { titulo: 'Proximos eventos' },
+    meta: { titulo: 'Próximos eventos' },
   },
   {
     path: '/guia/clases',
@@ -83,13 +83,13 @@ const rutas = [
     path: '/guia/enfermeria',
     name: 'enfermeria',
     component: () => import('@/views/guia/Enfermeria.vue'),
-    meta: { titulo: 'Enfermeria' },
+    meta: { titulo: 'Enfermería' },
   },
   {
     path: '/soda',
     name: 'soda',
     component: () => import('@/views/soda/SodaMenu.vue'),
-    meta: { titulo: 'Soda Armonia' },
+    meta: { titulo: 'Soda Armonía' },
   },
   {
     path: '/soda/carrito',
@@ -120,7 +120,7 @@ const rutas = [
     path: '/configuracion',
     name: 'configuracion',
     component: () => import('@/views/Configuracion.vue'),
-    meta: { publica: true, titulo: 'Configuracion' },
+    meta: { publica: true, titulo: 'Configuración' },
   },
   {
     path: '/notificaciones',
@@ -151,13 +151,13 @@ const rutas = [
         path: 'menu',
         name: 'admin-menu',
         component: () => import('@/views/admin/MenuSoda.vue'),
-        meta: { roles: ['admin', 'soda'], titulo: 'Menu de la soda' },
+        meta: { roles: ['admin', 'soda'], titulo: 'Menú de la soda' },
       },
       {
         path: 'eventos',
         name: 'admin-eventos',
         component: () => import('@/views/admin/EventosAdmin.vue'),
-        meta: { roles: ['admin', 'profesor'], titulo: 'Eventos' },
+        meta: { roles: ['admin'], titulo: 'Eventos' },
       },
       {
         path: 'lugares',
@@ -181,7 +181,7 @@ const rutas = [
         path: 'enfermeria',
         name: 'admin-enfermeria',
         component: () => import('@/views/admin/EnfermeriaAdmin.vue'),
-        meta: { roles: ['admin'], titulo: 'Enfermeria' },
+        meta: { roles: ['admin'], titulo: 'Enfermería' },
       },
       {
         path: 'usuarios',
@@ -196,7 +196,7 @@ const rutas = [
     path: '/:ruta(.*)*',
     name: 'no-encontrado',
     component: () => import('@/views/NoEncontrado.vue'),
-    meta: { publica: true, titulo: 'Pagina no encontrada' },
+    meta: { publica: true, titulo: 'Página no encontrada' },
   },
 ]
 
@@ -227,9 +227,22 @@ router.beforeEach(async (hacia) => {
   }
 
   if (hacia.meta.roles && haySesion) {
-    if (!hacia.meta.roles.includes(auth.usuario.rol)) {
-      return { name: 'menu' }
+    const permitido = hacia.matched.every(
+      (r) => !r.meta.roles || r.meta.roles.includes(auth.usuario.rol)
+    )
+    if (!permitido) {
+      return { name: auth.puedeEntrarAlPanel ? 'admin-resumen' : 'menu' }
     }
+  }
+
+  // La cuenta de la soda trabaja solo en el panel.
+  if (
+    haySesion &&
+    auth.esPersonalSoda &&
+    !hacia.path.startsWith('/admin') &&
+    !hacia.meta.publica
+  ) {
+    return { name: 'admin-pedidos' }
   }
 
   return true

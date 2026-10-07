@@ -9,8 +9,10 @@ import { MongoClient } from 'mongodb'
  * entre invocaciones que caen en la misma instancia.
  */
 
-const URI = process.env.MONGODB_URI
-const NOMBRE_BD = process.env.MONGODB_DB || 'citx'
+// Se leen al conectar (y no al importar) para que el script de datos
+// iniciales alcance a cargar el archivo .env primero.
+const uri = () => process.env.MONGODB_URI
+const nombreBD = () => process.env.MONGODB_DB || 'citx'
 
 if (!globalThis._citxMongo) {
   globalThis._citxMongo = { cliente: null, promesa: null }
@@ -19,7 +21,7 @@ if (!globalThis._citxMongo) {
 const cache = globalThis._citxMongo
 
 export async function conectar() {
-  if (!URI) {
+  if (!uri()) {
     throw new Error(
       'Falta la variable de entorno MONGODB_URI. Revisa el archivo .env o la configuracion del proyecto en Vercel.'
     )
@@ -28,7 +30,7 @@ export async function conectar() {
   if (cache.cliente) return cache.cliente
 
   if (!cache.promesa) {
-    const cliente = new MongoClient(URI, {
+    const cliente = new MongoClient(uri(), {
       maxPoolSize: 10,
       minPoolSize: 0,
       serverSelectionTimeoutMS: 8000,
@@ -36,6 +38,7 @@ export async function conectar() {
       retryWrites: true,
     })
     cache.promesa = cliente.connect().then((c) => {
+      cache.indicesListos = false
       cache.cliente = c
       return c
     })
@@ -52,7 +55,7 @@ export async function conectar() {
 
 export async function bd() {
   const cliente = await conectar()
-  return cliente.db(NOMBRE_BD)
+  return cliente.db(nombreBD())
 }
 
 /** Acceso corto a una coleccion. */
@@ -75,6 +78,7 @@ export const COLECCIONES = {
   notificaciones: 'notificaciones',
   calificaciones: 'calificaciones',
   intentosEntrada: 'intentos_entrada',
+  imagenes: 'imagenes',
 }
 
 /**
@@ -114,6 +118,20 @@ export async function asegurarIndices() {
       .collection(COLECCIONES.intentosEntrada)
       .createIndex({ creadoEn: 1 }, { expireAfterSeconds: 900 }),
     base.collection(COLECCIONES.intentosEntrada).createIndex({ llave: 1 }),
+    base
+      .collection(COLECCIONES.solicitudesObjetos)
+      .createIndex({ objetoId: 1, usuarioId: 1 }),
+    base
+      .collection(COLECCIONES.calificaciones)
+      .createIndex({ productoId: 1, usuarioId: 1 }, { unique: true }),
   ])
   cache.indicesListos = true
+}
+
+/** Cierra la conexion (solo lo usa el script de datos iniciales). */
+export async function cerrar() {
+  if (cache.cliente) await cache.cliente.close()
+  cache.cliente = null
+  cache.promesa = null
+  cache.indicesListos = false
 }

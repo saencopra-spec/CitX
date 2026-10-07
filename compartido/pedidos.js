@@ -1,0 +1,61 @@
+export const ESTADOS_PEDIDO = ['recibido', 'preparacion', 'listo', 'entregado']
+
+export const NOMBRE_ESTADO = {
+  recibido: 'Recibido',
+  preparacion: 'En preparación',
+  listo: 'Listo para retirar',
+  entregado: 'Entregado',
+}
+
+export const METODOS_PAGO = {
+  sinpe: 'SINPE Móvil',
+  tarjeta: 'Tarjeta',
+  efectivo: 'Efectivo al retirar',
+}
+
+/** Siguiente estado en la linea de tiempo, o null si ya termino. */
+export function siguienteEstado(estado) {
+  const i = ESTADOS_PEDIDO.indexOf(estado)
+  if (i === -1 || i === ESTADOS_PEDIDO.length - 1) return null
+  return ESTADOS_PEDIDO[i + 1]
+}
+
+/** Se avanza de uno en uno, o se devuelve un paso si fue un error. */
+export function cambioDeEstadoPermitido(actual, nuevo) {
+  const a = ESTADOS_PEDIDO.indexOf(actual)
+  const n = ESTADOS_PEDIDO.indexOf(nuevo)
+  if (a === -1 || n === -1) return false
+  return n === a + 1 || n === a - 1
+}
+
+/** Codigo corto, sin caracteres que se confundan (0/O, 1/I/L). */
+export const ALFABETO_CODIGO = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+
+export function generarCodigo(azar = Math.random) {
+  let c = ''
+  for (let i = 0; i < 5; i++) {
+    c += ALFABETO_CODIGO[Math.floor(azar() * ALFABETO_CODIGO.length)]
+  }
+  return c
+}
+
+export function codigoValido(codigo) {
+  return new RegExp(`^[${ALFABETO_CODIGO}]{5}$`).test(
+    String(codigo ?? '').toUpperCase()
+  )
+}
+
+/** Texto que lleva el QR del pedido. */
+export function textoQR(codigo) {
+  return `CITX-PEDIDO:${codigo}`
+}
+
+/** Saca el codigo de lo que leyo la camara (acepta el texto del QR o el codigo solo). */
+export function codigoDesdeQR(texto) {
+  const limpio = String(texto ?? '')
+    .trim()
+    .toUpperCase()
+  const m = /^CITX-PEDIDO:([A-Z0-9]{5})$/.exec(limpio)
+  if (m) return m[1]
+  return codigoValido(limpio) ? limpio : null
+}

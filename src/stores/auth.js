@@ -1,15 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { api } from '@/lib/api'
+import { NOMBRE_ROL, puede as puedeRol } from '@compartido/permisos.js'
 import { useConfiguracion } from './configuracion'
+import { useNotificaciones } from './notificaciones'
 
-export const ROLES = {
-  estudiante: 'Estudiante',
-  profesor: 'Profesor',
-  administrativo: 'Personal administrativo',
-  admin: 'Administrador',
-  soda: 'Soda Armonia',
-}
+export const ROLES = NOMBRE_ROL
 
 export const useAuth = defineStore('auth', () => {
   const usuario = ref(null)
@@ -22,10 +18,23 @@ export const useAuth = defineStore('auth', () => {
   const esPersonalSoda = computed(() => usuario.value?.rol === 'soda')
   const esProfesor = computed(() => usuario.value?.rol === 'profesor')
   const esEstudiante = computed(() => usuario.value?.rol === 'estudiante')
-  const puedeEntrarAlPanel = computed(
-    () => esAdmin.value || esPersonalSoda.value
-  )
-  const puedePublicarEventos = computed(() => esAdmin.value || esProfesor.value)
+  const puedeEntrarAlPanel = computed(() => puede('panel.entrar'))
+  const puedePublicarEventos = computed(() => puede('eventos.publicar'))
+
+  /** Permiso del usuario actual segun compartido/permisos.js. */
+  function puede(accion) {
+    return Boolean(usuario.value) && puedeRol(usuario.value.rol, accion)
+  }
+
+  function esFavorito(clave) {
+    return (usuario.value?.favoritos ?? []).includes(clave)
+  }
+
+  async function alternarFavorito(clave) {
+    const datos = await api.post(`/lugares/${clave}/favorito`)
+    if (usuario.value) usuario.value.favoritos = datos.favoritos
+    return datos.favorito
+  }
 
   const nombreCorto = computed(() => {
     if (!usuario.value?.nombre) return ''
@@ -74,6 +83,7 @@ export const useAuth = defineStore('auth', () => {
       await api.post('/auth/salir')
     } finally {
       usuario.value = null
+      useNotificaciones().limpiar()
     }
   }
 
@@ -100,6 +110,9 @@ export const useAuth = defineStore('auth', () => {
     puedePublicarEventos,
     nombreCorto,
     nombreRol,
+    puede,
+    esFavorito,
+    alternarFavorito,
     cargarSesion,
     entrar,
     registrar,

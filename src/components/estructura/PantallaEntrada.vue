@@ -138,7 +138,7 @@ onMounted(() => {
   gap: var(--e-4);
   padding: var(--e-3) var(--e-5);
   border-radius: var(--radio-xl);
-  background: rgba(255, 255, 255, 0.94);
+  background: #000;
   box-shadow: 0 10px 30px rgba(13, 17, 23, 0.3);
 }
 
@@ -157,14 +157,14 @@ onMounted(() => {
 }
 
 [data-logo] :deep(.marca__nombre) {
-  color: var(--marino-600);
+  color: #fff;
   font-size: 26px !important;
 }
 
 .portada__linea {
   width: 1px;
   height: 60px;
-  background: var(--gris-300);
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .portada__lema {

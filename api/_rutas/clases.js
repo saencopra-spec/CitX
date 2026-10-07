@@ -27,9 +27,9 @@ registrar('GET', '/horarios', async ({ req, res }) => {
 })
 
 function ordenSeccion(a, b) {
-  const [na, sa] = a.split('-').map(Number)
-  const [nb, sb] = b.split('-').map(Number)
-  return na - nb || sa - sb
+  const [na, sa] = a.split('-')
+  const [nb, sb] = b.split('-')
+  return Number(na) - Number(nb) || sa.localeCompare(sb)
 }
 
 registrar('GET', '/horarios/:seccion', async ({ req, res, params }) => {

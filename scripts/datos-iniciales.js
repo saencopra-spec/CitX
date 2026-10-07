@@ -12,7 +12,7 @@ export const CUENTAS_DEMO = [
     correo: 'estudiante@citx.demo',
     contrasena: 'Estudiante2026',
     rol: 'estudiante',
-    seccion: '10-1',
+    seccion: '10-A',
   },
   {
     nombre: 'Profesora de prueba',
@@ -513,19 +513,19 @@ export const MATERIAS = [
 
 /** Especialidad de ejemplo de cada seccion de 10.° a 12.°. */
 const ESPECIALIDAD_SECCION = {
-  '10-1': 'Desarrollo de Software',
-  '10-2': 'Ciberseguridad',
-  '11-1': 'Inteligencia Artificial',
-  '11-2': 'Electrónica Industrial',
-  '12-1': 'Diseño Gráfico Multimedia',
-  '12-2': 'Logística y Distribución',
+  '10-A': 'Desarrollo de Software',
+  '10-B': 'Ciberseguridad',
+  '11-A': 'Inteligencia Artificial',
+  '11-B': 'Electrónica Industrial',
+  '12-A': 'Diseño Gráfico Multimedia',
+  '12-B': 'Logística y Distribución',
 }
 
 const TALLER_SECCION = {
-  '7-1': 'Robótica',
-  '7-2': 'Dibujo Artístico y TIC',
-  '8-1': 'Montajes Eléctricos',
-  '9-1': 'Gestión Empresarial',
+  '7-A': 'Robótica',
+  '7-B': 'Dibujo Artístico y TIC',
+  '8-A': 'Montajes Eléctricos',
+  '9-A': 'Gestión Empresarial',
 }
 
 /**
@@ -589,16 +589,16 @@ export function horarioDeEjemplo(seccion) {
 }
 
 export const SECCIONES_CON_HORARIO = [
-  '7-1',
-  '7-2',
-  '8-1',
-  '9-1',
-  '10-1',
-  '10-2',
-  '11-1',
-  '11-2',
-  '12-1',
-  '12-2',
+  '7-A',
+  '7-B',
+  '8-A',
+  '9-A',
+  '10-A',
+  '10-B',
+  '11-A',
+  '11-B',
+  '12-A',
+  '12-B',
 ]
 
 export const OBJETOS = [

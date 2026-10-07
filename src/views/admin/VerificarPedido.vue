@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   ScanLine,
+  Search,
   ArrowRight,
   Banknote,
   CircleCheck,
@@ -125,6 +126,7 @@ async function avanzar() {
     </EncabezadoPanel>
 
     <form class="buscador busqueda" role="search" @submit.prevent="buscar">
+      <Search :size="20" aria-hidden="true" />
       <label for="verificar-codigo" class="solo-lectores">Código del pedido</label>
       <input
         id="verificar-codigo"
@@ -176,7 +178,7 @@ async function avanzar() {
 
       <p v-if="entregadoEn" class="nota nota--aviso" role="status">
         <CircleAlert :size="18" aria-hidden="true" />
-        <span>Este pedido ya se entregó a las {{ horaDe(entregadoEn) }}. No lo entregués de nuevo.</span>
+        <span>Este pedido ya se entregó ({{ horaDe(entregadoEn) }}). No lo entregués de nuevo.</span>
       </p>
       <p v-else-if="otroDia" class="nota nota--aviso">
         <CircleAlert :size="18" aria-hidden="true" />

@@ -167,9 +167,8 @@ describe('Permisos por rol', () => {
     expect(puede('soda', 'eventos.publicar')).toBe(false)
   })
 
-  it('usuarios y bitacora son solo del administrador', () => {
+  it('usuarios e invitaciones son solo del administrador', () => {
     expect(puede('admin', 'usuarios.gestionar')).toBe(true)
-    expect(puede('admin', 'bitacora.ver')).toBe(true)
     for (const rol of ['soda', 'profesor', 'administrativo', 'estudiante']) {
       expect(puede(rol, 'usuarios.gestionar')).toBe(false)
     }
@@ -178,7 +177,7 @@ describe('Permisos por rol', () => {
       puede(
         {
           rol: 'administrativo',
-          permisos: ['usuarios.gestionar', 'bitacora.ver'],
+          permisos: ['usuarios.gestionar'],
         },
         'usuarios.gestionar'
       )
@@ -363,7 +362,9 @@ describe('Pedidos', () => {
   })
 
   it('el QR lleva un enlace a la pagina de verificacion', () => {
-    expect(textoQR('AB2CD', 'https://citx.vercel.app')).toBe('https://citx.vercel.app/verificar/AB2CD')
+    expect(textoQR('AB2CD', 'https://citx.vercel.app')).toBe(
+      'https://citx.vercel.app/verificar/AB2CD'
+    )
   })
 
   it('lee el codigo desde el QR, el formato viejo o escrito a mano', () => {

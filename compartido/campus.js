@@ -62,7 +62,7 @@ export const LUGARES_CIT = [
     horario: 'Lunes a viernes, 7:00 a. m. a 12:00 m. d.',
     restringido: true,
     notaAcceso: 'Solo personal y familias de preescolar.',
-    foto: '/fotos/lugar-preescolar.webp',
+    foto: '/fotos/lugares/preescolar.webp',
   },
   {
     clave: 'play-granjita',
@@ -76,7 +76,7 @@ export const LUGARES_CIT = [
     horario: 'Durante la jornada de preescolar',
     restringido: true,
     notaAcceso: 'Para preescolar, con sus maestras.',
-    foto: '/fotos/lugar-granjita.webp',
+    foto: '/fotos/lugares/granjita.webp',
   },
   {
     clave: 'primaria',
@@ -102,7 +102,7 @@ export const LUGARES_CIT = [
       'Salón multiusos para actividades, actos y clases especiales de primaria.',
     horario: 'Según actividades',
     restringido: false,
-    foto: '/fotos/lugar-multiusos-primaria.webp',
+    foto: '/fotos/lugares/multiusos-primaria.webp',
   },
   {
     clave: 'area-juegos',
@@ -114,7 +114,7 @@ export const LUGARES_CIT = [
     descripcion: 'Juegos al aire libre para los recreos de primaria.',
     horario: 'Recreos de primaria',
     restringido: false,
-    foto: '/fotos/lugar-area-juegos.webp',
+    foto: '/fotos/lugares/area-juegos.webp',
   },
   {
     clave: 'gimnasio-primaria',
@@ -127,7 +127,7 @@ export const LUGARES_CIT = [
       'Gimnasio techado para Educación Física y actividades de primaria.',
     horario: 'Lunes a viernes, 7:00 a. m. a 3:30 p. m.',
     restringido: false,
-    foto: '/fotos/lugar-gimnasio-primaria.webp',
+    foto: '/fotos/lugares/gimnasio-primaria.webp',
   },
   {
     clave: 'secundaria',
@@ -140,7 +140,7 @@ export const LUGARES_CIT = [
       'Edificio de sétimo a duodécimo, con aulas, laboratorios de cómputo y talleres de las especialidades técnicas.',
     horario: 'Lunes a viernes, 7:00 a. m. a 3:30 p. m.',
     restringido: false,
-    foto: '/fotos/lugar-secundaria.webp',
+    foto: '/fotos/lugares/secundaria.webp',
   },
   {
     clave: 'deportes',
@@ -153,7 +153,7 @@ export const LUGARES_CIT = [
       'Complejo deportivo con piscina y gimnasio de secundaria. Aquí se entrena natación, voleibol y baloncesto.',
     horario: 'Lunes a viernes, 7:00 a. m. a 4:30 p. m.',
     restringido: false,
-    foto: '/fotos/lugar-deportes.webp',
+    foto: '/fotos/lugares/deportes.webp',
   },
   {
     clave: 'cancha-natural',
@@ -178,7 +178,7 @@ export const LUGARES_CIT = [
       'Desayunos, almuerzos, bebidas y meriendas. Pedí desde CitX y retirá en el recreo sin hacer fila.',
     horario: 'Lunes a viernes, 6:45 a. m. a 3:00 p. m.',
     restringido: false,
-    foto: '/fotos/lugar-soda.webp',
+    foto: '/fotos/lugares/soda.webp',
   },
   {
     clave: 'parqueo',
@@ -202,7 +202,7 @@ export const LUGARES_CIT = [
     descripcion: 'Proyecto de agricultura orgánica integrada del colegio.',
     horario: 'Lunes a viernes',
     restringido: false,
-    foto: '/fotos/lugar-armonia.webp',
+    foto: '/fotos/lugares/armonia.webp',
   },
   {
     clave: 'cacaotal',
@@ -239,7 +239,7 @@ export const LUGARES_CIT = [
     descripcion: 'Salón de eventos, actos, graduaciones y presentaciones.',
     horario: 'Según actividades',
     restringido: false,
-    foto: '/fotos/lugar-chirel.webp',
+    foto: '/fotos/lugares/chirel.webp',
   },
   {
     clave: 'hospital-veterinario',
@@ -265,7 +265,7 @@ export const LUGARES_CIT = [
       'Vivero donde se producen plantas para el campus y los proyectos ambientales.',
     horario: 'Con actividades guiadas',
     restringido: false,
-    foto: '/fotos/lugar-vivero.webp',
+    foto: '/fotos/lugares/vivero.webp',
     ubicacionAproximada: true,
   },
   {
@@ -279,7 +279,7 @@ export const LUGARES_CIT = [
       'Jardín con plantas medicinales y de uso tradicional, para aprender sobre su historia y cuidado.',
     horario: 'Con actividades guiadas',
     restringido: false,
-    foto: '/fotos/lugar-jardin.webp',
+    foto: '/fotos/lugares/jardin.webp',
     ubicacionAproximada: true,
   },
   {
@@ -293,6 +293,6 @@ export const LUGARES_CIT = [
       'Dentro del edificio de Primaria. Primeros auxilios, control de signos vitales y apoyo en emergencias de salud.',
     horario: 'Lunes a viernes, 7:00 a. m. a 3:30 p. m.',
     restringido: false,
-    foto: '/fotos/lugar-enfermeria.webp',
+    foto: '/fotos/lugares/enfermeria.webp',
   },
 ]

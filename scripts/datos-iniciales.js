@@ -53,7 +53,7 @@ export const PRODUCTOS = [
     descripcion:
       'Gallo pinto recién hecho, huevo al gusto, natilla y una tortilla.',
     // Foto: James Diggans, CC BY 2.0 (Wikimedia Commons).
-    foto: '/fotos/gallo-pinto.webp',
+    foto: '/fotos/comida/gallo-pinto.webp',
     estrellas: [5, 5, 4, 5],
   },
   {
@@ -62,7 +62,7 @@ export const PRODUCTOS = [
     precio: 1700,
     descripcion:
       'Dos tostadas francesas con banano, arándanos y un toque de miel.',
-    foto: '/fotos/tostadas-francesas.webp',
+    foto: '/fotos/comida/tostadas-francesas.webp',
     estrellas: [5, 4, 4],
   },
   {
@@ -71,7 +71,7 @@ export const PRODUCTOS = [
     precio: 1600,
     descripcion:
       'Pan integral tostado, aguacate majado, huevo duro y semillas.',
-    foto: '/fotos/tostada-aguacate.webp',
+    foto: '/fotos/comida/tostada-aguacate.webp',
     estrellas: [4, 4, 5],
   },
   {
@@ -79,7 +79,7 @@ export const PRODUCTOS = [
     categoria: 'desayunos',
     precio: 1200,
     descripcion: 'Huevo frito con yema suave sobre pan integral de la casa.',
-    foto: '/fotos/huevo-pan-integral.webp',
+    foto: '/fotos/comida/huevo-pan-integral.webp',
     estrellas: [4, 3, 4],
   },
   {
@@ -87,7 +87,7 @@ export const PRODUCTOS = [
     categoria: 'desayunos',
     precio: 1100,
     descripcion: 'Yogur natural con fresas de la huerta y granola crujiente.',
-    foto: '/fotos/yogur-fresas.webp',
+    foto: '/fotos/comida/yogur-fresas.webp',
     estrellas: [5, 4],
   },
   {
@@ -95,7 +95,7 @@ export const PRODUCTOS = [
     categoria: 'desayunos',
     precio: 1300,
     descripcion: 'Papaya, piña, banano y fresas picadas, según la temporada.',
-    foto: '/fotos/bowl-frutas.webp',
+    foto: '/fotos/comida/bowl-frutas.webp',
     estrellas: [4, 5, 4],
   },
   // Almuerzos
@@ -105,7 +105,7 @@ export const PRODUCTOS = [
     precio: 3300,
     descripcion:
       'Arroz, frijoles, pollo en salsa, ensalada verde, picadillo del día y plátano maduro.',
-    foto: '/fotos/casado-pollo.webp',
+    foto: '/fotos/comida/casado-pollo.webp',
     estrellas: [5, 4, 4, 5, 4],
   },
   {
@@ -113,7 +113,7 @@ export const PRODUCTOS = [
     categoria: 'almuerzos',
     precio: 2600,
     descripcion: 'Pasta corta en salsa de tomate casera con queso rallado.',
-    foto: '/fotos/pasta-tomate.webp',
+    foto: '/fotos/comida/pasta-tomate.webp',
     estrellas: [4, 4, 3],
   },
   {
@@ -122,7 +122,7 @@ export const PRODUCTOS = [
     precio: 3200,
     descripcion:
       'Torta de res a la plancha, queso, lechuga, tomate y papas a la francesa.',
-    foto: '/fotos/hamburguesa.webp',
+    foto: '/fotos/comida/hamburguesa.webp',
     estrellas: [5, 5, 4, 4],
   },
   {
@@ -131,7 +131,7 @@ export const PRODUCTOS = [
     precio: 2800,
     descripcion:
       'Lechuga, pollo a la plancha, maíz dulce, huevo y aderezo de la casa.',
-    foto: '/fotos/ensalada-pollo.webp',
+    foto: '/fotos/comida/ensalada-pollo.webp',
     estrellas: [4, 4],
   },
   {
@@ -140,7 +140,7 @@ export const PRODUCTOS = [
     precio: 3500,
     descripcion:
       'Arroz con camarones y vegetales, acompañado de ensalada. Solo los viernes.',
-    foto: '/fotos/arroz-camarones.webp',
+    foto: '/fotos/comida/arroz-camarones.webp',
     estrellas: [5, 4, 5],
   },
   {
@@ -148,7 +148,7 @@ export const PRODUCTOS = [
     categoria: 'almuerzos',
     precio: 2900,
     descripcion: 'Dos piezas de pollo frito, ensalada de repollo y tortilla.',
-    foto: '/fotos/pollo-frito.webp',
+    foto: '/fotos/comida/pollo-frito.webp',
     estrellas: [4, 5, 4],
   },
   // Bebidas
@@ -158,7 +158,7 @@ export const PRODUCTOS = [
     precio: 700,
     descripcion:
       'Café chorreado con leche caliente. Pedilo con o sin azúcar en la nota.',
-    foto: '/fotos/cafe-leche.webp',
+    foto: '/fotos/comida/cafe-leche.webp',
     estrellas: [5, 4, 5],
   },
   {
@@ -166,7 +166,7 @@ export const PRODUCTOS = [
     categoria: 'bebidas',
     precio: 600,
     descripcion: 'Té negro frío con limón, hecho en la soda. Vaso de 400 ml.',
-    foto: '/fotos/te-frio.webp',
+    foto: '/fotos/comida/te-frio.webp',
     estrellas: [4, 4, 4],
   },
   {
@@ -174,7 +174,7 @@ export const PRODUCTOS = [
     categoria: 'bebidas',
     precio: 900,
     descripcion: 'Naranjas exprimidas al momento, sin azúcar añadida.',
-    foto: '/fotos/jugo-naranja.webp',
+    foto: '/fotos/comida/jugo-naranja.webp',
     estrellas: [5, 5],
   },
   {
@@ -182,7 +182,7 @@ export const PRODUCTOS = [
     categoria: 'bebidas',
     precio: 1100,
     descripcion: 'Fresas de la huerta Armonía, en agua o en leche.',
-    foto: '/fotos/batido-fresa.webp',
+    foto: '/fotos/comida/batido-fresa.webp',
     estrellas: [5, 4, 4],
   },
   {
@@ -190,7 +190,7 @@ export const PRODUCTOS = [
     categoria: 'bebidas',
     precio: 700,
     descripcion: 'Limonada fría con hojas de hierbabuena de la huerta.',
-    foto: '/fotos/limonada-hierbabuena.webp',
+    foto: '/fotos/comida/limonada-hierbabuena.webp',
     estrellas: [4, 5],
   },
   {
@@ -198,7 +198,7 @@ export const PRODUCTOS = [
     categoria: 'bebidas',
     precio: 1000,
     descripcion: 'Banano maduro con leche y un poco de canela.',
-    foto: '/fotos/batido-banano.webp',
+    foto: '/fotos/comida/batido-banano.webp',
     estrellas: [4, 4],
     disponible: false,
   },
@@ -209,7 +209,7 @@ export const PRODUCTOS = [
     precio: 500,
     descripcion:
       'Galleta grande con trozos de chocolate, horneada en la mañana.',
-    foto: '/fotos/galletas-chocolate.webp',
+    foto: '/fotos/comida/galletas-chocolate.webp',
     estrellas: [5, 5, 4],
   },
   {
@@ -217,7 +217,7 @@ export const PRODUCTOS = [
     categoria: 'snacks',
     precio: 700,
     descripcion: 'Dona cubierta de chocolate con chispas de colores.',
-    foto: '/fotos/dona.webp',
+    foto: '/fotos/comida/dona.webp',
     estrellas: [4, 3, 4],
   },
   {
@@ -226,7 +226,7 @@ export const PRODUCTOS = [
     precio: 600,
     descripcion:
       'Helado de vainilla o fresa en cono. Pedí el sabor en la nota.',
-    foto: '/fotos/helado-cono.webp',
+    foto: '/fotos/comida/helado-cono.webp',
     estrellas: [5, 4],
   },
   {
@@ -234,7 +234,7 @@ export const PRODUCTOS = [
     categoria: 'snacks',
     precio: 500,
     descripcion: 'Vasito de sandía fría picada.',
-    foto: '/fotos/sandia.webp',
+    foto: '/fotos/comida/sandia.webp',
     estrellas: [4],
   },
   {
@@ -242,7 +242,7 @@ export const PRODUCTOS = [
     categoria: 'snacks',
     precio: 1300,
     descripcion: 'Porción de pizza de jamón y queso, recién salida del horno.',
-    foto: '/fotos/pizza-porcion.webp',
+    foto: '/fotos/comida/pizza-porcion.webp',
     estrellas: [4, 5, 4, 4],
   },
   {
@@ -250,7 +250,7 @@ export const PRODUCTOS = [
     categoria: 'snacks',
     precio: 1200,
     descripcion: 'Pan blanco tostado con jamón, queso derretido y mayonesa.',
-    foto: '/fotos/sandwich-tostado.webp',
+    foto: '/fotos/comida/sandwich-tostado.webp',
     estrellas: [4, 4, 3],
   },
 ]
@@ -277,7 +277,7 @@ export const EVENTOS = [
     lugarClave: 'el-chirel',
     todos: true,
     secciones: [],
-    imagen: '/fotos/portada-guia.webp',
+    imagen: '/fotos/portadas/guia.webp',
   },
   {
     dias: 3,
@@ -288,7 +288,7 @@ export const EVENTOS = [
     lugarClave: 'deportes',
     todos: true,
     secciones: [],
-    imagen: '/fotos/lugar-canchas.webp',
+    imagen: '/fotos/lugares/canchas.webp',
   },
   {
     dias: 6,
@@ -321,7 +321,7 @@ export const EVENTOS = [
     lugarClave: 'enfermeria',
     todos: false,
     secciones: ['10-1', '11-1', '11-2'],
-    imagen: '/fotos/lugar-enfermeria.webp',
+    imagen: '/fotos/lugares/enfermeria.webp',
   },
   {
     dias: 14,
@@ -608,14 +608,14 @@ export const OBJETOS = [
       'Audífonos inalámbricos negros, con un rayón en el lado derecho.',
     lugar: 'Área de juegos',
     diasAtras: 1,
-    foto: '/fotos/objeto-audifonos.webp',
+    foto: '/fotos/objetos/audifonos.webp',
   },
   {
     titulo: 'Botella verde de metal',
     descripcion: 'Botella térmica verde mate, sin calcomanías.',
     lugar: 'Deportes',
     diasAtras: 2,
-    foto: '/fotos/objeto-botella.webp',
+    foto: '/fotos/objetos/botella.webp',
   },
   {
     titulo: 'Mochila azul',
@@ -623,35 +623,35 @@ export const OBJETOS = [
       'Mochila azul oscuro con un parche amarillo al frente. Tiene cuadernos adentro.',
     lugar: 'Parqueo general',
     diasAtras: 2,
-    foto: '/fotos/objeto-mochila.webp',
+    foto: '/fotos/objetos/mochila.webp',
   },
   {
     titulo: 'Calculadora',
     descripcion: 'Calculadora de escritorio con rollo de papel.',
     lugar: 'Secundaria',
     diasAtras: 3,
-    foto: '/fotos/objeto-calculadora.webp',
+    foto: '/fotos/objetos/calculadora.webp',
   },
   {
     titulo: 'Anteojos con marco café',
     descripcion: 'Anteojos de lectura con marco café y patas doradas.',
     lugar: 'Soda',
     diasAtras: 4,
-    foto: '/fotos/objeto-anteojos.webp',
+    foto: '/fotos/objetos/anteojos.webp',
   },
   {
     titulo: 'Jacket de mezclilla',
     descripcion: 'Jacket azul de mezclilla con cuello de pana café, talla M.',
     lugar: 'El Chirel',
     diasAtras: 5,
-    foto: '/fotos/objeto-jacket.webp',
+    foto: '/fotos/objetos/jacket.webp',
   },
   {
     titulo: 'Reloj inteligente blanco',
     descripcion: 'Reloj con correa blanca de silicón. Está apagado.',
     lugar: 'Deportes',
     diasAtras: 6,
-    foto: '/fotos/objeto-reloj.webp',
+    foto: '/fotos/objetos/reloj.webp',
   },
 ]
 

@@ -12,7 +12,6 @@ import {
   conflicto,
 } from '../_lib/respuesta.js'
 import { requerir, idValido, usuarioPublico } from '../_lib/sesion.js'
-import { anotar } from '../_lib/bitacora.js'
 import {
   generarCodigoInvitacion,
   huella,
@@ -177,14 +176,7 @@ registrar('PATCH', '/usuarios/:id', async ({ req, res, params }) => {
         returnDocument: 'after',
       })
     : actual
-  if (notas.length)
-    await anotar(
-      req,
-      admin,
-      'Cuenta modificada',
-      `${actual.nombre} (${actual.correo}): ${notas.join('; ')}`
-    )
-  ok(res, { usuario: conDatosPanel(r) })
+  if (notas.length) ok(res, { usuario: conDatosPanel(r) })
 })
 
 registrar('DELETE', '/usuarios/:id', async ({ req, res, params }) => {
@@ -218,12 +210,6 @@ registrar('DELETE', '/usuarios/:id', async ({ req, res, params }) => {
       }
     ),
   ])
-  await anotar(
-    req,
-    admin,
-    'Cuenta borrada',
-    `${usuario.nombre} (${usuario.correo}), ${NOMBRE_ROL[usuario.rol]}`
-  )
   ok(res, { listo: true })
 })
 
@@ -232,7 +218,7 @@ registrar(
   'POST',
   '/usuarios/:id/contrasena-temporal',
   async ({ req, res, params }) => {
-    const admin = await requerir(req, 'usuarios.gestionar')
+    await requerir(req, 'usuarios.gestionar')
     const id = idValido(params.id)
     const usuarios = await col(COLECCIONES.usuarios)
     const usuario = await usuarios.findOne({ _id: id })
@@ -253,12 +239,6 @@ registrar(
         },
       }
     )
-    await anotar(
-      req,
-      admin,
-      'Contraseña temporal',
-      `${usuario.nombre} (${usuario.correo})`
-    )
     ok(res, { contrasena: temporal })
   }
 )
@@ -267,7 +247,7 @@ registrar(
   'POST',
   '/usuarios/:id/cerrar-sesiones',
   async ({ req, res, params }) => {
-    const admin = await requerir(req, 'usuarios.gestionar')
+    await requerir(req, 'usuarios.gestionar')
     const id = idValido(params.id)
     const usuarios = await col(COLECCIONES.usuarios)
     const usuario = await usuarios.findOneAndUpdate(
@@ -276,12 +256,6 @@ registrar(
       { returnDocument: 'after' }
     )
     if (!usuario) throw noExiste('Esa cuenta ya no existe.')
-    await anotar(
-      req,
-      admin,
-      'Sesiones cerradas',
-      `${usuario.nombre} (${usuario.correo})`
-    )
     ok(res, { listo: true })
   }
 )
@@ -330,12 +304,6 @@ registrar('POST', '/usuarios', async ({ req, res }) => {
     creadoEn: new Date(),
   }
   const { insertedId } = await usuarios.insertOne(usuario)
-  await anotar(
-    req,
-    admin,
-    'Cuenta creada',
-    `${usuario.nombre} (${usuario.correo}) como ${NOMBRE_ROL[usuario.rol]}`
-  )
   creado(res, { usuario: conDatosPanel({ ...usuario, _id: insertedId }) })
 })
 
@@ -394,12 +362,6 @@ registrar('POST', '/invitaciones', async ({ req, res }) => {
   }
   const invitaciones = await col(COLECCIONES.invitaciones)
   const { insertedId } = await invitaciones.insertOne(invitacion)
-  await anotar(
-    req,
-    admin,
-    'Invitación creada',
-    `${NOMBRE_ROL[datos.rol]} para ${datos.nota} (${invitacion.pista})`
-  )
   creado(res, {
     codigo,
     invitacion: invitacionPublica({ ...invitacion, _id: insertedId }),
@@ -407,7 +369,7 @@ registrar('POST', '/invitaciones', async ({ req, res }) => {
 })
 
 registrar('DELETE', '/invitaciones/:id', async ({ req, res, params }) => {
-  const admin = await requerir(req, 'usuarios.gestionar')
+  await requerir(req, 'usuarios.gestionar')
   const invitaciones = await col(COLECCIONES.invitaciones)
   const r = await invitaciones.findOneAndUpdate(
     { _id: idValido(params.id) },
@@ -415,39 +377,5 @@ registrar('DELETE', '/invitaciones/:id', async ({ req, res, params }) => {
     { returnDocument: 'after' }
   )
   if (!r) throw noExiste('Esa invitación ya no existe.')
-  await anotar(req, admin, 'Invitación revocada', `${r.nota} (${r.pista})`)
   ok(res, { invitacion: invitacionPublica(r) })
-})
-
-// ---------------------------------------------------------------------------
-// Bitacora
-// ---------------------------------------------------------------------------
-
-registrar('GET', '/bitacora', async ({ req, res, query }) => {
-  await requerir(req, 'bitacora.ver')
-  const bitacora = await col(COLECCIONES.bitacora)
-  const filtro = {}
-  if (query.buscar) {
-    const texto = escaparRegex(String(query.buscar).slice(0, 60))
-    filtro.$or = [
-      { accion: { $regex: texto, $options: 'i' } },
-      { detalle: { $regex: texto, $options: 'i' } },
-      { usuarioNombre: { $regex: texto, $options: 'i' } },
-    ]
-  }
-  const lista = await bitacora
-    .find(filtro)
-    .sort({ creadoEn: -1 })
-    .limit(300)
-    .toArray()
-  ok(res, {
-    registros: lista.map((r) => ({
-      id: String(r._id),
-      usuarioNombre: r.usuarioNombre,
-      accion: r.accion,
-      detalle: r.detalle,
-      ip: r.ip,
-      creadoEn: r.creadoEn,
-    })),
-  })
 })

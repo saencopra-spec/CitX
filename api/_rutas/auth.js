@@ -20,7 +20,6 @@ import {
 } from '../_lib/sesion.js'
 import { SECCIONES } from '../../compartido/permisos.js'
 import { canjear } from '../_lib/invitaciones.js'
-import { anotar } from '../_lib/bitacora.js'
 
 const correo = z
   .string({ error: 'Escribí tu correo.' })
@@ -176,12 +175,6 @@ registrar('POST', '/auth/registro', async ({ req, res }) => {
       { _id: invitacion._id, 'usadoPor.correo': usuario.correo },
       { $set: { 'usadoPor.$.id': String(insertedId) } }
     )
-    await anotar(
-      req,
-      usuario,
-      'Cuenta creada con invitación',
-      `${usuario.nombre} (${usuario.correo}) como ${usuario.rol}`
-    )
   }
 
   ponerCookie(req, res, usuario)
@@ -208,12 +201,6 @@ registrar('POST', '/auth/canjear', async ({ req, res }) => {
   else operacion.$unset = { permisos: '' }
   const usuarios = await col(COLECCIONES.usuarios)
   await usuarios.updateOne({ _id: usuario._id }, operacion)
-  await anotar(
-    req,
-    usuario,
-    'Código de invitación usado',
-    `${usuario.nombre} pasó a ${invitacion.rol}`
-  )
   const actualizado = await usuarios.findOne({ _id: usuario._id })
   ok(res, { usuario: usuarioPublico(actualizado) })
 })

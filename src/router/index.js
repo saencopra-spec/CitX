@@ -229,12 +229,6 @@ const rutas = [
         component: () => import('@/views/admin/Invitaciones.vue'),
         meta: { permiso: 'usuarios.gestionar', titulo: 'Invitaciones' },
       },
-      {
-        path: 'bitacora',
-        name: 'admin-bitacora',
-        component: () => import('@/views/admin/Bitacora.vue'),
-        meta: { permiso: 'bitacora.ver', titulo: 'Bitácora' },
-      },
     ],
   },
 

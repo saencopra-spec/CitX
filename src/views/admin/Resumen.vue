@@ -9,7 +9,6 @@ import {
   CalendarDays,
   Users,
   TicketCheck,
-  ScrollText,
   ArrowRight,
   Trophy,
   ChartColumn,
@@ -24,7 +23,6 @@ import { NOMBRE_ROL } from '@compartido/permisos.js'
 import {
   fechaRelativa,
   horaLegible,
-  horaDe,
   fechaLarga,
   saludoSegunHora,
 } from '@compartido/hora.js'
@@ -194,34 +192,6 @@ const hoy = fechaLarga(new Date())
             <strong>{{ n }}</strong>
           </li>
         </ul>
-      </section>
-
-      <section
-        v-if="datos?.personas"
-        class="bloque"
-        aria-labelledby="t-bitacora"
-      >
-        <div class="bloque__encabezado">
-          <h2 id="t-bitacora" class="subtitulo">
-            <ScrollText :size="20" aria-hidden="true" /> Últimos movimientos
-          </h2>
-          <RouterLink
-            :to="{ name: 'admin-bitacora' }"
-            class="boton boton--texto boton--pequeno"
-            >Bitácora</RouterLink
-          >
-        </div>
-        <ul v-if="datos.personas.ultimosMovimientos.length" class="lista">
-          <li v-for="m in datos.personas.ultimosMovimientos" :key="m.id">
-            <strong>{{ m.accion }}</strong>
-            <span>{{ m.detalle }}</span>
-            <span class="lista__meta"
-              >{{ m.usuarioNombre }} · {{ fechaRelativa(m.creadoEn) }},
-              {{ horaDe(m.creadoEn) }}</span
-            >
-          </li>
-        </ul>
-        <p v-else class="texto-suave">Todavía no hay movimientos.</p>
       </section>
     </div>
   </div>

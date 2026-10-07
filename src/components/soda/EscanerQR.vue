@@ -62,7 +62,11 @@ async function leerCuadro() {
   const ctx = lienzo.getContext('2d', { willReadFrequently: true })
   ctx.drawImage(v, 0, 0, lienzo.width, lienzo.height)
   const datos = ctx.getImageData(0, 0, lienzo.width, lienzo.height)
-  return jsQR(datos.data, datos.width, datos.height, { inversionAttempts: 'dontInvert' })?.data ?? null
+  return (
+    jsQR(datos.data, datos.width, datos.height, {
+      inversionAttempts: 'dontInvert',
+    })?.data ?? null
+  )
 }
 
 let ultimoIntento = 0
@@ -90,13 +94,17 @@ async function encender() {
   problema.value = ''
   aviso.value = ''
   if (!navigator.mediaDevices?.getUserMedia) {
-    problema.value = 'Este navegador no permite usar la cámara. Escribí el código a mano.'
+    problema.value =
+      'Este navegador no permite usar la cámara. Escribí el código a mano.'
     return
   }
   try {
     await prepararLector()
     flujo = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: trasera.value ? 'environment' : 'user', width: { ideal: 1280 } },
+      video: {
+        facingMode: trasera.value ? 'environment' : 'user',
+        width: { ideal: 1280 },
+      },
       audio: false,
     })
     await nextTick()
@@ -104,7 +112,8 @@ async function encender() {
     await video.value.play()
     animacion = requestAnimationFrame(bucle)
   } catch {
-    problema.value = 'No pudimos usar la cámara. Revisá que el navegador tenga permiso, o escribí el código a mano.'
+    problema.value =
+      'No pudimos usar la cámara. Revisá que el navegador tenga permiso, o escribí el código a mano.'
   }
 }
 
@@ -152,7 +161,9 @@ onUnmounted(apagar)
     ancho="30rem"
     @cerrar="cerrar"
   >
-    <p v-if="problema" class="nota nota--aviso"><CircleAlert :size="18" aria-hidden="true" /><span>{{ problema }}</span></p>
+    <p v-if="problema" class="nota nota--aviso">
+      <CircleAlert :size="18" aria-hidden="true" /><span>{{ problema }}</span>
+    </p>
     <div v-else class="camara">
       <video ref="video" playsinline muted />
       <span class="camara__marco" aria-hidden="true" />
@@ -161,7 +172,9 @@ onUnmounted(apagar)
     <p v-if="aviso" class="aviso" role="status">{{ aviso }}</p>
 
     <form class="manual" novalidate @submit.prevent="usarManual">
-      <label class="campo__etiqueta" for="codigo-manual"><Keyboard :size="16" aria-hidden="true" /> O escribí el código</label>
+      <label class="campo__etiqueta" for="codigo-manual"
+        ><Keyboard :size="16" aria-hidden="true" /> O escribí el código</label
+      >
       <div class="manual__fila">
         <input
           id="codigo-manual"
@@ -177,10 +190,16 @@ onUnmounted(apagar)
     </form>
 
     <template #pie>
-      <button type="button" class="boton boton--contorno" @click="cambiarCamara">
+      <button
+        type="button"
+        class="boton boton--contorno"
+        @click="cambiarCamara"
+      >
         <RefreshCw :size="18" aria-hidden="true" /> Cambiar cámara
       </button>
-      <button type="button" class="boton boton--contorno" @click="cerrar">Cerrar</button>
+      <button type="button" class="boton boton--contorno" @click="cerrar">
+        Cerrar
+      </button>
     </template>
   </Dialogo>
 </template>

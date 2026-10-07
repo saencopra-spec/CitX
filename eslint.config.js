@@ -27,7 +27,12 @@ export default [
     },
   },
   {
-    files: ['api/**/*.js', 'scripts/**/*.js', 'compartido/**/*.js', '*.config.js'],
+    files: [
+      'api/**/*.js',
+      'scripts/**/*.js',
+      'compartido/**/*.js',
+      '*.config.js',
+    ],
     languageOptions: {
       globals: { ...globals.node },
     },

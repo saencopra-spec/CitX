@@ -8,7 +8,11 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'marca/logo-citx.svg', 'icons/apple-touch-icon.png'],
+      includeAssets: [
+        'favicon.svg',
+        'marca/logo-citx.svg',
+        'icons/apple-touch-icon.png',
+      ],
       manifest: {
         name: 'CitX - Complejo Educativo CIT',
         short_name: 'CitX',

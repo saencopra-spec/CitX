@@ -17,7 +17,12 @@ import EscanerQR from '@/components/soda/EscanerQR.vue'
 import { api } from '@/lib/api'
 import { useAvisos } from '@/stores/avisos'
 import { colones } from '@compartido/dinero.js'
-import { horaDe, horaLegible, fechaIsoLegible, partesCR } from '@compartido/hora.js'
+import {
+  horaDe,
+  horaLegible,
+  fechaIsoLegible,
+  partesCR,
+} from '@compartido/hora.js'
 import {
   NOMBRE_ESTADO,
   METODOS_PAGO,
@@ -48,9 +53,13 @@ const accionPara = {
 }
 
 const hoy = computed(() => partesCR().iso)
-const otroDia = computed(() => pedido.value && pedido.value.franja.fecha !== hoy.value)
+const otroDia = computed(
+  () => pedido.value && pedido.value.franja.fecha !== hoy.value
+)
 const entregadoEn = computed(() => {
-  const paso = [...(pedido.value?.historial ?? [])].reverse().find((h) => h.estado === 'entregado')
+  const paso = [...(pedido.value?.historial ?? [])]
+    .reverse()
+    .find((h) => h.estado === 'entregado')
   return paso ? paso.en : null
 })
 
@@ -63,7 +72,10 @@ async function cargar(codigo) {
     const datos = await api.get(`/pedidos/${codigo}`)
     pedido.value = datos.pedido
   } catch (e) {
-    error.value = e.estado === 404 ? `No existe ningún pedido con el código ${codigo}.` : e.message
+    error.value =
+      e.estado === 404
+        ? `No existe ningún pedido con el código ${codigo}.`
+        : e.message
   } finally {
     cargando.value = false
   }
@@ -96,7 +108,9 @@ async function avanzar() {
   if (!estado) return
   moviendo.value = true
   try {
-    const datos = await api.patch(`/pedidos/${pedido.value.codigo}/estado`, { estado })
+    const datos = await api.patch(`/pedidos/${pedido.value.codigo}/estado`, {
+      estado,
+    })
     pedido.value = datos.pedido
     avisos.exito(
       estado === 'entregado'
@@ -119,7 +133,11 @@ async function avanzar() {
       ayuda="Escaneá el QR que muestra la persona (o escribí el código) para ver su pedido y entregarlo."
     >
       <template #acciones>
-        <button type="button" class="boton boton--accion boton--pequeno" @click="escaneando = true">
+        <button
+          type="button"
+          class="boton boton--accion boton--pequeno"
+          @click="escaneando = true"
+        >
           <ScanLine :size="18" aria-hidden="true" /> Escanear QR
         </button>
       </template>
@@ -127,7 +145,9 @@ async function avanzar() {
 
     <form class="buscador busqueda" role="search" @submit.prevent="buscar">
       <Search :size="20" aria-hidden="true" />
-      <label for="verificar-codigo" class="solo-lectores">Código del pedido</label>
+      <label for="verificar-codigo" class="solo-lectores"
+        >Código del pedido</label
+      >
       <input
         id="verificar-codigo"
         v-model="manual"
@@ -138,10 +158,16 @@ async function avanzar() {
         maxlength="60"
         placeholder="Código del pedido, por ejemplo K7M2Q"
       />
-      <button type="submit" class="boton boton--contorno boton--pequeno">Buscar</button>
+      <button type="submit" class="boton boton--contorno boton--pequeno">
+        Buscar
+      </button>
     </form>
 
-    <div v-if="cargando" class="esqueleto" style="height: 360px; border-radius: var(--radio-lg)" />
+    <div
+      v-if="cargando"
+      class="esqueleto"
+      style="height: 360px; border-radius: var(--radio-lg)"
+    />
 
     <p v-else-if="error" class="nota nota--aviso" role="alert">
       <CircleAlert :size="18" aria-hidden="true" /><span>{{ error }}</span>
@@ -151,10 +177,14 @@ async function avanzar() {
       <ScanLine :size="48" aria-hidden="true" class="inicio__icono" />
       <h2>Listo para escanear</h2>
       <p class="texto-suave">
-        También podés escanear el QR con la cámara normal del celular: se abre esta misma página con el
-        pedido.
+        También podés escanear el QR con la cámara normal del celular: se abre
+        esta misma página con el pedido.
       </p>
-      <button type="button" class="boton boton--accion boton--grande" @click="escaneando = true">
+      <button
+        type="button"
+        class="boton boton--accion boton--grande"
+        @click="escaneando = true"
+      >
         <ScanLine :size="20" aria-hidden="true" /> Escanear QR
       </button>
     </section>
@@ -170,7 +200,8 @@ async function avanzar() {
           :class="{
             'etiqueta--exito': pedido.estado === 'listo',
             'etiqueta--neutra': pedido.estado === 'entregado',
-            'etiqueta--info': pedido.estado === 'recibido' || pedido.estado === 'preparacion',
+            'etiqueta--info':
+              pedido.estado === 'recibido' || pedido.estado === 'preparacion',
           }"
           >{{ NOMBRE_ESTADO[pedido.estado] }}</span
         >
@@ -178,25 +209,38 @@ async function avanzar() {
 
       <p v-if="entregadoEn" class="nota nota--aviso" role="status">
         <CircleAlert :size="18" aria-hidden="true" />
-        <span>Este pedido ya se entregó ({{ horaDe(entregadoEn) }}). No lo entregués de nuevo.</span>
+        <span
+          >Este pedido ya se entregó ({{ horaDe(entregadoEn) }}). No lo
+          entregués de nuevo.</span
+        >
       </p>
       <p v-else-if="otroDia" class="nota nota--aviso">
         <CircleAlert :size="18" aria-hidden="true" />
-        <span>Ojo: este pedido es para el {{ fechaIsoLegible(pedido.franja.fecha) }}, no para hoy.</span>
+        <span
+          >Ojo: este pedido es para el
+          {{ fechaIsoLegible(pedido.franja.fecha) }}, no para hoy.</span
+        >
       </p>
 
       <dl class="datos">
         <div>
           <dt><User :size="16" aria-hidden="true" /> Quién lo pidió</dt>
           <dd>
-            {{ pedido.usuarioNombre }}<template v-if="pedido.usuarioSeccion"> · {{ pedido.usuarioSeccion }}</template>
+            {{ pedido.usuarioNombre
+            }}<template v-if="pedido.usuarioSeccion">
+              · {{ pedido.usuarioSeccion }}</template
+            >
           </dd>
         </div>
         <div>
           <dt><Clock :size="16" aria-hidden="true" /> Retiro</dt>
           <dd>
             {{ pedido.franja.nombre }},
-            {{ horaLegible(pedido.franja.inicio ?? inicioFranja(pedido.franja.clave)) }}
+            {{
+              horaLegible(
+                pedido.franja.inicio ?? inicioFranja(pedido.franja.clave)
+              )
+            }}
           </dd>
         </div>
       </dl>
@@ -208,18 +252,29 @@ async function avanzar() {
             {{ i.nombre }}
             <span v-if="i.nota" class="items__nota">{{ i.nota }}</span>
           </span>
-          <span class="items__precio">{{ colones(i.precio * i.cantidad) }}</span>
+          <span class="items__precio">{{
+            colones(i.precio * i.cantidad)
+          }}</span>
         </li>
       </ul>
 
-      <div class="cobro" :class="{ 'cobro--pendiente': pedido.pago.estado === 'pendiente' }">
+      <div
+        class="cobro"
+        :class="{ 'cobro--pendiente': pedido.pago.estado === 'pendiente' }"
+      >
         <template v-if="pedido.pago.estado === 'pendiente'">
           <Banknote :size="22" aria-hidden="true" />
-          <span>Cobrar <strong>{{ colones(pedido.total) }}</strong> en efectivo</span>
+          <span
+            >Cobrar <strong>{{ colones(pedido.total) }}</strong> en
+            efectivo</span
+          >
         </template>
         <template v-else>
           <CircleCheck :size="22" aria-hidden="true" />
-          <span>Pagado con {{ METODOS_PAGO[pedido.pago.metodo] }} · {{ colones(pedido.total) }}</span>
+          <span
+            >Pagado con {{ METODOS_PAGO[pedido.pago.metodo] }} ·
+            {{ colones(pedido.total) }}</span
+          >
         </template>
       </div>
 
@@ -238,7 +293,11 @@ async function avanzar() {
       </p>
     </article>
 
-    <EscanerQR :abierto="escaneando" @cerrar="escaneando = false" @leido="abrir" />
+    <EscanerQR
+      :abierto="escaneando"
+      @cerrar="escaneando = false"
+      @leido="abrir"
+    />
   </div>
 </template>
 

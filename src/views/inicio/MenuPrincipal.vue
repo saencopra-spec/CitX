@@ -230,7 +230,7 @@ onMounted(async () => {
       >
         <div class="acceso__media">
           <img
-            src="/fotos/portada-guia.webp"
+            src="/fotos/portadas/guia.webp"
             alt=""
             loading="lazy"
             width="900"
@@ -253,7 +253,7 @@ onMounted(async () => {
       >
         <div class="acceso__media">
           <img
-            src="/fotos/portada-soda.webp"
+            src="/fotos/portadas/soda.webp"
             alt=""
             loading="lazy"
             width="900"

@@ -45,7 +45,8 @@ async function enviar() {
     // La soda y objetos perdidos solo vuelven a paginas del panel (por
     // ejemplo, el QR de un pedido que escanearon antes de entrar).
     const seguirPanel = seguir && /^\/(admin|verificar)(\/|$)/.test(seguir)
-    if (auth.soloPanel) router.replace(seguirPanel ? seguir : auth.inicioDe(usuario))
+    if (auth.soloPanel)
+      router.replace(seguirPanel ? seguir : auth.inicioDe(usuario))
     else router.replace(seguir ?? { name: 'menu' })
   } catch (e) {
     if (e.campos) mostrar(e, { aviso: false })

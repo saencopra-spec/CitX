@@ -10,7 +10,8 @@ import { useAvisos } from '@/stores/avisos'
 import { useConfiguracion } from '@/stores/configuracion'
 
 const route = useRoute()
-const seguir = typeof route.query.seguir === 'string' ? { seguir: route.query.seguir } : {}
+const seguir =
+  typeof route.query.seguir === 'string' ? { seguir: route.query.seguir } : {}
 
 const avisos = useAvisos()
 const configuracion = useConfiguracion()

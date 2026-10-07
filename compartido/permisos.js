@@ -4,8 +4,8 @@
  *
  * Cada rol trae permisos por defecto. La administracion puede ajustar los
  * permisos de cada persona del personal (por ejemplo, darle a alguien de
- * secretaria el permiso de objetos perdidos). Los permisos de administrar
- * usuarios y ver la bitacora solo los tiene el rol de administrador.
+ * secretaria el permiso de objetos perdidos). El permiso de administrar
+ * usuarios solo lo tiene el rol de administrador.
  */
 
 export const ROLES = [
@@ -91,11 +91,6 @@ export const PERMISOS = {
   'usuarios.gestionar': {
     nombre: 'Usuarios e invitaciones',
     explica: 'Crear invitaciones, cambiar permisos y borrar cuentas.',
-    soloAdmin: true,
-  },
-  'bitacora.ver': {
-    nombre: 'Bitácora',
-    explica: 'Ver el registro de acciones importantes del panel.',
     soloAdmin: true,
   },
 }

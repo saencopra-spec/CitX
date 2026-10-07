@@ -10,7 +10,6 @@ import {
 } from '../_lib/respuesta.js'
 import { requerir } from '../_lib/sesion.js'
 import { campoFoto, guardarFotoSiEsNueva } from '../_lib/imagenes.js'
-import { anotar } from '../_lib/bitacora.js'
 import { CATEGORIAS, LIENZO } from '../../compartido/campus.js'
 import { normalizar } from '../../compartido/texto.js'
 
@@ -50,7 +49,7 @@ registrar('GET', '/lugares', async ({ res }) => {
 })
 
 registrar('PUT', '/lugares/:clave', async ({ req, res, params }) => {
-  const usuario = await requerir(req, 'lugares.editar')
+  await requerir(req, 'lugares.editar')
   const datos = esquemaLugar.parse(await leerCuerpo(req))
   const lugares = await col(COLECCIONES.lugares)
   const r = await lugares.findOneAndUpdate(
@@ -66,12 +65,11 @@ registrar('PUT', '/lugares/:clave', async ({ req, res, params }) => {
     { returnDocument: 'after' }
   )
   if (!r) throw noExiste('Ese lugar no existe en el mapa.')
-  await anotar(req, usuario, 'Lugar editado', r.nombre)
   ok(res, { lugar: publico(r) })
 })
 
 registrar('POST', '/lugares', async ({ req, res }) => {
-  const usuario = await requerir(req, 'lugares.editar')
+  await requerir(req, 'lugares.editar')
   const datos = esquemaLugar.parse(await leerCuerpo(req))
   const clave = normalizar(datos.nombre)
     .replace(/[^a-z0-9]+/g, '-')
@@ -90,12 +88,11 @@ registrar('POST', '/lugares', async ({ req, res }) => {
     creadoEn: new Date(),
   }
   await lugares.insertOne(lugar)
-  await anotar(req, usuario, 'Lugar agregado al mapa', lugar.nombre)
   creado(res, { lugar: publico(lugar) })
 })
 
 registrar('DELETE', '/lugares/:clave', async ({ req, res, params }) => {
-  const usuario = await requerir(req, 'lugares.editar')
+  await requerir(req, 'lugares.editar')
   const lugares = await col(COLECCIONES.lugares)
   const r = await lugares.findOneAndDelete({ clave: params.clave })
   if (!r) throw noExiste('Ese lugar ya no existe.')
@@ -105,7 +102,6 @@ registrar('DELETE', '/lugares/:clave', async ({ req, res, params }) => {
     { favoritos: params.clave },
     { $pull: { favoritos: params.clave } }
   )
-  await anotar(req, usuario, 'Lugar borrado del mapa', r.nombre)
   ok(res, { listo: true })
 })
 

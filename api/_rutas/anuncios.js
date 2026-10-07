@@ -4,7 +4,6 @@ import { col, COLECCIONES, asegurarIndices } from '../_lib/db.js'
 import { ok, creado, leerCuerpo, noExiste } from '../_lib/respuesta.js'
 import { requerir, idValido } from '../_lib/sesion.js'
 import { notificar, destinatarios } from '../_lib/notificar.js'
-import { anotar } from '../_lib/bitacora.js'
 import { puede, SECCIONES } from '../../compartido/permisos.js'
 import { fechaDesdeCR } from '../../compartido/hora.js'
 
@@ -108,20 +107,13 @@ registrar('POST', '/anuncios', async ({ req, res }) => {
     lugarClave: anuncio.lugarClave,
     tipo: 'anuncio',
   })
-  await anotar(
-    req,
-    usuario,
-    'Anuncio enviado',
-    `${anuncio.titulo} (${ids.length} personas)`
-  )
   creado(res, { anuncio: publico(anuncio), enviadoA: ids.length })
 })
 
 registrar('DELETE', '/anuncios/:id', async ({ req, res, params }) => {
-  const usuario = await requerir(req, 'anuncios.publicar')
+  await requerir(req, 'anuncios.publicar')
   const anuncios = await col(COLECCIONES.anuncios)
   const a = await anuncios.findOneAndDelete({ _id: idValido(params.id) })
   if (!a) throw noExiste('Ese anuncio ya no existe.')
-  await anotar(req, usuario, 'Anuncio borrado', a.titulo)
   ok(res, { listo: true })
 })

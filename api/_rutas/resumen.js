@@ -72,8 +72,7 @@ registrar('GET', '/resumen', async ({ req, res }) => {
       (async () => {
         const usuarios = await col(COLECCIONES.usuarios)
         const invitaciones = await col(COLECCIONES.invitaciones)
-        const bitacora = await col(COLECCIONES.bitacora)
-        const [porRol, nuevosHoy, activas, ultimos] = await Promise.all([
+        const [porRol, nuevosHoy, activas] = await Promise.all([
           usuarios
             .aggregate([{ $group: { _id: '$rol', n: { $sum: 1 } } }])
             .toArray(),
@@ -83,20 +82,12 @@ registrar('GET', '/resumen', async ({ req, res }) => {
             venceEn: { $gt: new Date() },
             $expr: { $lt: ['$usos', '$usosMaximos'] },
           }),
-          bitacora.find({}).sort({ creadoEn: -1 }).limit(5).toArray(),
         ])
         datos.personas = {
           porRol: Object.fromEntries(porRol.map((r) => [r._id, r.n])),
           total: porRol.reduce((s, r) => s + r.n, 0),
           nuevosHoy,
           invitacionesActivas: activas,
-          ultimosMovimientos: ultimos.map((b) => ({
-            id: String(b._id),
-            accion: b.accion,
-            detalle: b.detalle,
-            usuarioNombre: b.usuarioNombre,
-            creadoEn: b.creadoEn,
-          })),
         }
       })()
     )

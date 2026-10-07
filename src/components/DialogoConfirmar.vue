@@ -10,6 +10,7 @@ const confirmar = useConfirmar()
     :abierto="confirmar.abierto"
     :titulo="confirmar.opciones.titulo ?? ''"
     modo="centro"
+    encima
     ancho="26rem"
     @cerrar="confirmar.responder(false)"
   >

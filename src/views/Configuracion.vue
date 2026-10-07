@@ -236,8 +236,8 @@ onMounted(() => entradaEscalonada(raiz.value))
           <div class="opcion__texto">
             <p id="o-tema" class="opcion__titulo">Tema</p>
             <p class="opcion__explica">
-              El modo oscuro cansa menos la vista de noche y gasta menos
-              batería.
+              El modo oscuro cansa menos la vista de noche. «Automático» usa
+              el mismo modo que tu celular o computadora.
             </p>
           </div>
           <div class="segmentos" role="group" aria-labelledby="o-tema">

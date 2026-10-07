@@ -17,7 +17,7 @@ import { useAuth } from '@/stores/auth'
 import { useAvisos } from '@/stores/avisos'
 import { useLugares } from '@/stores/lugares'
 import { CATEGORIAS } from '@compartido/campus.js'
-import { coincide } from '@compartido/texto.js'
+import { coincide, normalizar } from '@compartido/texto.js'
 
 const auth = useAuth()
 const avisos = useAvisos()
@@ -42,7 +42,7 @@ const lista = computed(() =>
   )
 )
 
-const filtrados = computed(() =>
+const coincidencias = computed(() =>
   lista.value.filter((l) => {
     if (filtro.value === 'favoritos' && !auth.esFavorito(l.clave)) return false
     if (filtro.value === 'restringido' && !l.restringido) return false
@@ -59,6 +59,22 @@ const filtrados = computed(() =>
       String(l.numero ?? '')
     )
   })
+)
+
+/** Primero los que coinciden por nombre o numero; despues los que lo mencionan. */
+function relevancia(l) {
+  const b = normalizar(busqueda.value)
+  const n = normalizar(l.nombre)
+  if (String(l.numero ?? '') === b) return 0
+  if (n.startsWith(b)) return 1
+  if (n.includes(b)) return 2
+  return 3
+}
+
+const filtrados = computed(() =>
+  busqueda.value
+    ? [...coincidencias.value].sort((a, b) => relevancia(a) - relevancia(b))
+    : coincidencias.value
 )
 
 const resaltadas = computed(() => {

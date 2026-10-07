@@ -3,6 +3,8 @@
  * Marca de CitX: la bombilla con el visto bueno y, si se pide, el nombre.
  * El degradado es lo unico de la interfaz que lo lleva, por decision de diseno.
  */
+const idGradiente = `grad-citx-${Math.random().toString(36).slice(2, 9)}`
+
 defineProps({
   /** Alto de la bombilla en pixeles. */
   tamano: { type: Number, default: 56 },
@@ -27,7 +29,7 @@ defineProps({
     >
       <defs>
         <linearGradient
-          :id="`grad-${tamano}-${direccion}`"
+          :id="idGradiente"
           gradientUnits="userSpaceOnUse"
           x1="13"
           y1="0"
@@ -42,7 +44,7 @@ defineProps({
       </defs>
       <g
         fill="none"
-        :stroke="`url(#grad-${tamano}-${direccion})`"
+        :stroke="`url(#${idGradiente})`"
         stroke-width="11"
         stroke-linecap="round"
         stroke-linejoin="round"

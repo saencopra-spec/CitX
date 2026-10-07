@@ -377,6 +377,16 @@ onUnmounted(() => {
   padding: var(--e-1);
 }
 
+@media (max-width: 640px) {
+  .panel {
+    position: fixed;
+    top: calc(64px + env(safe-area-inset-top));
+    left: var(--e-3);
+    right: var(--e-3);
+    width: auto;
+  }
+}
+
 .panel-enter-active,
 .panel-leave-active {
   transition:

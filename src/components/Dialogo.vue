@@ -14,6 +14,8 @@ const props = defineProps({
   ancho: { type: String, default: '32rem' },
   /** 'hoja' sube desde abajo en celular; 'centro' siempre centrado. */
   modo: { type: String, default: 'hoja' },
+  /** Para confirmaciones que se abren sobre otra ventana. */
+  encima: { type: Boolean, default: false },
 })
 const emit = defineEmits(['cerrar'])
 
@@ -80,7 +82,7 @@ onUnmounted(() => {
       <div
         v-if="abierto"
         class="fondo"
-        :class="`fondo--${modo}`"
+        :class="[`fondo--${modo}`, { 'fondo--encima': encima }]"
         @mousedown.self="emit('cerrar')"
         @keydown="alTeclear"
       >
@@ -134,6 +136,10 @@ onUnmounted(() => {
   align-items: flex-end;
   justify-content: center;
   background: rgba(13, 17, 23, 0.5);
+}
+
+.fondo--encima {
+  z-index: calc(var(--z-modal) + 10);
 }
 
 .fondo--centro {

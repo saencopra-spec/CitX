@@ -135,7 +135,7 @@ function enfocar(clave) {
   const marco = svg.value.getBoundingClientRect()
   const objetivo = aLienzo(
     marco.left + marco.width * (angosto ? 0.5 : 0.38),
-    marco.top + marco.height * (angosto ? 0.3 : 0.5)
+    marco.top + marco.height * (angosto ? 0.26 : 0.5)
   )
   aplicar(
     { k, x: objetivo.x - lugar.x * k, y: objetivo.y - (lugar.y - 12) * k },

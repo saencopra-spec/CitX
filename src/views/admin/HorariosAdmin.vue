@@ -14,7 +14,7 @@ import { horaLegible } from '@compartido/hora.js'
 const avisos = useAvisos()
 const confirmar = useConfirmar()
 
-const seccion = ref('10-1')
+const seccion = ref('10-A')
 const dia = ref('lunes')
 const dias = ref(null)
 const materias = ref([])

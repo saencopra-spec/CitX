@@ -308,7 +308,7 @@ async function enviar() {
           tipo="select"
           vacio="Elegí tu sección"
           :opciones="opciones"
-          ayuda="Por ejemplo 10-1. Sirve para mostrarte tu horario y los eventos de tu grupo."
+          ayuda="Por ejemplo 10-A. Sirve para mostrarte tu horario y los eventos de tu grupo."
           :error="errores.seccion"
         />
 

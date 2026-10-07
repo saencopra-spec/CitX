@@ -145,10 +145,12 @@ export function puede(sujeto, accion) {
   return lista.includes(accion)
 }
 
-/** Secciones de setimo a duodecimo, de la 1 a la 6 por nivel. */
 export const NIVELES = [7, 8, 9, 10, 11, 12]
+
+/** Secciones reales por nivel (letras, según horario oficial). */
+const LETRAS_POR_NIVEL = { 7: 5, 8: 6, 9: 5, 10: 5, 11: 5, 12: 3 }
 export const SECCIONES = NIVELES.flatMap((n) =>
-  [1, 2, 3, 4, 5, 6].map((s) => `${n}-${s}`)
+  'ABCDEF'.slice(0, LETRAS_POR_NIVEL[n]).split('').map((l) => `${n}-${l}`)
 )
 
 export function seccionValida(seccion) {

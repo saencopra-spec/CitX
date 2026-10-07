@@ -1,9 +1,6 @@
 import { partesCR, aMinutos, sumarDias, diaSemanaDe } from './hora.js'
 
-/**
- * Jornada del colegio: de 7:00 a. m. a 3:30 p. m., lecciones de 40 minutos,
- * dos recreos y almuerzo. Es un horario de ejemplo.
- */
+/** Jornada del colegio: de 7:00 a. m. a 3:30 p. m., lecciones de 40 minutos. */
 export const BLOQUES = [
   { tipo: 'leccion', numero: 1, inicio: '07:00', fin: '07:40' },
   { tipo: 'leccion', numero: 2, inicio: '07:40', fin: '08:20' },
@@ -13,26 +10,26 @@ export const BLOQUES = [
     clave: 'recreo-manana',
     nombre: 'Recreo de la mañana',
     inicio: '09:00',
-    fin: '09:20',
+    fin: '09:15',
   },
-  { tipo: 'leccion', numero: 4, inicio: '09:20', fin: '10:00' },
-  { tipo: 'leccion', numero: 5, inicio: '10:00', fin: '10:40' },
-  { tipo: 'leccion', numero: 6, inicio: '10:40', fin: '11:20' },
-  { tipo: 'leccion', numero: 7, inicio: '11:20', fin: '12:00' },
+  { tipo: 'leccion', numero: 4, inicio: '09:15', fin: '09:55' },
+  { tipo: 'leccion', numero: 5, inicio: '09:55', fin: '10:35' },
+  { tipo: 'leccion', numero: 6, inicio: '10:35', fin: '11:15' },
   {
     tipo: 'pausa',
     clave: 'almuerzo',
     nombre: 'Almuerzo',
-    inicio: '12:00',
-    fin: '12:40',
+    inicio: '11:15',
+    fin: '11:55',
   },
-  { tipo: 'leccion', numero: 8, inicio: '12:40', fin: '13:20' },
-  { tipo: 'leccion', numero: 9, inicio: '13:20', fin: '14:00' },
+  { tipo: 'leccion', numero: 7, inicio: '11:55', fin: '12:35' },
+  { tipo: 'leccion', numero: 8, inicio: '12:35', fin: '13:15' },
+  { tipo: 'leccion', numero: 9, inicio: '13:15', fin: '13:55' },
   {
     tipo: 'pausa',
     clave: 'recreo-tarde',
     nombre: 'Recreo de la tarde',
-    inicio: '14:00',
+    inicio: '13:55',
     fin: '14:10',
   },
   { tipo: 'leccion', numero: 10, inicio: '14:10', fin: '14:50' },

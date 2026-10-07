@@ -182,6 +182,14 @@ async function salir() {
         <div class="lateral__campana">
           <CampanaAvisos />
         </div>
+        <RouterLink
+          v-if="!auth.soloPanel"
+          :to="{ name: 'menu' }"
+          class="lateral__volver-movil"
+          aria-label="Volver a la app"
+        >
+          <ArrowLeft :size="20" aria-hidden="true" />
+        </RouterLink>
       </div>
       <nav class="lateral__nav">
         <div v-for="g in visibles" :key="g.titulo" class="grupo">
@@ -285,6 +293,21 @@ async function salir() {
   border-color: var(--marino-800);
 }
 
+.lateral__volver-movil {
+  display: grid;
+  place-items: center;
+  width: var(--objetivo-tactil);
+  height: var(--objetivo-tactil);
+  flex-shrink: 0;
+  border-radius: var(--radio-sm);
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.lateral__volver-movil:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .lateral__nav {
   display: flex;
   gap: 2px;
@@ -341,6 +364,10 @@ async function salir() {
 }
 
 @media (min-width: 1024px) {
+  .lateral__volver-movil {
+    display: none;
+  }
+
   .panel {
     display: grid;
     grid-template-columns: 16.5rem minmax(0, 1fr);

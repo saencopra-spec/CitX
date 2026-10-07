@@ -190,14 +190,18 @@ onMounted(() => {
   margin-top: 170px;
   padding: var(--e-4) var(--e-6);
   border-radius: var(--radio-xl);
-  background: var(--fondo-elevado);
+  background: #000;
   box-shadow: var(--sombra-3);
+}
+
+.empieza__marca :deep(.marca__nombre) {
+  color: #fff;
 }
 
 .empieza__linea {
   width: 1px;
   height: 72px;
-  background: var(--borde-fuerte);
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .empieza__colegio {

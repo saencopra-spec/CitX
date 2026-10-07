@@ -18,6 +18,7 @@ registrar('GET', '/notificaciones', async ({ req, res }) => {
       titulo: n.titulo,
       cuerpo: n.cuerpo,
       enlace: n.enlace,
+      lugarClave: n.lugarClave ?? null,
       tipo: n.tipo,
       leida: n.leida,
       creadoEn: n.creadoEn,

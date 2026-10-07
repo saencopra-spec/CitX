@@ -7,9 +7,13 @@ import {
   ShoppingBag,
   HeartPulse,
   Search,
+  Megaphone,
+  MapPin,
 } from 'lucide-vue-next'
 import MapaMiniatura from '@/components/MapaMiniatura.vue'
 import { useAuth } from '@/stores/auth'
+import { useLugares } from '@/stores/lugares'
+import EscudoCit from '@/components/EscudoCit.vue'
 import { api } from '@/lib/api'
 import { entradaEscalonada } from '@/lib/movimiento'
 import {
@@ -24,16 +28,20 @@ const auth = useAuth()
 const raiz = ref(null)
 const inicio = ref(null)
 const busqueda = ref('')
+const anuncios = ref([])
+const lugares = useLugares()
 
 const saludo = saludoSegunHora()
 const enfermeria = estadoEnfermeria()
 
-/** Lo mas util para mostrar arriba, segun lo que este pasando. */
-const destacado = computed(() => {
+/** Lo mas util para mostrar arriba: el pedido activo y el proximo evento. */
+const destacados = computed(() => {
+  const lista = []
   const pedido = inicio.value?.pedidoActivo
   if (pedido) {
     const listo = pedido.estado === 'listo'
-    return {
+    lista.push({
+      clave: 'pedido',
       icono: ShoppingBag,
       tono: listo ? 'exito' : 'info',
       titulo: listo
@@ -44,44 +52,62 @@ const destacado = computed(() => {
         : `Retiro: ${pedido.franja.nombre.toLowerCase()}.`,
       enlace: { name: 'pedido', params: { codigo: pedido.codigo } },
       accion: 'Ver pedido',
-    }
+      lugar: listo ? 'soda' : null,
+    })
   }
   const evento = inicio.value?.proximoEvento
   if (evento) {
-    return {
+    lista.push({
+      clave: 'evento',
       icono: CalendarDays,
-      tono: 'info',
+      tono: 'evento',
       titulo: evento.titulo,
-      texto: `Próximo evento: ${fechaRelativa(evento.inicio)}, ${horaLegible(evento.hora)}.`,
+      texto: `Próximo evento: ${fechaRelativa(evento.inicio)}, ${horaLegible(evento.hora)}${evento.lugarClave && lugares.nombreDe(evento.lugarClave) ? `, en ${lugares.nombreDe(evento.lugarClave)}` : ''}.`,
       enlace: { name: 'eventos' },
       accion: 'Ver eventos',
-    }
+      lugar: evento.lugarClave,
+    })
   }
-  return null
+  return lista
 })
 
 onMounted(async () => {
   entradaEscalonada(raiz.value)
-  try {
-    inicio.value = await api.get('/inicio')
-  } catch {
-    inicio.value = null
-  }
+  lugares.cargar()
+  const [i, a] = await Promise.allSettled([
+    api.get('/inicio'),
+    api.get('/anuncios'),
+  ])
+  inicio.value = i.status === 'fulfilled' ? i.value : null
+  anuncios.value = a.status === 'fulfilled' ? a.value.anuncios.slice(0, 3) : []
 })
 </script>
 
 <template>
   <div ref="raiz" class="pagina menu">
-    <header class="saludo">
-      <p data-entra class="saludo__hola titulo-manuscrito">
-        {{ saludo }}, {{ auth.nombreCorto }}
-      </p>
-      <p data-entra class="saludo__rol">
-        {{ auth.nombreRol
-        }}<template v-if="auth.usuario?.seccion">
-          · Sección {{ auth.usuario.seccion }}</template
-        >
-      </p>
+    <header data-entra class="portada">
+      <img
+        src="/fotos/campus-aereo.webp"
+        alt=""
+        class="portada__foto"
+        width="358"
+        height="292"
+      />
+      <div class="portada__contenido">
+        <EscudoCit :tamano="64" />
+        <div>
+          <p class="portada__hola titulo-manuscrito">
+            {{ saludo }}, {{ auth.nombreCorto }}
+          </p>
+          <p class="portada__rol">
+            {{ auth.nombreRol
+            }}<template v-if="auth.usuario?.seccion">
+              · Sección {{ auth.usuario.seccion }}</template
+            >
+            <span class="portada__colegio"> · Complejo Educativo CIT</span>
+          </p>
+        </div>
+      </div>
     </header>
 
     <form
@@ -101,35 +127,86 @@ onMounted(async () => {
         v-model="busqueda"
         class="entrada"
         type="search"
-        placeholder="Buscar en CitX: soda, enfermería, canchas..."
+        placeholder="Buscar en el CIT: soda, enfermería, secundaria..."
       />
     </form>
 
-    <RouterLink
-      v-if="destacado"
+    <div v-if="destacados.length" class="destacados">
+      <article
+        v-for="d in destacados"
+        :key="d.clave"
+        data-entra
+        class="destacado"
+        :class="`destacado--${d.tono}`"
+      >
+        <component
+          :is="d.icono"
+          :size="22"
+          aria-hidden="true"
+          class="destacado__icono"
+        />
+        <span class="destacado__textos">
+          <strong>{{ d.titulo }}</strong>
+          <span>{{ d.texto }}</span>
+        </span>
+        <span class="destacado__acciones">
+          <RouterLink
+            :to="d.enlace"
+            class="boton boton--texto boton--pequeno"
+            >{{ d.accion }}</RouterLink
+          >
+          <RouterLink
+            v-if="d.lugar"
+            :to="{ name: 'mapa', query: { lugar: d.lugar } }"
+            class="boton boton--texto boton--pequeno"
+          >
+            <MapPin :size="16" aria-hidden="true" /> Ver en el mapa
+          </RouterLink>
+        </span>
+      </article>
+    </div>
+
+    <section
+      v-if="anuncios.length"
       data-entra
-      :to="destacado.enlace"
-      class="destacado"
-      :class="`destacado--${destacado.tono}`"
+      class="anuncios"
+      aria-labelledby="t-anuncios"
     >
-      <component
-        :is="destacado.icono"
-        :size="22"
-        aria-hidden="true"
-        class="destacado__icono"
-      />
-      <span class="destacado__textos">
-        <strong>{{ destacado.titulo }}</strong>
-        <span>{{ destacado.texto }}</span>
-      </span>
-      <span class="destacado__accion">{{ destacado.accion }}</span>
-    </RouterLink>
+      <h2 id="t-anuncios" class="anuncios__titulo">
+        <Megaphone :size="18" aria-hidden="true" /> Avisos del colegio
+      </h2>
+      <ul>
+        <li
+          v-for="a in anuncios"
+          :key="a.id"
+          class="anuncio"
+          :class="{ 'es-importante': a.importante }"
+        >
+          <div>
+            <p class="anuncio__titulo">
+              <span v-if="a.importante" class="etiqueta etiqueta--error"
+                >Importante</span
+              >
+              {{ a.titulo }}
+            </p>
+            <p class="anuncio__cuerpo">{{ a.cuerpo }}</p>
+          </div>
+          <RouterLink
+            v-if="a.lugarClave"
+            :to="{ name: 'mapa', query: { lugar: a.lugarClave } }"
+            class="boton boton--contorno boton--pequeno"
+          >
+            <MapPin :size="16" aria-hidden="true" />
+            {{ lugares.nombreDe(a.lugarClave) ?? 'Ver en el mapa' }}
+          </RouterLink>
+        </li>
+      </ul>
+    </section>
 
     <div class="accesos">
       <RouterLink data-entra :to="{ name: 'mapa' }" class="acceso acceso--mapa">
         <div class="acceso__media acceso__media--mapa">
           <MapaMiniatura />
-          <span class="pin" aria-hidden="true" />
         </div>
         <div class="acceso__texto">
           <h2 class="acceso__titulo titulo-manuscrito">Mapa interactivo</h2>
@@ -210,13 +287,125 @@ onMounted(async () => {
   padding-top: var(--e-5);
 }
 
-.saludo__hola {
-  font-size: var(--txt-2xl);
+.portada {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 170px;
+  border-radius: var(--radio-xl);
+  overflow: hidden;
+  color: #ffffff;
+  box-shadow: var(--sombra-2);
 }
 
-.saludo__rol {
+.portada__foto {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.portada::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(21, 35, 74, 0.05) 0%,
+    rgba(21, 35, 74, 0.82) 72%
+  );
+}
+
+.portada__contenido {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--e-4);
+  padding: var(--e-4) var(--e-5);
+}
+
+.portada__hola {
+  font-size: var(--txt-2xl);
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.portada__rol {
+  font-size: var(--txt-sm);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.portada__colegio {
+  display: none;
+}
+
+.destacados {
+  display: grid;
+  gap: var(--e-3);
+}
+
+.destacado__acciones {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-1) var(--e-2);
+  margin-left: calc(var(--e-3) * -1);
+}
+
+.destacado--evento {
+  border-left-color: var(--accion);
+}
+
+.anuncios {
+  padding: var(--e-4);
+  border-radius: var(--radio-lg);
+  background: var(--aviso-fondo);
+  border: 1px solid color-mix(in srgb, var(--aviso) 30%, transparent);
+}
+
+.anuncios__titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  font-size: var(--txt-md);
+  margin-bottom: var(--e-3);
+  color: var(--aviso);
+}
+
+.anuncios ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+}
+
+.anuncio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-2) var(--e-4);
+  padding: var(--e-3);
+  border-radius: var(--radio-md);
+  background: var(--superficie);
+}
+
+.anuncio.es-importante {
+  border-left: 4px solid var(--error);
+}
+
+.anuncio__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2);
+  font-weight: var(--peso-semi);
+}
+
+.anuncio__cuerpo {
+  font-size: var(--txt-sm);
   color: var(--texto-suave);
-  margin-top: var(--e-1);
 }
 
 .destacado {
@@ -233,11 +422,6 @@ onMounted(async () => {
   text-decoration: none;
   box-shadow: var(--sombra-1);
   transition: box-shadow var(--dur-media) var(--curva);
-}
-
-.destacado:hover {
-  box-shadow: var(--sombra-3);
-  color: var(--texto);
 }
 
 .destacado--exito {
@@ -262,13 +446,6 @@ onMounted(async () => {
 .destacado__textos span {
   color: var(--texto-suave);
   font-size: var(--txt-sm);
-}
-
-.destacado__accion {
-  grid-column: 2;
-  font-size: var(--txt-sm);
-  font-weight: var(--peso-semi);
-  color: var(--accion);
 }
 
 .accesos {
@@ -322,31 +499,6 @@ onMounted(async () => {
 
 .acceso__media--mapa {
   aspect-ratio: 1000 / 600;
-}
-
-.pin {
-  position: absolute;
-  left: 53.5%;
-  top: 70%;
-  width: 18px;
-  height: 18px;
-  border-radius: 50% 50% 50% 0;
-  transform: translate(-50%, -100%) rotate(-45deg);
-  background: var(--accion);
-  border: 3px solid #ffffff;
-  box-shadow: var(--sombra-2);
-  animation: pin-salto calc(2400ms * var(--mov)) var(--curva) infinite;
-}
-
-@keyframes pin-salto {
-  0%,
-  70%,
-  100% {
-    transform: translate(-50%, -100%) rotate(-45deg);
-  }
-  80% {
-    transform: translate(-50%, -150%) rotate(-45deg);
-  }
 }
 
 .acceso__texto {
@@ -441,7 +593,11 @@ onMounted(async () => {
     padding-top: var(--e-8);
   }
 
-  .saludo__hola {
+  .portada {
+    min-height: 210px;
+  }
+
+  .portada__hola {
     font-size: var(--txt-3xl);
   }
 
@@ -476,6 +632,14 @@ onMounted(async () => {
 }
 
 @media (min-width: 1024px) {
+  .portada__colegio {
+    display: inline;
+  }
+
+  .destacados {
+    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  }
+
   .menu__buscar {
     max-width: 34rem;
   }

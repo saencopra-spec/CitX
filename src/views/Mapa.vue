@@ -7,27 +7,25 @@ import {
   Star,
   Clock,
   Lock,
-  MapPin,
   Info,
   ChevronRight,
+  CircleAlert,
 } from 'lucide-vue-next'
 import MapaCampus from '@/components/MapaCampus.vue'
 import FotoComida from '@/components/FotoComida.vue'
-import { ZONAS, CATEGORIAS } from '@/datos/campus'
-import { api } from '@/lib/api'
 import { useAuth } from '@/stores/auth'
 import { useAvisos } from '@/stores/avisos'
+import { useLugares } from '@/stores/lugares'
+import { CATEGORIAS } from '@compartido/campus.js'
 import { coincide } from '@compartido/texto.js'
 
 const auth = useAuth()
 const avisos = useAvisos()
+const lugaresStore = useLugares()
 const route = useRoute()
 const router = useRouter()
 
 const mapa = ref(null)
-const lugares = ref({})
-const cargando = ref(true)
-const sinDatos = ref(false)
 const busqueda = ref(
   typeof route.query.buscar === 'string' ? route.query.buscar : ''
 )
@@ -36,18 +34,12 @@ const seleccionada = ref(null)
 const mostrarResultados = ref(false)
 const verLeyenda = ref(false)
 
-/** Lista de lugares del mapa con su informacion de la base (o lo minimo si no hay). */
 const lista = computed(() =>
-  ZONAS.map((z) => ({
-    clave: z.clave,
-    nombre: lugares.value[z.clave]?.nombre ?? z.etiqueta,
-    categoria: lugares.value[z.clave]?.categoria ?? 'otro',
-    descripcion: lugares.value[z.clave]?.descripcion ?? '',
-    horario: lugares.value[z.clave]?.horario ?? '',
-    restringido: lugares.value[z.clave]?.restringido ?? false,
-    notaAcceso: lugares.value[z.clave]?.notaAcceso ?? '',
-    foto: lugares.value[z.clave]?.foto ?? null,
-  })).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+  [...lugaresStore.lista].sort(
+    (a, b) =>
+      (a.numero ?? 99) - (b.numero ?? 99) ||
+      a.nombre.localeCompare(b.nombre, 'es')
+  )
 )
 
 const filtrados = computed(() =>
@@ -63,7 +55,8 @@ const filtrados = computed(() =>
       busqueda.value,
       l.nombre,
       l.descripcion,
-      CATEGORIAS[l.categoria]?.nombre ?? ''
+      CATEGORIAS[l.categoria]?.nombre ?? '',
+      String(l.numero ?? '')
     )
   })
 )
@@ -80,10 +73,9 @@ const lugar = computed(
 const filtros = computed(() => [
   { valor: 'todo', texto: 'Todo' },
   { valor: 'favoritos', texto: 'Mis favoritos', icono: Star },
-  ...Object.entries(CATEGORIAS).map(([valor, c]) => ({
-    valor,
-    texto: c.corto,
-  })),
+  ...Object.entries(CATEGORIAS)
+    .filter(([valor]) => lista.value.some((l) => l.categoria === valor))
+    .map(([valor, c]) => ({ valor, texto: c.corto, color: c.color })),
   { valor: 'restringido', texto: 'Restringidas', icono: Lock },
 ])
 
@@ -126,17 +118,24 @@ watch(busqueda, (v) => {
   mostrarResultados.value = Boolean(v)
 })
 
-onMounted(async () => {
-  try {
-    const datos = await api.get('/lugares')
-    lugares.value = Object.fromEntries(datos.lugares.map((l) => [l.clave, l]))
-  } catch {
-    sinDatos.value = true
-  } finally {
-    cargando.value = false
+// Si llega con ?lugar= (por ejemplo desde una notificacion) se abre ese lugar.
+watch(
+  () => route.query.lugar,
+  (clave) => {
+    if (
+      typeof clave === 'string' &&
+      clave !== seleccionada.value &&
+      lugaresStore.porClave[clave]
+    ) {
+      setTimeout(() => elegir(clave), 200)
+    }
   }
+)
+
+onMounted(async () => {
+  await lugaresStore.cargar()
   const inicial = route.query.lugar
-  if (typeof inicial === 'string' && ZONAS.some((z) => z.clave === inicial)) {
+  if (typeof inicial === 'string' && lugaresStore.porClave[inicial]) {
     setTimeout(() => elegir(inicial), 250)
   }
 })
@@ -145,7 +144,21 @@ onMounted(async () => {
 <template>
   <div class="mapa-pagina">
     <section class="panel" aria-label="Buscar y filtrar lugares">
-      <h1 class="panel__titulo titulo-manuscrito">Mapa interactivo</h1>
+      <div class="panel__encabezado">
+        <img
+          src="/escudo-cit.webp"
+          alt=""
+          class="panel__escudo"
+          width="34"
+          height="44"
+        />
+        <div>
+          <h1 class="panel__titulo titulo-manuscrito">Mapa del CIT</h1>
+          <p class="panel__bajada">
+            Complejo Educativo CIT, La Asunción de Belén
+          </p>
+        </div>
+      </div>
 
       <form
         class="buscador busqueda"
@@ -160,7 +173,7 @@ onMounted(async () => {
           class="entrada"
           type="search"
           autocomplete="off"
-          placeholder="Buscar en CitX..."
+          placeholder="Buscar: soda, enfermería, 8..."
           aria-controls="resultados"
           :aria-expanded="mostrarResultados"
           @focus="mostrarResultados = Boolean(busqueda)"
@@ -187,7 +200,12 @@ onMounted(async () => {
               class="resultado"
               @click="elegir(l.clave, { desdeBusqueda: true })"
             >
-              <MapPin :size="18" aria-hidden="true" />
+              <span
+                class="numero"
+                :style="{ background: CATEGORIAS[l.categoria]?.color }"
+                aria-hidden="true"
+                >{{ l.numero ?? '+' }}</span
+              >
               <span>
                 <strong>{{ l.nombre }}</strong>
                 <span>{{ CATEGORIAS[l.categoria]?.nombre ?? 'Lugar' }}</span>
@@ -215,6 +233,12 @@ onMounted(async () => {
             :size="16"
             aria-hidden="true"
           />
+          <span
+            v-else-if="f.color"
+            class="punto"
+            :style="{ background: f.color }"
+            aria-hidden="true"
+          />
           {{ f.texto }}
         </button>
       </div>
@@ -223,8 +247,8 @@ onMounted(async () => {
         {{ resaltadas ? `${filtrados.length} lugares encontrados` : '' }}
       </p>
 
-      <!-- En pantallas grandes, lista completa de lugares -->
-      <ul class="lista-lugares">
+      <!-- En pantallas grandes, la leyenda completa como la del mapa oficial -->
+      <ol class="lista-lugares">
         <li v-for="l in filtrados" :key="l.clave">
           <button
             type="button"
@@ -233,7 +257,12 @@ onMounted(async () => {
             :aria-current="seleccionada === l.clave ? 'true' : undefined"
             @click="elegir(l.clave)"
           >
-            <span class="muestra" :data-cat="l.categoria" aria-hidden="true" />
+            <span
+              class="numero"
+              :style="{ background: CATEGORIAS[l.categoria]?.color }"
+              aria-hidden="true"
+              >{{ l.numero ?? '+' }}</span
+            >
             <span class="lista-lugares__nombre">{{ l.nombre }}</span>
             <Star
               v-if="auth.esFavorito(l.clave)"
@@ -256,13 +285,13 @@ onMounted(async () => {
               : 'No hay lugares con ese filtro.'
           }}
         </li>
-      </ul>
+      </ol>
     </section>
 
     <div class="lienzo">
       <MapaCampus
         ref="mapa"
-        :lugares="lugares"
+        :lugares="lista"
         :seleccionada="seleccionada"
         :resaltadas="resaltadas"
         :favoritos="auth.usuario?.favoritos ?? []"
@@ -280,23 +309,26 @@ onMounted(async () => {
         </button>
         <ul v-if="verLeyenda" class="leyenda__lista">
           <li v-for="(c, clave) in CATEGORIAS" :key="clave">
-            <span class="muestra" :data-cat="clave" aria-hidden="true" />
+            <span
+              class="punto"
+              :style="{ background: c.color }"
+              aria-hidden="true"
+            />
             {{ c.nombre }}
           </li>
           <li>
-            <span class="muestra muestra--rayada" aria-hidden="true" /> Acceso
-            restringido
+            <Lock :size="14" aria-hidden="true" class="icono-restringido" />
+            Acceso restringido (pin rayado)
           </li>
           <li>
-            <span class="muestra muestra--favorito" aria-hidden="true" /> Tus
+            <Star :size="14" aria-hidden="true" class="icono-favorito" /> Tus
             favoritos
           </li>
         </ul>
       </div>
 
-      <p class="aviso-ejemplo">Distribución de ejemplo</p>
-      <p v-if="sinDatos" class="sin-datos" role="status">
-        Sin conexión: se muestran solo los nombres de los lugares.
+      <p v-if="lugaresStore.sinConexion" class="sin-datos" role="status">
+        Sin conexión: se muestran los lugares guardados en la app.
       </p>
     </div>
 
@@ -311,17 +343,19 @@ onMounted(async () => {
           <FotoComida
             v-if="lugar.foto"
             :src="lugar.foto"
-            alt=""
+            :alt="`Foto de ${lugar.nombre}`"
             class="hoja__foto"
           />
           <div class="hoja__encabezado">
             <div>
               <p class="hoja__categoria">
                 <span
-                  class="muestra"
-                  :data-cat="lugar.categoria"
+                  class="numero numero--chico"
+                  :style="{ background: CATEGORIAS[lugar.categoria]?.color }"
                   aria-hidden="true"
-                />
+                >
+                  {{ lugar.numero ?? '+' }}
+                </span>
                 {{ CATEGORIAS[lugar.categoria]?.nombre ?? 'Lugar' }}
               </p>
               <h2 class="hoja__nombre">{{ lugar.nombre }}</h2>
@@ -366,6 +400,9 @@ onMounted(async () => {
             <Clock :size="16" aria-hidden="true" />
             {{ lugar.horario }}
           </p>
+          <p v-if="lugar.ubicacionAproximada" class="hoja__aproximada">
+            <CircleAlert :size="16" aria-hidden="true" /> Ubicación aproximada.
+          </p>
         </div>
       </section>
     </Transition>
@@ -381,7 +418,7 @@ onMounted(async () => {
     100dvh - 61px - var(--alto-barra-inferior) - env(safe-area-inset-bottom) -
       env(safe-area-inset-top)
   );
-  min-height: 420px;
+  min-height: 460px;
   margin-bottom: calc(
     (var(--alto-barra-inferior) + env(safe-area-inset-bottom) + var(--e-6)) * -1
   );
@@ -394,8 +431,26 @@ onMounted(async () => {
   padding: var(--e-3) var(--margen-lateral) var(--e-2);
 }
 
+.panel__encabezado {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+}
+
+.panel__escudo {
+  width: 34px;
+  height: auto;
+  flex-shrink: 0;
+}
+
 .panel__titulo {
   font-size: var(--txt-xl);
+  line-height: 1.1;
+}
+
+.panel__bajada {
+  font-size: var(--txt-xs);
+  color: var(--texto-suave);
 }
 
 .busqueda {
@@ -445,18 +500,13 @@ onMounted(async () => {
   text-align: left;
 }
 
-.resultado > svg {
-  color: var(--accion);
-  flex-shrink: 0;
-}
-
-.resultado span {
+.resultado > span:last-child {
   display: flex;
   flex-direction: column;
   line-height: 1.3;
 }
 
-.resultado span span {
+.resultado > span:last-child span {
   font-size: var(--txt-sm);
   color: var(--texto-suave);
 }
@@ -467,6 +517,36 @@ onMounted(async () => {
 
 .resultado--vacio {
   color: var(--texto-suave);
+}
+
+.numero {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 4px;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: var(--txt-xs);
+  font-weight: var(--peso-extra);
+  flex-shrink: 0;
+}
+
+.numero--chico {
+  min-width: 22px;
+  height: 22px;
+}
+
+.punto {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chip[aria-pressed='true'] .punto {
+  box-shadow: 0 0 0 2px #ffffff;
 }
 
 .lista-lugares {
@@ -511,66 +591,18 @@ onMounted(async () => {
   gap: var(--e-2);
 }
 
-.muestra {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  border-radius: 4px;
-  background: var(--mapa-otro);
-  border: 1px solid var(--borde-fuerte);
+.icono-restringido {
+  color: var(--error);
 }
 
-.muestra[data-cat='naturaleza'] {
-  background: var(--mapa-naturaleza);
-}
-.muestra[data-cat='academico'] {
-  background: var(--mapa-academico);
-}
-.muestra[data-cat='servicios'] {
-  background: var(--mapa-servicios);
-}
-.muestra[data-cat='alimentacion'] {
-  background: var(--mapa-alimentacion);
-}
-.muestra[data-cat='deporte'] {
-  background: var(--mapa-deporte);
-}
-.muestra[data-cat='administracion'] {
-  background: var(--mapa-administracion);
-}
-.muestra[data-cat='acceso'] {
-  background: var(--mapa-acceso);
-}
-
-.muestra--rayada {
-  background: repeating-linear-gradient(
-    45deg,
-    var(--mapa-rayado) 0 2px,
-    transparent 2px 6px
-  );
-}
-
-.muestra--favorito {
-  border-radius: 50%;
-  background: var(--aviso);
-}
-
-.aviso-ejemplo {
-  position: absolute;
-  top: var(--e-2);
-  left: var(--e-3);
-  padding: 2px var(--e-2);
-  border-radius: var(--radio-xs);
-  background: color-mix(in srgb, var(--fondo-elevado) 85%, transparent);
-  font-size: var(--txt-xs);
-  color: var(--texto-suave);
-  pointer-events: none;
+.icono-favorito {
+  color: var(--aviso);
+  fill: currentColor;
 }
 
 .sin-datos {
   position: absolute;
-  top: var(--e-8);
+  top: var(--e-3);
   left: var(--e-3);
   right: var(--e-3);
   padding: var(--e-2) var(--e-3);
@@ -610,7 +642,7 @@ onMounted(async () => {
 }
 
 .hoja__foto {
-  height: 88px;
+  height: 110px;
   border-radius: var(--radio-md);
 }
 
@@ -666,12 +698,18 @@ onMounted(async () => {
   line-height: var(--alto-amplio);
 }
 
-.hoja__horario {
+.hoja__horario,
+.hoja__aproximada {
   display: flex;
   align-items: center;
   gap: var(--e-2);
   font-size: var(--txt-sm);
   font-weight: var(--peso-semi);
+}
+
+.hoja__aproximada {
+  color: var(--texto-tenue);
+  font-weight: var(--peso-normal);
 }
 
 .hoja-enter-active,
@@ -699,6 +737,10 @@ onMounted(async () => {
     display: none;
   }
 
+  .hoja__foto {
+    height: 150px;
+  }
+
   .hoja-enter-from,
   .hoja-leave-to {
     transform: translateX(110%);
@@ -708,14 +750,14 @@ onMounted(async () => {
 @media (min-width: 1024px) {
   .mapa-pagina {
     flex-direction: row;
-    height: 100dvh;
+    height: calc(100dvh - 57px);
     margin-bottom: calc(var(--e-12) * -1);
   }
 
   .panel {
-    width: 20rem;
+    width: 21rem;
     flex-shrink: 0;
-    padding: var(--e-6) var(--e-4);
+    padding: var(--e-5) var(--e-4);
     border-right: 1px solid var(--borde);
     overflow-y: auto;
   }
@@ -767,11 +809,6 @@ onMounted(async () => {
 
   .lista-lugares__flecha {
     color: var(--texto-tenue);
-  }
-
-  .icono-favorito {
-    color: var(--aviso);
-    fill: currentColor;
   }
 
   .lista-lugares__vacio {

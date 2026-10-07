@@ -23,7 +23,7 @@ export const useAuth = defineStore('auth', () => {
 
   /** Permiso del usuario actual segun compartido/permisos.js. */
   function puede(accion) {
-    return Boolean(usuario.value) && puedeRol(usuario.value.rol, accion)
+    return Boolean(usuario.value) && puedeRol(usuario.value, accion)
   }
 
   function esFavorito(clave) {
@@ -78,6 +78,13 @@ export const useAuth = defineStore('auth', () => {
     return datos.usuario
   }
 
+  /** Usa un codigo de invitacion con la cuenta actual (pasa a ser personal). */
+  async function canjear(codigo) {
+    const datos = await api.post('/auth/canjear', { codigo })
+    usuario.value = datos.usuario
+    return datos.usuario
+  }
+
   async function salir() {
     try {
       await api.post('/auth/salir')
@@ -116,6 +123,7 @@ export const useAuth = defineStore('auth', () => {
     cargarSesion,
     entrar,
     registrar,
+    canjear,
     salir,
     actualizarPerfil,
     cambiarContrasena,

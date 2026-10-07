@@ -9,7 +9,14 @@ import {
   comprobanteSinpeValido,
   TARJETA_PRUEBA,
 } from '../compartido/pagos.js'
-import { puede, seccionValida, SECCIONES } from '../compartido/permisos.js'
+import {
+  puede,
+  permisosDe,
+  seccionValida,
+  SECCIONES,
+} from '../compartido/permisos.js'
+import { LUGARES_CIT, CATEGORIAS, LIENZO } from '../compartido/campus.js'
+import { generarCodigoInvitacion, huella } from '../api/_lib/invitaciones.js'
 import { estadoEnfermeria } from '../compartido/enfermeria.js'
 import { partesCR, horaLegible, sumarDias } from '../compartido/hora.js'
 import {
@@ -136,34 +143,78 @@ describe('Validacion de tarjeta', () => {
 })
 
 describe('Permisos por rol', () => {
-  it('solo admin y soda entran al panel y gestionan pedidos', () => {
-    for (const rol of ['admin', 'soda']) {
-      expect(puede(rol, 'panel.entrar')).toBe(true)
-      expect(puede(rol, 'pedidos.gestionar')).toBe(true)
-    }
-    for (const rol of ['estudiante', 'profesor', 'administrativo']) {
-      expect(puede(rol, 'panel.entrar')).toBe(false)
-      expect(puede(rol, 'pedidos.gestionar')).toBe(false)
-    }
+  it('admin y soda entran al panel; estudiante y profesor no', () => {
+    expect(puede('admin', 'panel.entrar')).toBe(true)
+    expect(puede('soda', 'panel.entrar')).toBe(true)
+    expect(puede('soda', 'pedidos.gestionar')).toBe(true)
+    expect(puede('soda', 'reportes.ver')).toBe(true)
+    expect(puede('estudiante', 'panel.entrar')).toBe(false)
+    expect(puede('profesor', 'panel.entrar')).toBe(false)
+    expect(puede('estudiante', 'pedidos.gestionar')).toBe(false)
   })
 
-  it('profesores y admin publican eventos; estudiantes no', () => {
+  it('el personal administrativo entra al panel para anuncios y objetos', () => {
+    expect(puede('administrativo', 'panel.entrar')).toBe(true)
+    expect(puede('administrativo', 'anuncios.publicar')).toBe(true)
+    expect(puede('administrativo', 'objetos.gestionar')).toBe(true)
+    expect(puede('administrativo', 'usuarios.gestionar')).toBe(false)
+  })
+
+  it('profesores y admin publican eventos; estudiantes y soda no', () => {
     expect(puede('profesor', 'eventos.publicar')).toBe(true)
     expect(puede('admin', 'eventos.publicar')).toBe(true)
     expect(puede('estudiante', 'eventos.publicar')).toBe(false)
     expect(puede('soda', 'eventos.publicar')).toBe(false)
   })
 
-  it('la soda no puede administrar usuarios ni lugares', () => {
-    expect(puede('soda', 'usuarios.gestionar')).toBe(false)
-    expect(puede('soda', 'lugares.editar')).toBe(false)
+  it('usuarios y bitacora son solo del administrador', () => {
     expect(puede('admin', 'usuarios.gestionar')).toBe(true)
+    expect(puede('admin', 'bitacora.ver')).toBe(true)
+    for (const rol of ['soda', 'profesor', 'administrativo', 'estudiante']) {
+      expect(puede(rol, 'usuarios.gestionar')).toBe(false)
+    }
+    // Aunque alguien intente darselo en su lista de permisos, no aplica.
+    expect(
+      puede(
+        {
+          rol: 'administrativo',
+          permisos: ['usuarios.gestionar', 'bitacora.ver'],
+        },
+        'usuarios.gestionar'
+      )
+    ).toBe(false)
+  })
+
+  it('respeta los permisos ajustados de cada persona', () => {
+    const secretaria = {
+      rol: 'administrativo',
+      permisos: ['objetos.gestionar'],
+    }
+    expect(puede(secretaria, 'objetos.gestionar')).toBe(true)
+    expect(puede(secretaria, 'anuncios.publicar')).toBe(false)
+    expect(puede(secretaria, 'panel.entrar')).toBe(true)
+    const profeDeHorarios = {
+      rol: 'profesor',
+      permisos: ['eventos.publicar', 'horarios.editar'],
+    }
+    expect(puede(profeDeHorarios, 'horarios.editar')).toBe(true)
+    expect(puede(profeDeHorarios, 'panel.entrar')).toBe(true)
+    const sinNada = { rol: 'soda', permisos: [] }
+    expect(puede(sinNada, 'pedidos.gestionar')).toBe(false)
+    expect(puede(sinNada, 'panel.entrar')).toBe(false)
+  })
+
+  it('un estudiante nunca tiene permisos, aunque los traiga en la lista', () => {
+    expect(
+      permisosDe({ rol: 'estudiante', permisos: ['pedidos.gestionar'] })
+    ).toEqual([])
   })
 
   it('niega acciones desconocidas o roles inventados', () => {
     expect(puede('admin', 'algo.inventado')).toBe(false)
     expect(puede('superusuario', 'panel.entrar')).toBe(false)
     expect(puede(undefined, 'panel.entrar')).toBe(false)
+    expect(puede(null, 'pedidos.gestionar')).toBe(false)
   })
 
   it('las secciones van de 7-1 a 12-6', () => {
@@ -171,6 +222,46 @@ describe('Permisos por rol', () => {
     expect(seccionValida('10-1')).toBe(true)
     expect(seccionValida('13-1')).toBe(false)
     expect(seccionValida('Contraseña...')).toBe(false)
+  })
+})
+
+describe('Codigos de invitacion', () => {
+  it('tienen el formato CIT-XXXXX-XXXXX sin letras confusas', () => {
+    for (let i = 0; i < 30; i++) {
+      const c = generarCodigoInvitacion()
+      expect(c).toMatch(/^CIT-[A-Z2-9]{5}-[A-Z2-9]{5}$/)
+      expect(c.slice(4)).not.toMatch(/[01IOL]/)
+    }
+  })
+
+  it('la huella no depende de mayusculas, espacios ni guiones', () => {
+    const c = generarCodigoInvitacion()
+    expect(huella(c)).toBe(huella(c.toLowerCase().replace(/-/g, ' ')))
+    expect(huella(c)).not.toBe(huella(generarCodigoInvitacion()))
+    expect(huella(c)).toHaveLength(64)
+  })
+})
+
+describe('Lugares oficiales del mapa', () => {
+  it('estan los 19 de la leyenda del CIT y la enfermeria', () => {
+    const numeros = LUGARES_CIT.map((l) => l.numero)
+      .filter(Boolean)
+      .sort((a, b) => a - b)
+    expect(numeros).toEqual(Array.from({ length: 19 }, (_, i) => i + 1))
+    expect(LUGARES_CIT.some((l) => l.clave === 'enfermeria')).toBe(true)
+  })
+
+  it('cada pin cae dentro del mapa y con categoria conocida', () => {
+    for (const l of LUGARES_CIT) {
+      expect(l.x).toBeGreaterThanOrEqual(0)
+      expect(l.x).toBeLessThanOrEqual(LIENZO.ancho)
+      expect(l.y).toBeGreaterThanOrEqual(0)
+      expect(l.y).toBeLessThanOrEqual(LIENZO.alto)
+      expect(CATEGORIAS[l.categoria]).toBeTruthy()
+    }
+    expect(new Set(LUGARES_CIT.map((l) => l.clave)).size).toBe(
+      LUGARES_CIT.length
+    )
   })
 })
 

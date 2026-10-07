@@ -2,27 +2,32 @@
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import gsap from 'gsap'
 import { Plus, Minus, Maximize } from 'lucide-vue-next'
-import { ZONAS, LIENZO, centroDe, cajaDe } from '@/datos/campus'
+import { LIENZO, CATEGORIAS } from '@compartido/campus.js'
 import { sinMovimiento } from '@/lib/movimiento'
 
 /**
- * Mapa del campus dibujado en SVG.
+ * Mapa del campus sobre la ilustracion oficial del CIT, con pines propios
+ * que se pueden tocar.
  * - Rueda del mouse o botones para acercar y alejar.
  * - Arrastrar para moverse; con dos dedos se hace zoom (pellizco).
- * - Cada zona se puede tocar, o enfocar con Tab y abrir con Enter.
+ * - Cada pin se puede enfocar con Tab y abrir con Enter.
+ * - En modo `colocar`, tocar el mapa emite la posicion (para el panel).
  */
 const props = defineProps({
-  /** clave -> { nombre, categoria, restringido } */
-  lugares: { type: Object, default: () => ({}) },
+  lugares: { type: Array, default: () => [] },
   seleccionada: { type: String, default: null },
-  /** Si se da, las zonas que no estan aqui se ven apagadas (busqueda o filtro). */
+  /** Si se da, los pines que no estan aqui se ven apagados. */
   resaltadas: { type: Set, default: null },
   favoritos: { type: Array, default: () => [] },
+  /** Para el panel: tocar el mapa elige una posicion. */
+  colocar: { type: Boolean, default: false },
+  /** Muestra siempre el nombre de cada lugar. */
+  conNombres: { type: Boolean, default: false },
 })
-const emit = defineEmits(['elegir'])
+const emit = defineEmits(['elegir', 'colocar'])
 
 const MIN = 1
-const MAX = 5
+const MAX = 4
 const svg = ref(null)
 const vista = reactive({ x: 0, y: 0, k: 1 })
 let animacion = null
@@ -30,16 +35,48 @@ let animacion = null
 const transformacion = computed(
   () => `translate(${vista.x} ${vista.y}) scale(${vista.k})`
 )
+/** Los pines crecen menos que el mapa al hacer zoom, para no tapar todo. */
+const escalaPin = computed(() => 1 / Math.max(1, vista.k * 0.75))
+const mostrarNombres = computed(() => props.conNombres || vista.k >= 1.9)
 
-/** Evita que el mapa se vaya del todo fuera de la pantalla. */
+/** Pines grandes como en el mapa oficial: preescolar, primaria y secundaria. */
+const GRANDES = [2, 4, 8]
+
+const ordenados = computed(() =>
+  [...props.lugares].sort((a, b) => {
+    // El seleccionado se dibuja al final para que quede encima.
+    if (a.clave === props.seleccionada) return 1
+    if (b.clave === props.seleccionada) return -1
+    return a.y - b.y
+  })
+)
+
+function radio(l) {
+  return GRANDES.includes(l.numero) ? 21 : 15
+}
+
+/** Silueta de pin con la punta en (0,0) y la cabeza de radio R arriba. */
+function forma(R) {
+  const c = R * 1.75
+  return `M0 0 C${-R * 0.35} ${-R * 0.85} ${-R} ${-R * 1.1} ${-R} ${-c} A${R} ${R} 0 1 1 ${R} ${-c} C${R} ${-R * 1.1} ${R * 0.35} ${-R * 0.85} 0 0 Z`
+}
+
+function color(l) {
+  return CATEGORIAS[l.categoria]?.color ?? '#5b6573'
+}
+
 function limitar(v) {
-  const margen = 320
-  const minX = LIENZO.ancho - LIENZO.ancho * v.k - margen
-  const minY = LIENZO.alto - LIENZO.alto * v.k - margen
+  const margen = 240
   return {
     k: v.k,
-    x: Math.min(margen, Math.max(minX, v.x)),
-    y: Math.min(margen, Math.max(minY, v.y)),
+    x: Math.min(
+      margen,
+      Math.max(LIENZO.ancho - LIENZO.ancho * v.k - margen, v.x)
+    ),
+    y: Math.min(
+      margen,
+      Math.max(LIENZO.alto - LIENZO.alto * v.k - margen, v.y)
+    ),
   }
 }
 
@@ -59,10 +96,16 @@ function aplicar(destino, animar = false) {
 
 /** Pasa coordenadas de pantalla a coordenadas del lienzo SVG. */
 function aLienzo(clientX, clientY) {
-  const ctm = svg.value.getScreenCTM()
+  const ctm = svg.value?.getScreenCTM()
   if (!ctm) return { x: 0, y: 0 }
   const p = new DOMPoint(clientX, clientY).matrixTransform(ctm.inverse())
   return { x: p.x, y: p.y }
+}
+
+/** Coordenadas sobre la ilustracion (descontando el zoom y el desplazamiento). */
+function aMapa(clientX, clientY) {
+  const p = aLienzo(clientX, clientY)
+  return { x: (p.x - vista.x) / vista.k, y: (p.y - vista.y) / vista.k }
 }
 
 function zoomEn(punto, factor, animar = false) {
@@ -78,43 +121,24 @@ function zoomEn(punto, factor, animar = false) {
   )
 }
 
-function acercar() {
-  zoomEn({ x: LIENZO.ancho / 2, y: LIENZO.alto / 2 }, 1.5, true)
-}
+const centroLienzo = () => ({ x: LIENZO.ancho / 2, y: LIENZO.alto / 2 })
+const acercar = () => zoomEn(centroLienzo(), 1.5, true)
+const alejar = () => zoomEn(centroLienzo(), 1 / 1.5, true)
+const restablecer = () => aplicar({ x: 0, y: 0, k: 1 }, true)
 
-function alejar() {
-  zoomEn({ x: LIENZO.ancho / 2, y: LIENZO.alto / 2 }, 1 / 1.5, true)
-}
-
-function restablecer() {
-  aplicar({ x: 0, y: 0, k: 1 }, true)
-}
-
-/** Acerca el mapa a una zona y la deja un poco arriba del centro (la hoja inferior tapa abajo). */
+/** Acerca el mapa a un lugar y lo deja en la parte que no tapa la hoja de informacion. */
 function enfocar(clave) {
-  const zona = ZONAS.find((z) => z.clave === clave)
-  if (!zona) return
-  const caja = cajaDe(zona)
-  const centro = centroDe(zona)
+  const lugar = props.lugares.find((l) => l.clave === clave)
+  if (!lugar || !svg.value) return
   const angosto = window.matchMedia('(max-width: 767px)').matches
-  // En celular se acerca mas porque la pantalla es chica; en computadora menos.
-  const tope = angosto ? 3.2 : 2.2
-  const k = Math.min(
-    tope,
-    Math.max(
-      1.5,
-      Math.min(LIENZO.ancho / (caja.w * 3), LIENZO.alto / (caja.h * 3))
-    )
-  )
-  // La hoja de informacion tapa abajo en celular y a la derecha en computadora,
-  // asi que el lugar se lleva a la parte de la pantalla que queda libre.
+  const k = angosto ? 2.6 : 2.1
   const marco = svg.value.getBoundingClientRect()
   const objetivo = aLienzo(
-    marco.left + marco.width * (angosto ? 0.5 : 0.36),
-    marco.top + marco.height * (angosto ? 0.24 : 0.5)
+    marco.left + marco.width * (angosto ? 0.5 : 0.38),
+    marco.top + marco.height * (angosto ? 0.3 : 0.5)
   )
   aplicar(
-    { k, x: objetivo.x - centro.x * k, y: objetivo.y - centro.y * k },
+    { k, x: objetivo.x - lugar.x * k, y: objetivo.y - (lugar.y - 12) * k },
     true
   )
 }
@@ -174,7 +198,15 @@ function alMover(e) {
 }
 
 function alSoltar(e) {
+  const eraToque = punteros.size === 1 && !seMovio && punteros.has(e.pointerId)
   punteros.delete(e.pointerId)
+  if (props.colocar && eraToque && e.type === 'pointerup') {
+    const p = aMapa(e.clientX, e.clientY)
+    emit('colocar', {
+      x: Math.round(Math.min(LIENZO.ancho, Math.max(0, p.x))),
+      y: Math.round(Math.min(LIENZO.alto, Math.max(0, p.y))),
+    })
+  }
   if (punteros.size === 1) {
     const [p] = [...punteros.values()]
     inicioArrastre = { vx: vista.x, vy: vista.y, px: p.x, py: p.y }
@@ -185,48 +217,24 @@ function alSoltar(e) {
 
 function alRueda(e) {
   e.preventDefault()
-  const factor = Math.exp(-e.deltaY * 0.0018)
-  zoomEn(aLienzo(e.clientX, e.clientY), factor)
+  zoomEn(aLienzo(e.clientX, e.clientY), Math.exp(-e.deltaY * 0.0018))
 }
 
-function tocarZona(clave) {
-  if (seMovio) return
+function tocar(clave) {
+  if (seMovio || props.colocar) return
   emit('elegir', clave)
 }
 
-function infoDe(clave) {
-  return props.lugares[clave] ?? {}
-}
-
-function etiquetaAccesible(zona) {
-  const info = infoDe(zona.clave)
-  const partes = [info.nombre ?? zona.etiqueta]
-  if (info.restringido) partes.push('acceso restringido')
-  if (props.favoritos.includes(zona.clave)) partes.push('favorito')
+function etiquetaAccesible(l) {
+  const partes = [l.numero ? `${l.numero}, ${l.nombre}` : l.nombre]
+  if (l.restringido) partes.push('acceso restringido')
+  if (props.favoritos.includes(l.clave)) partes.push('favorito')
   return partes.join(', ')
 }
 
-function apagada(clave) {
+function apagado(clave) {
   return props.resaltadas !== null && !props.resaltadas.has(clave)
 }
-
-// Arboles del bosque y del cacaotal: posiciones fijas para que no cambien al recargar.
-function arboles(x0, y0, ancho, alto, columnas, filas, radio) {
-  const lista = []
-  for (let f = 0; f < filas; f++) {
-    for (let c = 0; c < columnas; c++) {
-      const desfase = f % 2 ? 0.5 : 0
-      lista.push({
-        x: x0 + ((c + 0.5 + desfase) * ancho) / (columnas + 0.5),
-        y: y0 + ((f + 0.5) * alto) / filas,
-        r: radio * (0.8 + ((c * 7 + f * 13) % 5) / 10),
-      })
-    }
-  }
-  return lista
-}
-const arbolesBosque = arboles(60, 50, 250, 130, 7, 4, 15)
-const arbolesCacao = arboles(362, 58, 186, 120, 6, 4, 9)
 
 let alAjustarTamano = null
 onMounted(() => {
@@ -242,13 +250,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="mapa">
+  <div class="mapa" :class="{ 'mapa--colocar': colocar }">
     <svg
       ref="svg"
       class="mapa__lienzo"
       :viewBox="`0 0 ${LIENZO.ancho} ${LIENZO.alto}`"
       role="group"
-      aria-label="Mapa del campus. Usá Tab para recorrer los lugares y Enter para ver uno."
+      aria-label="Mapa del Complejo Educativo CIT. Usá Tab para recorrer los lugares y Enter para ver uno."
       @pointerdown="alPresionar"
       @pointermove="alMover"
       @pointerup="alSoltar"
@@ -256,211 +264,118 @@ onUnmounted(() => {
       @pointerleave="alSoltar"
     >
       <defs>
+        <filter id="sombra-pin" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow
+            dx="0"
+            dy="1.5"
+            stdDeviation="1.5"
+            flood-color="#0d1117"
+            flood-opacity="0.35"
+          />
+        </filter>
         <pattern
-          id="rayado"
-          width="12"
-          height="12"
+          id="rayado-pin"
+          width="5"
+          height="5"
           patternUnits="userSpaceOnUse"
           patternTransform="rotate(45)"
         >
-          <rect width="12" height="12" fill="transparent" />
-          <line x1="0" y1="0" x2="0" y2="12" class="rayado__linea" />
+          <line
+            x1="0"
+            y1="0"
+            x2="0"
+            y2="5"
+            stroke="#ffffff"
+            stroke-width="1.6"
+            opacity="0.6"
+          />
         </pattern>
       </defs>
 
       <g :transform="transformacion">
-        <rect :width="LIENZO.ancho" :height="LIENZO.alto" class="suelo" />
-
-        <!-- Calle de acceso y caminos internos -->
-        <rect x="0" y="690" :width="LIENZO.ancho" height="30" class="calle" />
-        <path d="M20 690 H980" class="calle__linea" />
-        <path
-          d="M30 214 H975 M30 510 H975 M202 214 V510 M478 214 V630 M672 214 V510 M805 214 V690"
-          class="camino"
+        <image
+          href="/mapa-cit.webp"
+          :width="LIENZO.ancho"
+          :height="LIENZO.alto"
+          class="mapa__fondo"
         />
 
-        <!-- Zonas -->
         <g
-          v-for="zona in ZONAS"
-          :key="zona.clave"
-          class="zona"
+          v-for="l in ordenados"
+          :key="l.clave"
+          class="pin"
           :class="{
-            'es-seleccionada': seleccionada === zona.clave,
-            'es-apagada': apagada(zona.clave),
+            'es-seleccionado': seleccionada === l.clave,
+            'es-apagado': apagado(l.clave),
           }"
-          :data-cat="infoDe(zona.clave).categoria ?? 'otro'"
+          :transform="`translate(${l.x} ${l.y}) scale(${escalaPin * (seleccionada === l.clave ? 1.25 : 1)})`"
           role="button"
           tabindex="0"
-          :aria-label="etiquetaAccesible(zona)"
-          :aria-pressed="seleccionada === zona.clave"
-          @click="tocarZona(zona.clave)"
-          @keydown.enter.prevent="emit('elegir', zona.clave)"
-          @keydown.space.prevent="emit('elegir', zona.clave)"
+          :aria-label="etiquetaAccesible(l)"
+          :aria-pressed="seleccionada === l.clave"
+          @click="tocar(l.clave)"
+          @keydown.enter.prevent="emit('elegir', l.clave)"
+          @keydown.space.prevent="emit('elegir', l.clave)"
         >
-          <path v-if="zona.d" :d="zona.d" class="zona__forma" />
-          <rect
-            v-else
-            :x="zona.x"
-            :y="zona.y"
-            :width="zona.w"
-            :height="zona.h"
-            :rx="zona.r"
-            class="zona__forma"
+          <path
+            :d="forma(radio(l))"
+            :fill="color(l)"
+            class="pin__forma"
+            filter="url(#sombra-pin)"
           />
-
-          <!-- Detalles que ayudan a reconocer cada lugar -->
-          <g v-if="zona.clave === 'bosque'" class="detalle" aria-hidden="true">
-            <circle
-              v-for="(a, i) in arbolesBosque"
-              :key="i"
-              :cx="a.x"
-              :cy="a.y"
-              :r="a.r"
-              class="arbol"
-            />
-          </g>
-          <g
-            v-else-if="zona.clave === 'cacaotal'"
-            class="detalle"
-            aria-hidden="true"
-          >
-            <circle
-              v-for="(a, i) in arbolesCacao"
-              :key="i"
-              :cx="a.x"
-              :cy="a.y"
-              :r="a.r"
-              class="arbol arbol--cacao"
-            />
-          </g>
-          <g
-            v-else-if="zona.clave === 'armonia'"
-            class="detalle"
-            aria-hidden="true"
-          >
-            <rect
-              v-for="n in 6"
-              :key="n"
-              :x="596"
-              :y="50 + n * 20"
-              width="168"
-              height="9"
-              rx="4"
-              class="surco"
-            />
-          </g>
-          <g
-            v-else-if="zona.clave === 'piscina'"
-            class="detalle"
-            aria-hidden="true"
-          >
-            <rect x="832" y="410" width="126" height="60" rx="6" class="agua" />
-            <path
-              d="M832 425 H958 M832 440 H958 M832 455 H958"
-              class="carril"
-            />
-          </g>
-          <g
-            v-else-if="zona.clave === 'canchas'"
-            class="detalle"
-            aria-hidden="true"
-          >
-            <rect
-              x="830"
-              y="245"
-              width="130"
-              height="120"
-              rx="2"
-              class="linea-cancha"
-            />
-            <path d="M830 305 H960" class="linea-cancha" />
-            <circle cx="895" cy="305" r="16" class="linea-cancha" />
-          </g>
-          <g
-            v-else-if="zona.clave === 'parqueo'"
-            class="detalle"
-            aria-hidden="true"
-          >
-            <path
-              v-for="n in 7"
-              :key="n"
-              :d="`M${48 + n * 28} 545 v38 M${48 + n * 28} 627 v38`"
-              class="linea-parqueo"
-            />
-          </g>
-          <g
-            v-else-if="zona.clave === 'plaza'"
-            class="detalle"
-            aria-hidden="true"
-          >
-            <circle cx="575" cy="318" r="30" class="fuente" />
-          </g>
-
-          <!-- Areas restringidas: rayado y candado -->
-          <template v-if="infoDe(zona.clave).restringido">
-            <path
-              v-if="zona.d"
-              :d="zona.d"
-              class="zona__rayado"
-              aria-hidden="true"
-            />
-            <rect
-              v-else
-              :x="zona.x"
-              :y="zona.y"
-              :width="zona.w"
-              :height="zona.h"
-              :rx="zona.r"
-              class="zona__rayado"
-              aria-hidden="true"
-            />
-          </template>
-
+          <path
+            v-if="l.restringido"
+            :d="forma(radio(l))"
+            fill="url(#rayado-pin)"
+            class="pin__rayado"
+          />
+          <circle
+            :cy="-radio(l) * 1.75"
+            :r="radio(l) * 0.68"
+            class="pin__centro"
+          />
           <text
-            :x="centroDe(zona).x"
-            :y="centroDe(zona).y"
-            class="zona__etiqueta"
-            aria-hidden="true"
+            v-if="l.numero"
+            :y="-radio(l) * 1.75"
+            class="pin__numero"
+            :style="{ fontSize: `${radio(l) * 0.82}px` }"
           >
-            {{ zona.etiqueta }}
+            {{ l.numero }}
           </text>
+          <!-- La enfermeria lleva una cruz en vez de numero -->
+          <path
+            v-else
+            :transform="`translate(0 ${-radio(l) * 1.75})`"
+            d="M-2.2 -6 H2.2 V-2.2 H6 V2.2 H2.2 V6 H-2.2 V2.2 H-6 V-2.2 H-2.2 Z"
+            :fill="color(l)"
+          />
           <g
-            v-if="infoDe(zona.clave).restringido"
-            :transform="`translate(${cajaDe(zona).x + 8} ${cajaDe(zona).y + 8})`"
-            class="candado"
-            aria-hidden="true"
+            v-if="l.restringido"
+            :transform="`translate(${radio(l) * 0.8} ${-radio(l) * 2.55})`"
+            class="pin__candado"
           >
-            <rect width="22" height="22" rx="6" class="candado__fondo" />
-            <rect
-              x="6"
-              y="10"
-              width="10"
-              height="8"
-              rx="1.5"
-              class="candado__cuerpo"
-            />
-            <path d="M8 10 V7.5 a3 3 0 0 1 6 0 V10" class="candado__arco" />
+            <circle r="6.5" />
+            <rect x="-3" y="-0.5" width="6" height="4.5" rx="0.8" />
+            <path d="M-1.8 -0.5 V-2.2 a1.8 1.8 0 0 1 3.6 0 V-0.5" />
           </g>
-
-          <g v-if="favoritos.includes(zona.clave)" aria-hidden="true">
-            <circle
-              :cx="cajaDe(zona).x + cajaDe(zona).w - 12"
-              :cy="cajaDe(zona).y + 12"
-              r="10"
-              class="favorito"
-            />
+          <g
+            v-if="favoritos.includes(l.clave)"
+            :transform="`translate(${-radio(l) * 0.85} ${-radio(l) * 2.55})`"
+            class="pin__favorito"
+          >
+            <circle r="6.5" />
             <path
-              :transform="`translate(${cajaDe(zona).x + cajaDe(zona).w - 18} ${cajaDe(zona).y + 6}) scale(0.5)`"
+              transform="scale(0.42) translate(-12 -12.5)"
               d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"
-              class="favorito__estrella"
             />
           </g>
-        </g>
-
-        <!-- Indicador de norte y entrada -->
-        <g class="norte" aria-hidden="true" transform="translate(965 22)">
-          <path d="M0 -12 L7 8 L0 3 L-7 8 Z" />
-          <text y="24">N</text>
+          <text
+            v-if="mostrarNombres || seleccionada === l.clave"
+            :y="5"
+            class="pin__nombre"
+          >
+            {{ l.nombre }}
+          </text>
         </g>
       </g>
     </svg>
@@ -495,7 +410,7 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: var(--mapa-suelo);
+  background: #ffffff;
   border-radius: inherit;
 }
 
@@ -512,204 +427,93 @@ onUnmounted(() => {
   cursor: grabbing;
 }
 
-.suelo {
-  fill: var(--mapa-suelo);
+.mapa--colocar .mapa__lienzo {
+  cursor: crosshair;
 }
 
-.calle {
-  fill: var(--gris-600);
+.mapa__fondo {
+  pointer-events: none;
 }
 
-:root[data-tema='oscuro'] .calle {
-  fill: #2a313b;
-}
-
-.calle__linea {
-  stroke: #f5d36b;
-  stroke-width: 2;
-  stroke-dasharray: 18 14;
-}
-
-.camino {
-  fill: none;
-  stroke: var(--mapa-camino);
-  stroke-width: 16;
-  stroke-linecap: round;
-}
-
-.zona {
+.pin {
   cursor: pointer;
   outline: none;
-}
-
-.zona__forma {
-  fill: var(--mapa-otro);
-  stroke: var(--mapa-borde);
-  stroke-width: 3;
-  transition:
-    stroke var(--dur-media) var(--curva),
-    stroke-width var(--dur-media) var(--curva),
-    filter var(--dur-media) var(--curva);
-}
-
-.zona[data-cat='naturaleza'] .zona__forma {
-  fill: var(--mapa-naturaleza);
-}
-.zona[data-cat='academico'] .zona__forma {
-  fill: var(--mapa-academico);
-}
-.zona[data-cat='servicios'] .zona__forma {
-  fill: var(--mapa-servicios);
-}
-.zona[data-cat='alimentacion'] .zona__forma {
-  fill: var(--mapa-alimentacion);
-}
-.zona[data-cat='deporte'] .zona__forma {
-  fill: var(--mapa-deporte);
-}
-.zona[data-cat='administracion'] .zona__forma {
-  fill: var(--mapa-administracion);
-}
-.zona[data-cat='acceso'] .zona__forma {
-  fill: var(--mapa-acceso);
-}
-
-.zona:hover .zona__forma {
-  filter: brightness(0.96);
-}
-
-.zona:focus-visible .zona__forma,
-.es-seleccionada .zona__forma {
-  stroke: var(--mapa-seleccion);
-  stroke-width: 6;
-}
-
-.zona:focus-visible .zona__forma {
-  stroke-dasharray: 10 6;
-}
-
-.zona {
   transition: opacity var(--dur-media) var(--curva);
 }
 
-.es-apagada {
-  opacity: 0.28;
+.pin__forma {
+  stroke: #ffffff;
+  stroke-width: 2;
 }
 
-.zona__rayado {
-  fill: url(#rayado);
+.pin__rayado {
   pointer-events: none;
 }
 
-:deep(.rayado__linea) {
-  stroke: var(--mapa-rayado);
-  stroke-width: 3;
-  opacity: 0.55;
+.pin__centro {
+  fill: #ffffff;
 }
 
-.zona__etiqueta {
-  fill: var(--mapa-texto);
+.pin__numero {
+  fill: #15234a;
   font-family: var(--fuente-base);
-  font-size: 15px;
-  font-weight: 700;
-  text-anchor: middle;
-  dominant-baseline: middle;
-  paint-order: stroke;
-  stroke: var(--mapa-suelo);
-  stroke-width: 4px;
-  stroke-linejoin: round;
-  pointer-events: none;
-}
-
-.candado__fondo {
-  fill: var(--mapa-rayado);
-}
-
-.candado__cuerpo {
-  fill: #ffffff;
-}
-
-.candado__arco {
-  fill: none;
-  stroke: #ffffff;
-  stroke-width: 2;
-}
-
-:root[data-tema='oscuro'] .candado__cuerpo {
-  fill: var(--gris-950);
-}
-
-:root[data-tema='oscuro'] .candado__arco {
-  stroke: var(--gris-950);
-}
-
-.arbol {
-  fill: var(--mapa-arbol);
-  opacity: 0.75;
-}
-
-.arbol--cacao {
-  opacity: 0.6;
-}
-
-.surco {
-  fill: var(--mapa-arbol);
-  opacity: 0.45;
-}
-
-.agua {
-  fill: var(--mapa-agua);
-}
-
-.carril {
-  stroke: #ffffff;
-  stroke-width: 1.5;
-  stroke-dasharray: 6 5;
-  opacity: 0.8;
-}
-
-.linea-cancha {
-  fill: none;
-  stroke: #ffffff;
-  stroke-width: 2.5;
-  opacity: 0.85;
-}
-
-.linea-parqueo {
-  stroke: #ffffff;
-  stroke-width: 2;
-  opacity: 0.9;
-}
-
-.fuente {
-  fill: var(--mapa-agua);
-  stroke: #ffffff;
-  stroke-width: 4;
-}
-
-.favorito {
-  fill: var(--aviso);
-  stroke: #ffffff;
-  stroke-width: 2;
-}
-
-.favorito__estrella {
-  fill: #ffffff;
-}
-
-.norte path {
-  fill: var(--mapa-texto);
-}
-
-.norte text {
-  fill: var(--mapa-texto);
-  font-size: 12px;
   font-weight: 800;
   text-anchor: middle;
-  font-family: var(--fuente-base);
+  dominant-baseline: central;
+  pointer-events: none;
 }
 
-.detalle {
+.pin:hover .pin__forma {
+  filter: brightness(1.1);
+}
+
+.pin:focus-visible .pin__forma,
+.es-seleccionado .pin__forma {
+  stroke: #15234a;
+  stroke-width: 3;
+}
+
+.es-apagado {
+  opacity: 0.22;
+}
+
+.pin__candado circle {
+  fill: #c42b2b;
+  stroke: #ffffff;
+  stroke-width: 1.5;
+}
+
+.pin__candado rect {
+  fill: #ffffff;
+}
+
+.pin__candado path {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 1.3;
+}
+
+.pin__favorito circle {
+  fill: #e0a33f;
+  stroke: #ffffff;
+  stroke-width: 1.5;
+}
+
+.pin__favorito path {
+  fill: #ffffff;
+}
+
+.pin__nombre {
+  fill: #15234a;
+  font-family: var(--fuente-base);
+  font-size: 11px;
+  font-weight: 800;
+  text-anchor: middle;
+  dominant-baseline: hanging;
+  paint-order: stroke;
+  stroke: #ffffff;
+  stroke-width: 3.5px;
+  stroke-linejoin: round;
   pointer-events: none;
 }
 

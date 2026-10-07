@@ -6,7 +6,7 @@ import { col, COLECCIONES } from './db.js'
  */
 export async function notificar(
   usuarioIds,
-  { titulo, cuerpo, enlace = null, tipo = 'general' }
+  { titulo, cuerpo, enlace = null, tipo = 'general', lugarClave = null }
 ) {
   const ids = [...new Set(usuarioIds.map(String))]
   if (ids.length === 0) return
@@ -18,6 +18,7 @@ export async function notificar(
       titulo,
       cuerpo,
       enlace,
+      lugarClave,
       tipo,
       leida: false,
       creadoEn: ahora,

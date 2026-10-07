@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import gsap from 'gsap'
 import { useConfiguracion } from '@/stores/configuracion'
+import EscudoCit from '@/components/EscudoCit.vue'
 
 const router = useRouter()
 const configuracion = useConfiguracion()
@@ -114,7 +115,10 @@ onUnmounted(() => {
       </svg>
 
       <p data-nombre class="bienvenida__nombre">CITX</p>
-      <p data-lema class="bienvenida__lema">Complejo Educativo CIT</p>
+      <p data-lema class="bienvenida__lema">
+        <EscudoCit :tamano="40" alternativo="" />
+        Complejo Educativo CIT
+      </p>
     </div>
 
     <button type="button" class="bienvenida__saltar" @click.stop="continuar">
@@ -163,6 +167,10 @@ onUnmounted(() => {
 }
 
 .bienvenida__lema {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  margin-top: var(--e-3);
   font-family: var(--fuente-titulo);
   font-size: var(--txt-md);
   color: var(--texto-suave);

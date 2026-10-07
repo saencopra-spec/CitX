@@ -47,7 +47,7 @@ function publico(o, extra = {}) {
 registrar('GET', '/objetos', async ({ req, res, query }) => {
   const usuario = await requerir(req)
   const objetos = await col(COLECCIONES.objetosPerdidos)
-  const gestiona = puede(usuario.rol, 'objetos.gestionar')
+  const gestiona = puede(usuario, 'objetos.gestionar')
   const filtro = gestiona && query.todos === '1' ? {} : { estado: 'disponible' }
   const lista = await objetos
     .find(filtro)

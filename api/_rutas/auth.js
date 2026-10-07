@@ -18,7 +18,9 @@ import {
   requerir,
   ipDe,
 } from '../_lib/sesion.js'
-import { ROLES_REGISTRO, SECCIONES } from '../../compartido/permisos.js'
+import { SECCIONES } from '../../compartido/permisos.js'
+import { canjear } from '../_lib/invitaciones.js'
+import { anotar } from '../_lib/bitacora.js'
 
 const correo = z
   .string({ error: 'Escribí tu correo.' })
@@ -43,18 +45,21 @@ const nombre = z
   .min(2, 'Escribí tu nombre completo.')
   .max(80, 'El nombre es demasiado largo.')
 
+/**
+ * Registro publico: cualquiera puede crear una cuenta de estudiante. Para ser
+ * personal (profesor, administrativo, soda o administrador) hace falta un
+ * codigo de invitacion que genera la administracion.
+ */
 const esquemaRegistro = z
   .object({
     nombre,
     correo,
     contrasena: contrasenaNueva,
-    rol: z.enum(ROLES_REGISTRO, {
-      error: 'Elegí si sos estudiante, profesor o personal administrativo.',
-    }),
     seccion: z.string().optional().nullable(),
+    codigo: z.string().trim().max(40).optional().nullable(),
   })
   .superRefine((d, ctx) => {
-    if (d.rol === 'estudiante' && !SECCIONES.includes(d.seccion ?? '')) {
+    if (!d.codigo && !SECCIONES.includes(d.seccion ?? '')) {
       ctx.addIssue({
         code: 'custom',
         path: ['seccion'],
@@ -130,18 +135,87 @@ registrar('POST', '/auth/registro', async ({ req, res }) => {
     nombre: datos.nombre,
     correo: datos.correo,
     hash: await bcrypt.hash(datos.contrasena, 10),
-    rol: datos.rol,
-    seccion: datos.rol === 'estudiante' ? datos.seccion : null,
+    rol: 'estudiante',
+    seccion: datos.seccion ?? null,
     favoritos: [],
     configuracion: null,
     activo: true,
+    versionSesion: 0,
     creadoEn: new Date(),
   }
-  const { insertedId } = await usuarios.insertOne(usuario)
+
+  let invitacion = null
+  if (datos.codigo) {
+    invitacion = await canjear(datos.codigo, ipDe(req), usuario)
+    usuario.rol = invitacion.rol
+    usuario.seccion = null
+    if (Array.isArray(invitacion.permisos))
+      usuario.permisos = invitacion.permisos
+    usuario.invitadoPor = invitacion.creadoPorNombre
+  }
+
+  let insertedId
+  try {
+    ;({ insertedId } = await usuarios.insertOne(usuario))
+  } catch (e) {
+    // Si no se pudo crear la cuenta, se devuelve el uso del codigo.
+    if (invitacion) {
+      const invitaciones = await col(COLECCIONES.invitaciones)
+      await invitaciones.updateOne(
+        { _id: invitacion._id },
+        { $inc: { usos: -1 }, $pull: { usadoPor: { correo: usuario.correo } } }
+      )
+    }
+    throw e
+  }
   usuario._id = insertedId
+
+  if (invitacion) {
+    const invitaciones = await col(COLECCIONES.invitaciones)
+    await invitaciones.updateOne(
+      { _id: invitacion._id, 'usadoPor.correo': usuario.correo },
+      { $set: { 'usadoPor.$.id': String(insertedId) } }
+    )
+    await anotar(
+      req,
+      usuario,
+      'Cuenta creada con invitación',
+      `${usuario.nombre} (${usuario.correo}) como ${usuario.rol}`
+    )
+  }
 
   ponerCookie(req, res, usuario)
   creado(res, { usuario: usuarioPublico(usuario) })
+})
+
+/**
+ * Alguien que ya tiene cuenta (por ejemplo, un profesor que se registro como
+ * estudiante) puede usar un codigo para pasar a personal.
+ */
+registrar('POST', '/auth/canjear', async ({ req, res }) => {
+  const usuario = await requerir(req)
+  const { codigo } = z
+    .object({ codigo: z.string().trim().min(4).max(40) })
+    .parse(await leerCuerpo(req))
+  const invitacion = await canjear(codigo, ipDe(req), usuario)
+  const cambios = {
+    rol: invitacion.rol,
+    seccion: null,
+    invitadoPor: invitacion.creadoPorNombre,
+  }
+  const operacion = { $set: cambios }
+  if (Array.isArray(invitacion.permisos)) cambios.permisos = invitacion.permisos
+  else operacion.$unset = { permisos: '' }
+  const usuarios = await col(COLECCIONES.usuarios)
+  await usuarios.updateOne({ _id: usuario._id }, operacion)
+  await anotar(
+    req,
+    usuario,
+    'Código de invitación usado',
+    `${usuario.nombre} pasó a ${invitacion.rol}`
+  )
+  const actualizado = await usuarios.findOne({ _id: usuario._id })
+  ok(res, { usuario: usuarioPublico(actualizado) })
 })
 
 registrar('POST', '/auth/entrar', async ({ req, res }) => {
@@ -170,6 +244,10 @@ registrar('POST', '/auth/entrar', async ({ req, res }) => {
   }
 
   await limpiarIntentos(llave)
+  await usuarios.updateOne(
+    { _id: usuario._id },
+    { $set: { ultimoIngreso: new Date() } }
+  )
   ponerCookie(req, res, usuario)
   ok(res, { usuario: usuarioPublico(usuario) })
 })
@@ -212,10 +290,16 @@ registrar('PUT', '/auth/contrasena', async ({ req, res }) => {
       actual: 'La contraseña actual no es correcta.',
     })
   }
+  // Cambiar la contrasena cierra la sesion en los demas dispositivos.
   const usuarios = await col(COLECCIONES.usuarios)
+  const versionSesion = (usuario.versionSesion ?? 0) + 1
   await usuarios.updateOne(
     { _id: usuario._id },
-    { $set: { hash: await bcrypt.hash(datos.nueva, 10) } }
+    {
+      $set: { hash: await bcrypt.hash(datos.nueva, 10), versionSesion },
+      $unset: { debeCambiarContrasena: '' },
+    }
   )
+  ponerCookie(req, res, { ...usuario, versionSesion })
   ok(res, { listo: true })
 })

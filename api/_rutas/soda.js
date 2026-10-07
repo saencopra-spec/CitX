@@ -58,7 +58,7 @@ registrar('GET', '/soda/productos', async ({ req, res, query }) => {
   let filtro = { oculto: { $ne: true } }
   if (query.todos === '1') {
     const usuario = await usuarioDeSesion(req)
-    if (usuario && puede(usuario.rol, 'productos.gestionar')) filtro = {}
+    if (usuario && puede(usuario, 'productos.gestionar')) filtro = {}
   }
   const lista = await productos
     .find(filtro)

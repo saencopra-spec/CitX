@@ -119,6 +119,7 @@ registrar('POST', '/eventos', async ({ req, res }) => {
     titulo: `Nuevo evento: ${evento.titulo}`,
     cuerpo: `Es ${fechaRelativa(evento.inicio)} a las ${horaLegible(evento.hora)}.`,
     enlace: '/guia/eventos',
+    lugarClave: evento.lugarClave || null,
     tipo: 'evento',
   })
 
@@ -131,7 +132,7 @@ async function eventoEditable(req, id) {
   const evento = await eventos.findOne({ _id: idValido(id) })
   if (!evento) throw noExiste('Ese evento ya no existe.')
   const esAutor = evento.autorId === String(usuario._id)
-  if (!esAutor && !puede(usuario.rol, 'eventos.gestionarTodos')) {
+  if (!esAutor && !puede(usuario, 'eventos.gestionarTodos')) {
     throw sinPermiso('Solo podés cambiar los eventos que publicaste vos.')
   }
   return { usuario, evento, eventos }

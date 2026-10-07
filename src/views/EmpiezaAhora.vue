@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router'
 import gsap from 'gsap'
 import { Mail } from 'lucide-vue-next'
 import LogoCitx from '@/components/LogoCitx.vue'
+import EscudoCit from '@/components/EscudoCit.vue'
 import { useAvisos } from '@/stores/avisos'
 import { useConfiguracion } from '@/stores/configuracion'
 
@@ -35,9 +36,16 @@ onMounted(() => {
 
 <template>
   <main ref="raiz" class="empieza">
+    <div class="empieza__foto" aria-hidden="true">
+      <img src="/fotos/campus-aereo.webp" alt="" width="358" height="292" />
+    </div>
+
     <header data-entra class="empieza__marca">
-      <LogoCitx :tamano="92" con-nombre alternativo="CitX" />
+      <EscudoCit :tamano="92" />
+      <span class="empieza__linea" aria-hidden="true" />
+      <LogoCitx :tamano="84" con-nombre alternativo="CitX" />
     </header>
+    <p data-entra class="empieza__colegio">La app del Complejo Educativo CIT</p>
 
     <div class="empieza__cuerpo">
       <h1 data-entra class="empieza__titulo titulo-manuscrito">
@@ -132,8 +140,64 @@ onMounted(() => {
   background: var(--fondo-elevado);
 }
 
+.empieza {
+  position: relative;
+  overflow: hidden;
+}
+
+.empieza__foto {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 230px;
+  z-index: 0;
+}
+
+.empieza__foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.empieza__foto::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(21, 35, 74, 0.25) 0%,
+    var(--fondo-elevado) 96%
+  );
+}
+
+.empieza__marca,
+.empieza__colegio,
+.empieza__cuerpo,
+.empieza__nota {
+  position: relative;
+  z-index: 1;
+}
+
 .empieza__marca {
-  padding-block: var(--e-6) var(--e-4);
+  display: flex;
+  align-items: center;
+  gap: var(--e-5);
+  margin-top: 120px;
+  padding: var(--e-4) var(--e-6);
+  border-radius: var(--radio-xl);
+  background: var(--fondo-elevado);
+  box-shadow: var(--sombra-3);
+}
+
+.empieza__linea {
+  width: 1px;
+  height: 72px;
+  background: var(--borde-fuerte);
+}
+
+.empieza__colegio {
+  margin-top: var(--e-3);
+  font-family: var(--fuente-titulo);
+  color: var(--texto-suave);
 }
 
 .empieza__cuerpo {

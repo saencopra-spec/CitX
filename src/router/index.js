@@ -5,7 +5,7 @@ import { useAuth } from '@/stores/auth'
  * Rutas de CitX.
  *
  * `meta.publica`  -> se puede ver sin iniciar sesion.
- * `meta.roles`    -> lista de roles que pueden entrar. Si no esta, basta con
+ * `meta.permiso`  -> permiso que hace falta (ver compartido/permisos.js). Si no esta, basta con
  *                    tener sesion iniciada.
  * `meta.titulo`   -> se usa para el <title> y para anunciar el cambio de
  *                    pagina a los lectores de pantalla.
@@ -126,68 +126,93 @@ const rutas = [
     path: '/notificaciones',
     name: 'notificaciones',
     component: () => import('@/views/Notificaciones.vue'),
-    meta: { titulo: 'Notificaciones' },
+    meta: { titulo: 'Avisos' },
   },
 
   // --- Panel de administracion ---
+  // Cada seccion pide un permiso; el personal ve solo las que le dieron.
   {
     path: '/admin',
     component: () => import('@/views/admin/PanelLayout.vue'),
-    meta: { roles: ['admin', 'soda'] },
+    meta: { permiso: 'panel.entrar' },
     children: [
       {
         path: '',
         name: 'admin-resumen',
         component: () => import('@/views/admin/Resumen.vue'),
-        meta: { roles: ['admin', 'soda'], titulo: 'Resumen' },
+        meta: { permiso: 'panel.entrar', titulo: 'Resumen' },
       },
       {
         path: 'pedidos',
         name: 'admin-pedidos',
         component: () => import('@/views/admin/PedidosTablero.vue'),
-        meta: { roles: ['admin', 'soda'], titulo: 'Pedidos' },
+        meta: { permiso: 'pedidos.gestionar', titulo: 'Pedidos' },
+      },
+      {
+        path: 'reportes',
+        name: 'admin-reportes',
+        component: () => import('@/views/admin/Reportes.vue'),
+        meta: { permiso: 'reportes.ver', titulo: 'Reportes de la soda' },
       },
       {
         path: 'menu',
         name: 'admin-menu',
         component: () => import('@/views/admin/MenuSoda.vue'),
-        meta: { roles: ['admin', 'soda'], titulo: 'Menú de la soda' },
+        meta: { permiso: 'productos.gestionar', titulo: 'Menú de la soda' },
+      },
+      {
+        path: 'anuncios',
+        name: 'admin-anuncios',
+        component: () => import('@/views/admin/AnunciosAdmin.vue'),
+        meta: { permiso: 'anuncios.publicar', titulo: 'Anuncios' },
       },
       {
         path: 'eventos',
         name: 'admin-eventos',
         component: () => import('@/views/admin/EventosAdmin.vue'),
-        meta: { roles: ['admin'], titulo: 'Eventos' },
+        meta: { permiso: 'eventos.gestionarTodos', titulo: 'Eventos' },
       },
       {
         path: 'lugares',
         name: 'admin-lugares',
         component: () => import('@/views/admin/LugaresAdmin.vue'),
-        meta: { roles: ['admin'], titulo: 'Lugares del mapa' },
+        meta: { permiso: 'lugares.editar', titulo: 'Lugares del mapa' },
       },
       {
         path: 'objetos-perdidos',
         name: 'admin-objetos',
         component: () => import('@/views/admin/ObjetosAdmin.vue'),
-        meta: { roles: ['admin'], titulo: 'Objetos perdidos' },
+        meta: { permiso: 'objetos.gestionar', titulo: 'Objetos perdidos' },
       },
       {
         path: 'horarios',
         name: 'admin-horarios',
         component: () => import('@/views/admin/HorariosAdmin.vue'),
-        meta: { roles: ['admin'], titulo: 'Horarios' },
+        meta: { permiso: 'horarios.editar', titulo: 'Horarios' },
       },
       {
         path: 'enfermeria',
         name: 'admin-enfermeria',
         component: () => import('@/views/admin/EnfermeriaAdmin.vue'),
-        meta: { roles: ['admin'], titulo: 'Enfermería' },
+        meta: { permiso: 'enfermeria.editar', titulo: 'Enfermería' },
       },
       {
         path: 'usuarios',
         name: 'admin-usuarios',
         component: () => import('@/views/admin/UsuariosAdmin.vue'),
-        meta: { roles: ['admin'], titulo: 'Usuarios' },
+        meta: { permiso: 'usuarios.gestionar', titulo: 'Usuarios' },
+      },
+      {
+        path: 'invitaciones',
+        name: 'admin-invitaciones',
+        component: () => import('@/views/admin/Invitaciones.vue'),
+        meta: { permiso: 'usuarios.gestionar', titulo: 'Invitaciones' },
+      },
+      {
+        path: 'bitacora',
+        name: 'admin-bitacora',
+        component: () => import('@/views/admin/Bitacora.vue'),
+        meta: { permiso: 'bitacora.ver', titulo: 'Bitácora' },
       },
     ],
   },
@@ -226,12 +251,16 @@ router.beforeEach(async (hacia) => {
     return { name: 'empieza', query: { seguir: hacia.fullPath } }
   }
 
-  if (hacia.meta.roles && haySesion) {
+  if (haySesion) {
     const permitido = hacia.matched.every(
-      (r) => !r.meta.roles || r.meta.roles.includes(auth.usuario.rol)
+      (r) => !r.meta.permiso || auth.puede(r.meta.permiso)
     )
     if (!permitido) {
-      return { name: auth.puedeEntrarAlPanel ? 'admin-resumen' : 'menu' }
+      const alResumen =
+        hacia.path.startsWith('/admin') &&
+        hacia.name !== 'admin-resumen' &&
+        auth.puede('panel.entrar')
+      return { name: alResumen ? 'admin-resumen' : 'menu' }
     }
   }
 
@@ -242,7 +271,9 @@ router.beforeEach(async (hacia) => {
     !hacia.path.startsWith('/admin') &&
     !hacia.meta.publica
   ) {
-    return { name: 'admin-pedidos' }
+    return {
+      name: auth.puede('pedidos.gestionar') ? 'admin-pedidos' : 'admin-resumen',
+    }
   }
 
   return true

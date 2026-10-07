@@ -13,6 +13,7 @@ import {
   KeyRound,
 } from 'lucide-vue-next'
 import EncabezadoPagina from '@/components/EncabezadoPagina.vue'
+import EscudoCit from '@/components/EscudoCit.vue'
 import Dialogo from '@/components/Dialogo.vue'
 import Campo from '@/components/Campo.vue'
 import CampoContrasena from '@/components/CampoContrasena.vue'
@@ -46,7 +47,7 @@ function cambiar(clave, valor) {
 const temas = [
   { valor: 'claro', texto: 'Claro', icono: Sun },
   { valor: 'oscuro', texto: 'Oscuro', icono: Moon },
-  { valor: 'sistema', texto: 'Como el teléfono', icono: MonitorSmartphone },
+  { valor: 'sistema', texto: 'Automático', icono: MonitorSmartphone },
 ]
 
 const tamanos = [
@@ -72,7 +73,7 @@ const daltonismos = [
 ]
 
 const movimientos = [
-  { valor: 'sistema', texto: 'Como el teléfono' },
+  { valor: 'sistema', texto: 'Automático' },
   { valor: 'si', texto: 'Reducir' },
   { valor: 'no', texto: 'Normal' },
 ]
@@ -101,7 +102,7 @@ const interruptores = [
     clave: 'lecturaVoz',
     titulo: 'Leer en voz alta',
     explica:
-      'Muestra un botón para que el teléfono lea en voz alta lo que hay en la pantalla.',
+      'Muestra un botón para que tu celular o computadora lea en voz alta lo que hay en la pantalla.',
     disponible: vozDisponible,
   },
 ]
@@ -167,6 +168,25 @@ async function guardarClave() {
   }
 }
 
+// Codigo de invitacion para quien ya tiene cuenta
+const codigo = ref('')
+const canjeando = ref(false)
+async function canjearCodigo() {
+  canjeando.value = true
+  try {
+    const usuario = await auth.canjear(codigo.value.trim().toUpperCase())
+    codigo.value = ''
+    avisos.exito(
+      `Listo. Tu cuenta ahora es de ${auth.nombreRol.toLowerCase()}.`
+    )
+    if (usuario.rol === 'soda') router.push('/admin/pedidos')
+  } catch (e) {
+    avisos.error(e.campos?.codigo ?? e.message)
+  } finally {
+    canjeando.value = false
+  }
+}
+
 async function salir() {
   const si = await confirmar.preguntar({
     titulo: '¿Cerrar sesión?',
@@ -204,7 +224,7 @@ onMounted(() => entradaEscalonada(raiz.value))
   <div ref="raiz" class="pagina configuracion">
     <EncabezadoPagina
       titulo="Configuración"
-      bajada="Ajustá CitX a tu gusto. Se guarda en este teléfono y en tu cuenta."
+      bajada="Ajustá CitX a tu gusto. Se guarda en este dispositivo y en tu cuenta."
       :volver="auth.haySesion ? { name: 'menu' } : { name: 'empieza' }"
     />
 
@@ -322,7 +342,9 @@ onMounted(() => entradaEscalonada(raiz.value))
           <div class="opcion__texto">
             <p id="o-mov" class="opcion__titulo">Movimiento</p>
             <p class="opcion__explica">
-              Quita las animaciones si te marean o si el teléfono va lento.
+              Quita las animaciones si te marean o si el dispositivo va lento.
+              «Automático» sigue lo que tengas configurado en tu celular o
+              computadora.
             </p>
           </div>
           <div class="segmentos" role="group" aria-labelledby="o-mov">
@@ -343,14 +365,14 @@ onMounted(() => entradaEscalonada(raiz.value))
           class="opcion opcion--fila"
         >
           <div class="opcion__texto">
-            <p class="opcion__titulo">Avisos del teléfono</p>
+            <p class="opcion__titulo">Avisos del navegador</p>
             <p class="opcion__explica">
               {{
                 permiso === 'granted'
-                  ? 'Activados. Te avisamos cuando tu pedido esté listo aunque estés en otra app.'
+                  ? 'Activados. Te avisamos cuando tu pedido esté listo aunque estés en otra pestaña o app.'
                   : permiso === 'denied'
                     ? 'Bloqueados en el navegador. Se activan desde los ajustes del navegador.'
-                    : 'Te avisamos cuando tu pedido esté listo aunque estés en otra app.'
+                    : 'Te avisamos cuando tu pedido esté listo aunque estés en otra pestaña o app.'
               }}
             </p>
           </div>
@@ -415,6 +437,48 @@ onMounted(() => entradaEscalonada(raiz.value))
             <KeyRound :size="18" aria-hidden="true" /> Cambiar contraseña
           </button>
         </div>
+        <p v-if="auth.usuario.debeCambiarContrasena" class="nota nota--aviso">
+          <KeyRound :size="18" aria-hidden="true" />
+          <span
+            >Estás usando una contraseña temporal. Cambiala por una tuya con el
+            botón «Cambiar contraseña».</span
+          >
+        </p>
+
+        <form
+          v-if="auth.usuario.rol === 'estudiante'"
+          class="canjear"
+          novalidate
+          @submit.prevent="canjearCodigo"
+        >
+          <p class="opcion__titulo">¿Sos personal del colegio?</p>
+          <p class="opcion__explica">
+            Si la administración te dio un código de invitación, escribilo aquí
+            para pasar tu cuenta a personal.
+          </p>
+          <div class="canjear__fila">
+            <label class="solo-lectores" for="codigo-invitacion"
+              >Código de invitación</label
+            >
+            <input
+              id="codigo-invitacion"
+              v-model="codigo"
+              class="entrada canjear__entrada"
+              autocomplete="off"
+              autocapitalize="characters"
+              placeholder="CIT-XXXXX-XXXXX"
+              maxlength="20"
+            />
+            <button
+              type="submit"
+              class="boton boton--accion boton--pequeno"
+              :disabled="canjeando || codigo.length < 8"
+            >
+              {{ canjeando ? 'Revisando...' : 'Usar código' }}
+            </button>
+          </div>
+        </form>
+
         <button
           type="button"
           class="boton boton--peligro boton--ancho salir"
@@ -424,6 +488,11 @@ onMounted(() => entradaEscalonada(raiz.value))
         </button>
       </section>
     </div>
+
+    <footer class="pie-colegio">
+      <EscudoCit :tamano="44" alternativo="" />
+      <p>CitX · Complejo Educativo CIT<br />La Asunción de Belén, Heredia</p>
+    </footer>
 
     <Dialogo
       :abierto="editandoPerfil"
@@ -671,6 +740,39 @@ onMounted(() => entradaEscalonada(raiz.value))
   margin: 0;
   font-weight: var(--peso-semi);
   overflow-wrap: anywhere;
+}
+
+.canjear {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+  padding: var(--e-4);
+  border-radius: var(--radio-md);
+  background: var(--superficie-2);
+  border: 1px dashed var(--borde-fuerte);
+}
+
+.canjear__fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-2);
+}
+
+.canjear__entrada {
+  flex: 1 1 12rem;
+  font-family: var(--fuente-mono);
+  letter-spacing: 0.05em;
+}
+
+.pie-colegio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e-3);
+  margin-top: var(--e-8);
+  color: var(--texto-tenue);
+  font-size: var(--txt-sm);
+  line-height: 1.4;
 }
 
 .salir {

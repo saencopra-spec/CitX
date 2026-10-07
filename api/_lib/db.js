@@ -79,6 +79,9 @@ export const COLECCIONES = {
   calificaciones: 'calificaciones',
   intentosEntrada: 'intentos_entrada',
   imagenes: 'imagenes',
+  invitaciones: 'invitaciones',
+  anuncios: 'anuncios',
+  bitacora: 'bitacora',
 }
 
 /**
@@ -124,6 +127,11 @@ export async function asegurarIndices() {
     base
       .collection(COLECCIONES.calificaciones)
       .createIndex({ productoId: 1, usuarioId: 1 }, { unique: true }),
+    base
+      .collection(COLECCIONES.invitaciones)
+      .createIndex({ hash: 1 }, { unique: true }),
+    base.collection(COLECCIONES.anuncios).createIndex({ creadoEn: -1 }),
+    base.collection(COLECCIONES.bitacora).createIndex({ creadoEn: -1 }),
   ])
   cache.indicesListos = true
 }

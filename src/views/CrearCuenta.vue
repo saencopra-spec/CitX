@@ -3,10 +3,10 @@ import { computed, ref, nextTick } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import {
   GraduationCap,
-  Presentation,
-  Briefcase,
+  BadgeCheck,
   ArrowRight,
   UserPlus,
+  KeyRound,
 } from 'lucide-vue-next'
 import PantallaEntrada from '@/components/PantallaEntrada.vue'
 import Campo from '@/components/Campo.vue'
@@ -14,13 +14,18 @@ import CampoContrasena from '@/components/CampoContrasena.vue'
 import { useAuth } from '@/stores/auth'
 import { useAvisos } from '@/stores/avisos'
 import { usarErrores, opcionesSeccion } from '@/lib/errores'
-import { SECCIONES, NOMBRE_NIVEL } from '@compartido/permisos.js'
+import { SECCIONES, NOMBRE_NIVEL, NOMBRE_ROL } from '@compartido/permisos.js'
 
 const auth = useAuth()
 const avisos = useAvisos()
 const router = useRouter()
 const { errores, limpiar, mostrar } = usarErrores()
 
+/**
+ * Las cuentas de estudiante se crean libremente. El personal (profesores,
+ * administrativos y soda) necesita un codigo de invitacion que entrega la
+ * administracion: asi nadie puede hacerse pasar por profesor.
+ */
 const tipos = [
   {
     valor: 'estudiante',
@@ -29,32 +34,28 @@ const tipos = [
     icono: GraduationCap,
   },
   {
-    valor: 'profesor',
-    texto: 'Profesor',
-    detalle: 'Podés publicar eventos y recordatorios.',
-    icono: Presentation,
-  },
-  {
-    valor: 'administrativo',
-    texto: 'Personal administrativo',
-    detalle: 'Dirección, secretaría y demás personal.',
-    icono: Briefcase,
+    valor: 'personal',
+    texto: 'Personal del colegio',
+    detalle:
+      'Profesores, administrativos y soda. Necesitás un código de invitación.',
+    icono: BadgeCheck,
   },
 ]
 
 const paso = ref(1)
 const formulario = ref({
-  rol: '',
+  tipo: '',
   nombre: '',
   correo: '',
   contrasena: '',
   seccion: '',
+  codigo: '',
 })
 const enviando = ref(false)
 const tituloPaso = ref(null)
 
 const opciones = opcionesSeccion(SECCIONES, NOMBRE_NIVEL)
-const esEstudiante = computed(() => formulario.value.rol === 'estudiante')
+const esEstudiante = computed(() => formulario.value.tipo === 'estudiante')
 
 const fuerza = computed(() => {
   const c = formulario.value.contrasena
@@ -71,14 +72,21 @@ const fuerza = computed(() => {
 })
 
 async function continuar() {
-  if (!formulario.value.rol) {
-    errores.rol = 'Elegí una opción para seguir.'
+  if (!formulario.value.tipo) {
+    errores.tipo = 'Elegí una opción para seguir.'
     return
   }
   limpiar()
   paso.value = 2
   await nextTick()
   tituloPaso.value?.focus()
+}
+
+function alEscribirCodigo(e) {
+  formulario.value.codigo = e.target.value
+    .toUpperCase()
+    .replace(/[^A-Z0-9-]/g, '')
+    .slice(0, 20)
 }
 
 function validar() {
@@ -94,6 +102,9 @@ function validar() {
     errores.contrasena = 'Usá al menos una letra y un número.'
   if (esEstudiante.value && !f.seccion)
     errores.seccion = 'Elegí tu sección de la lista.'
+  if (!esEstudiante.value && f.codigo.replace(/[^A-Z0-9]/g, '').length < 8) {
+    errores.codigo = 'Escribí el código completo que te dio la administración.'
+  }
   return Object.keys(errores).length === 0
 }
 
@@ -102,15 +113,19 @@ async function enviar() {
   enviando.value = true
   try {
     const f = formulario.value
-    await auth.registrar({
-      rol: f.rol,
+    const usuario = await auth.registrar({
       nombre: f.nombre.trim(),
       correo: f.correo.trim(),
       contrasena: f.contrasena,
       seccion: esEstudiante.value ? f.seccion : null,
+      codigo: esEstudiante.value ? null : f.codigo,
     })
-    avisos.exito(`Cuenta creada. Bienvenido a CitX, ${auth.nombreCorto}.`)
-    router.replace({ name: 'menu' })
+    avisos.exito(
+      esEstudiante.value
+        ? `Cuenta creada. Bienvenido a CitX, ${auth.nombreCorto}.`
+        : `Cuenta creada como ${NOMBRE_ROL[usuario.rol].toLowerCase()}.`
+    )
+    router.replace(usuario.rol === 'soda' ? '/admin/pedidos' : { name: 'menu' })
   } catch (e) {
     mostrar(e, { aviso: !e.campos })
   } finally {
@@ -146,21 +161,21 @@ async function enviar() {
       >
         <fieldset
           class="tipos"
-          :aria-describedby="errores.rol ? 'rol-error' : undefined"
+          :aria-describedby="errores.tipo ? 'tipo-error' : undefined"
         >
           <legend class="tipos__pregunta">
-            ¿Sos estudiante, profesor o personal administrativo?
+            ¿Sos estudiante o personal del colegio?
           </legend>
           <label
             v-for="t in tipos"
             :key="t.valor"
             class="tipo"
-            :class="{ 'es-elegido': formulario.rol === t.valor }"
+            :class="{ 'es-elegido': formulario.tipo === t.valor }"
           >
             <input
-              v-model="formulario.rol"
+              v-model="formulario.tipo"
               type="radio"
-              name="rol"
+              name="tipo"
               :value="t.valor"
               class="solo-lectores"
             />
@@ -174,8 +189,13 @@ async function enviar() {
             <span class="tipo__marca" aria-hidden="true" />
           </label>
         </fieldset>
-        <p v-if="errores.rol" id="rol-error" class="campo__error" role="alert">
-          {{ errores.rol }}
+        <p
+          v-if="errores.tipo"
+          id="tipo-error"
+          class="campo__error"
+          role="alert"
+        >
+          {{ errores.tipo }}
         </p>
 
         <button
@@ -201,7 +221,7 @@ async function enviar() {
         <p ref="tituloPaso" tabindex="-1" class="elegido">
           Te estás registrando como
           <strong>{{
-            tipos.find((t) => t.valor === formulario.rol)?.texto.toLowerCase()
+            esEstudiante ? 'estudiante' : 'personal del colegio'
           }}</strong
           >.
           <button
@@ -212,6 +232,34 @@ async function enviar() {
             Cambiar
           </button>
         </p>
+
+        <div v-if="!esEstudiante" class="campo">
+          <label class="campo__etiqueta" for="codigo"
+            >Código de invitación</label
+          >
+          <div class="codigo">
+            <KeyRound :size="20" aria-hidden="true" />
+            <input
+              id="codigo"
+              class="campo__control"
+              :value="formulario.codigo"
+              autocomplete="off"
+              autocapitalize="characters"
+              spellcheck="false"
+              placeholder="CIT-XXXXX-XXXXX"
+              :aria-invalid="errores.codigo ? 'true' : undefined"
+              aria-describedby="codigo-ayuda"
+              @input="alEscribirCodigo"
+            />
+          </div>
+          <p id="codigo-ayuda" class="campo__ayuda">
+            Te lo da la administración del colegio. Sirve una sola vez y vence
+            en pocos días.
+          </p>
+          <p v-if="errores.codigo" class="campo__error" role="alert">
+            {{ errores.codigo }}
+          </p>
+        </div>
 
         <Campo
           id="nombre"
@@ -389,6 +437,24 @@ async function enviar() {
 
 .elegido strong {
   color: var(--texto);
+}
+
+.codigo {
+  position: relative;
+}
+
+.codigo svg {
+  position: absolute;
+  left: var(--e-4);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--texto-tenue);
+}
+
+.codigo .campo__control {
+  padding-left: calc(var(--e-4) + 28px);
+  font-family: var(--fuente-mono);
+  letter-spacing: 0.06em;
 }
 
 .pie {

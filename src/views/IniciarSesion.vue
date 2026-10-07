@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { LogIn, KeyRound } from 'lucide-vue-next'
+import { LogIn } from 'lucide-vue-next'
 import PantallaEntrada from '@/components/PantallaEntrada.vue'
 import Campo from '@/components/Campo.vue'
 import CampoContrasena from '@/components/CampoContrasena.vue'
@@ -19,34 +19,6 @@ const correo = ref('')
 const contrasena = ref('')
 const enviando = ref(false)
 const errorGeneral = ref('')
-
-/** Cuentas para que el jurado de la Expo pruebe cada rol. */
-const demos = [
-  {
-    rol: 'Estudiante (10-1)',
-    correo: 'estudiante@citx.demo',
-    contrasena: 'Estudiante2026',
-  },
-  {
-    rol: 'Profesora',
-    correo: 'profesor@citx.demo',
-    contrasena: 'Profesor2026',
-  },
-  {
-    rol: 'Personal administrativo',
-    correo: 'administrativo@citx.demo',
-    contrasena: 'Personal2026',
-  },
-  { rol: 'Administración', correo: 'admin@citx.demo', contrasena: 'Admin2026' },
-  { rol: 'Soda', correo: 'soda@citx.demo', contrasena: 'Soda2026' },
-]
-
-function usarDemo(d) {
-  correo.value = d.correo
-  contrasena.value = d.contrasena
-  limpiar()
-  errorGeneral.value = ''
-}
 
 function validar() {
   limpiar()
@@ -117,24 +89,6 @@ async function enviar() {
         <RouterLink :to="{ name: 'registro' }">Crear cuenta</RouterLink>
       </p>
     </form>
-
-    <details data-entra class="demos">
-      <summary>
-        <KeyRound :size="18" aria-hidden="true" />
-        Cuentas para probar CitX
-      </summary>
-      <p class="demos__nota">
-        Tocá una para llenar el formulario. Son cuentas de demostración.
-      </p>
-      <ul>
-        <li v-for="d in demos" :key="d.correo">
-          <button type="button" class="demos__boton" @click="usarDemo(d)">
-            <strong>{{ d.rol }}</strong>
-            <span>{{ d.correo }}</span>
-          </button>
-        </li>
-      </ul>
-    </details>
   </PantallaEntrada>
 </template>
 
@@ -161,56 +115,5 @@ async function enviar() {
 
 .pie a {
   font-weight: var(--peso-semi);
-}
-
-.demos {
-  border: 1px solid var(--borde);
-  border-radius: var(--radio-md);
-  background: var(--superficie-2);
-}
-
-.demos summary {
-  display: flex;
-  align-items: center;
-  gap: var(--e-2);
-  min-height: var(--objetivo-tactil);
-  padding: 0 var(--e-4);
-  cursor: pointer;
-  font-weight: var(--peso-semi);
-  font-size: var(--txt-sm);
-  color: var(--texto-suave);
-}
-
-.demos__nota {
-  padding: 0 var(--e-4) var(--e-2);
-  font-size: var(--txt-sm);
-  color: var(--texto-tenue);
-}
-
-.demos ul {
-  display: flex;
-  flex-direction: column;
-  padding: 0 var(--e-2) var(--e-2);
-}
-
-.demos__boton {
-  width: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0 var(--e-3);
-  min-height: var(--objetivo-tactil);
-  padding: var(--e-2) var(--e-3);
-  border-radius: var(--radio-sm);
-  text-align: left;
-  font-size: var(--txt-sm);
-}
-
-.demos__boton span {
-  color: var(--texto-tenue);
-}
-
-.demos__boton:hover {
-  background: var(--superficie-hover);
 }
 </style>

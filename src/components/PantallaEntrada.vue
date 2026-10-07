@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft } from 'lucide-vue-next'
 import LogoCitx from './LogoCitx.vue'
+import EscudoCit from './EscudoCit.vue'
 import { entradaEscalonada } from '@/lib/movimiento'
 
 /**
@@ -27,7 +28,10 @@ onMounted(() => entradaEscalonada(raiz.value))
 <template>
   <div ref="raiz" class="entrada-pantalla">
     <aside class="marca-lateral" aria-hidden="true">
-      <LogoCitx :tamano="120" con-nombre alternativo="" />
+      <div class="marca-lateral__marcas">
+        <EscudoCit :tamano="150" alternativo="" />
+        <LogoCitx :tamano="96" con-nombre alternativo="" />
+      </div>
       <p class="marca-lateral__lema">
         El mapa del campus, la guía del colegio y la soda, en el mismo lugar.
       </p>
@@ -50,7 +54,9 @@ onMounted(() => entradaEscalonada(raiz.value))
 
       <div class="formulario-zona__contenido">
         <div data-entra class="logo-movil">
-          <LogoCitx :tamano="72" con-nombre alternativo="CitX" />
+          <EscudoCit :tamano="74" />
+          <span class="logo-movil__linea" aria-hidden="true" />
+          <LogoCitx :tamano="66" con-nombre alternativo="CitX" />
         </div>
         <h1 data-entra class="titulo titulo-manuscrito">{{ titulo }}</h1>
         <slot />
@@ -93,8 +99,16 @@ onMounted(() => entradaEscalonada(raiz.value))
 
 .logo-movil {
   display: flex;
+  align-items: center;
   justify-content: center;
+  gap: var(--e-4);
   padding-bottom: var(--e-2);
+}
+
+.logo-movil__linea {
+  width: 1px;
+  height: 56px;
+  background: var(--borde-fuerte);
 }
 
 .titulo {
@@ -116,8 +130,21 @@ onMounted(() => entradaEscalonada(raiz.value))
     justify-content: center;
     gap: var(--e-6);
     padding: var(--e-12);
-    background: var(--marino-700);
+    background:
+      linear-gradient(
+        160deg,
+        rgba(21, 35, 74, 0.92) 0%,
+        rgba(21, 35, 74, 0.78) 55%,
+        rgba(3, 122, 118, 0.82) 100%
+      ),
+      url('/fotos/campus-aereo.webp') center / cover no-repeat;
     color: #ffffff;
+  }
+
+  .marca-lateral__marcas {
+    display: flex;
+    align-items: center;
+    gap: var(--e-8);
   }
 
   .marca-lateral :deep(.marca__nombre) {

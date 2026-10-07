@@ -257,7 +257,7 @@ registrar('GET', '/pedidos/:codigo', async ({ req, res, params }) => {
   const usuario = await requerir(req)
   const pedidos = await col(COLECCIONES.pedidos)
   const pedido = await pedidos.findOne({ codigo: params.codigo.toUpperCase() })
-  const personal = puede(usuario.rol, 'pedidos.gestionar')
+  const personal = puede(usuario, 'pedidos.gestionar')
   if (!pedido || (!personal && pedido.usuarioId !== String(usuario._id))) {
     throw noExiste('No encontramos un pedido con ese código.')
   }

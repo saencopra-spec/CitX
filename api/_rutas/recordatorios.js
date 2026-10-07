@@ -60,10 +60,7 @@ registrar('POST', '/recordatorios', async ({ req, res }) => {
   const usuario = await requerir(req)
   const datos = esquema.parse(await leerCuerpo(req))
   const secciones = datos.secciones.filter((s) => SECCIONES.includes(s))
-  if (
-    secciones.length &&
-    !puede(usuario.rol, 'recordatorios.publicarSecciones')
-  ) {
+  if (secciones.length && !puede(usuario, 'recordatorios.publicarSecciones')) {
     throw sinPermiso(
       'Solo el profesorado puede enviar recordatorios a una sección.'
     )
@@ -113,7 +110,7 @@ registrar('PUT', '/recordatorios/:id', async ({ req, res, params }) => {
     materia: datos.materia,
     fecha: datos.fecha,
   }
-  if (puede(usuario.rol, 'recordatorios.publicarSecciones')) {
+  if (puede(usuario, 'recordatorios.publicarSecciones')) {
     cambios.secciones = datos.secciones.filter((s) => SECCIONES.includes(s))
   }
   await recordatorios.updateOne({ _id: r._id }, { $set: cambios })

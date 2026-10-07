@@ -6,7 +6,7 @@ import SubirFoto from './SubirFoto.vue'
 import { api } from '@/lib/api'
 import { usarErrores } from '@/lib/errores'
 import { useAvisos } from '@/stores/avisos'
-import { ZONAS } from '@/datos/campus'
+import { useLugares } from '@/stores/lugares'
 import { SECCIONES, NIVELES, NOMBRE_NIVEL } from '@compartido/permisos.js'
 import { partesCR } from '@compartido/hora.js'
 
@@ -54,8 +54,15 @@ watch(
   }
 )
 
-const lugares = ZONAS.map((z) => ({ valor: z.clave, texto: z.etiqueta })).sort(
-  (a, b) => a.texto.localeCompare(b.texto, 'es')
+const lugaresStore = useLugares()
+lugaresStore.cargar()
+const lugares = computed(() =>
+  lugaresStore.lista
+    .map((l) => ({
+      valor: l.clave,
+      texto: l.numero ? `${l.numero}. ${l.nombre}` : l.nombre,
+    }))
+    .sort((a, b) => a.texto.localeCompare(b.texto, 'es', { numeric: true }))
 )
 
 const porNivel = computed(() =>

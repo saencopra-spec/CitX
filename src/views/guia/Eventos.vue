@@ -18,7 +18,7 @@ import { useAuth } from '@/stores/auth'
 import { useAvisos } from '@/stores/avisos'
 import { useConfirmar } from '@/stores/confirmar'
 import { entradaEscalonada } from '@/lib/movimiento'
-import { ZONAS } from '@/datos/campus'
+import { useLugares } from '@/stores/lugares'
 import {
   fechaRelativa,
   horaLegible,
@@ -37,7 +37,9 @@ const formularioAbierto = ref(false)
 const editando = ref(null)
 const lista = ref(null)
 
-const nombreLugar = Object.fromEntries(ZONAS.map((z) => [z.clave, z.etiqueta]))
+const lugaresStore = useLugares()
+lugaresStore.cargar()
+const nombreLugar = (clave) => lugaresStore.nombreDe(clave)
 
 /** Eventos agrupados por dia, como una agenda. */
 const dias = computed(() => {
@@ -196,7 +198,7 @@ onMounted(cargar)
                   <RouterLink
                     :to="{ name: 'mapa', query: { lugar: e.lugarClave } }"
                   >
-                    {{ nombreLugar[e.lugarClave] ?? 'Ver en el mapa'
+                    {{ nombreLugar(e.lugarClave) ?? 'Ver en el mapa'
                     }}<span class="solo-lectores"> (ver en el mapa)</span>
                   </RouterLink>
                 </li>

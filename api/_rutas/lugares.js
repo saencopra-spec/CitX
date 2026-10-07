@@ -1,22 +1,22 @@
 import { z } from 'zod'
 import { registrar } from '../_lib/enrutador.js'
 import { col, COLECCIONES } from '../_lib/db.js'
-import { ok, leerCuerpo, noExiste } from '../_lib/respuesta.js'
+import {
+  ok,
+  creado,
+  leerCuerpo,
+  noExiste,
+  conflicto,
+} from '../_lib/respuesta.js'
 import { requerir } from '../_lib/sesion.js'
-
-export const CATEGORIAS_LUGAR = [
-  'academico',
-  'servicios',
-  'alimentacion',
-  'deporte',
-  'naturaleza',
-  'administracion',
-  'acceso',
-]
+import { campoFoto, guardarFotoSiEsNueva } from '../_lib/imagenes.js'
+import { anotar } from '../_lib/bitacora.js'
+import { CATEGORIAS, LIENZO } from '../../compartido/campus.js'
+import { normalizar } from '../../compartido/texto.js'
 
 const esquemaLugar = z.object({
   nombre: z.string().trim().min(2, 'Escribí el nombre del lugar.').max(60),
-  categoria: z.enum(CATEGORIAS_LUGAR, { error: 'Elegí una categoría.' }),
+  categoria: z.enum(Object.keys(CATEGORIAS), { error: 'Elegí una categoría.' }),
   descripcion: z
     .string()
     .trim()
@@ -25,29 +25,88 @@ const esquemaLugar = z.object({
   horario: z.string().trim().max(120).optional().default(''),
   restringido: z.boolean(),
   notaAcceso: z.string().trim().max(200).optional().default(''),
+  numero: z.number().int().min(1).max(99).nullable().optional(),
+  x: z.number().min(0).max(LIENZO.ancho),
+  y: z.number().min(0).max(LIENZO.alto),
+  foto: campoFoto,
 })
+
+function publico(l) {
+  const { _id, ...resto } = l
+  void _id
+  return resto
+}
 
 /** La informacion de los lugares es publica: se usa tambien sin conexion. */
 registrar('GET', '/lugares', async ({ res }) => {
   const lugares = await col(COLECCIONES.lugares)
-  const lista = await lugares
-    .find({}, { projection: { _id: 0 } })
-    .sort({ nombre: 1 })
-    .toArray()
-  ok(res, { lugares: lista })
+  const lista = await lugares.find({}).toArray()
+  lista.sort(
+    (a, b) =>
+      (a.numero ?? 999) - (b.numero ?? 999) ||
+      a.nombre.localeCompare(b.nombre, 'es')
+  )
+  ok(res, { lugares: lista.map(publico) })
 })
 
 registrar('PUT', '/lugares/:clave', async ({ req, res, params }) => {
-  await requerir(req, 'lugares.editar')
+  const usuario = await requerir(req, 'lugares.editar')
   const datos = esquemaLugar.parse(await leerCuerpo(req))
   const lugares = await col(COLECCIONES.lugares)
   const r = await lugares.findOneAndUpdate(
     { clave: params.clave },
-    { $set: { ...datos, actualizadoEn: new Date() } },
-    { returnDocument: 'after', projection: { _id: 0 } }
+    {
+      $set: {
+        ...datos,
+        foto: await guardarFotoSiEsNueva(datos.foto),
+        ubicacionAproximada: false,
+        actualizadoEn: new Date(),
+      },
+    },
+    { returnDocument: 'after' }
   )
   if (!r) throw noExiste('Ese lugar no existe en el mapa.')
-  ok(res, { lugar: r })
+  await anotar(req, usuario, 'Lugar editado', r.nombre)
+  ok(res, { lugar: publico(r) })
+})
+
+registrar('POST', '/lugares', async ({ req, res }) => {
+  const usuario = await requerir(req, 'lugares.editar')
+  const datos = esquemaLugar.parse(await leerCuerpo(req))
+  const clave = normalizar(datos.nombre)
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 40)
+  const lugares = await col(COLECCIONES.lugares)
+  if (await lugares.findOne({ clave })) {
+    throw conflicto('Ya hay un lugar con ese nombre.', {
+      nombre: 'Ya hay un lugar con ese nombre.',
+    })
+  }
+  const lugar = {
+    ...datos,
+    clave,
+    foto: await guardarFotoSiEsNueva(datos.foto),
+    creadoEn: new Date(),
+  }
+  await lugares.insertOne(lugar)
+  await anotar(req, usuario, 'Lugar agregado al mapa', lugar.nombre)
+  creado(res, { lugar: publico(lugar) })
+})
+
+registrar('DELETE', '/lugares/:clave', async ({ req, res, params }) => {
+  const usuario = await requerir(req, 'lugares.editar')
+  const lugares = await col(COLECCIONES.lugares)
+  const r = await lugares.findOneAndDelete({ clave: params.clave })
+  if (!r) throw noExiste('Ese lugar ya no existe.')
+  // Se quita de los favoritos de todas las personas.
+  const usuarios = await col(COLECCIONES.usuarios)
+  await usuarios.updateMany(
+    { favoritos: params.clave },
+    { $pull: { favoritos: params.clave } }
+  )
+  await anotar(req, usuario, 'Lugar borrado del mapa', r.nombre)
+  ok(res, { listo: true })
 })
 
 /** Marca o desmarca un lugar como favorito del usuario. */

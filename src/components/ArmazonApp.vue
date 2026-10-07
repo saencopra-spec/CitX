@@ -1,5 +1,5 @@
 <script setup>
-import { computed, watch } from 'vue'
+import { watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import {
   House,
@@ -9,9 +9,12 @@ import {
   Bell,
   Settings,
   LayoutDashboard,
+  KeyRound,
 } from 'lucide-vue-next'
 import LogoCitx from './LogoCitx.vue'
+import EscudoCit from './EscudoCit.vue'
 import BotonLeer from './BotonLeer.vue'
+import CampanaAvisos from './CampanaAvisos.vue'
 import { useAuth } from '@/stores/auth'
 import { useCarrito } from '@/stores/carrito'
 import { useNotificaciones } from '@/stores/notificaciones'
@@ -34,12 +37,6 @@ function activa(seccion) {
   return route.path.startsWith(seccion.prefijo)
 }
 
-const textoCampana = computed(() =>
-  notificaciones.sinLeer
-    ? `Notificaciones, ${notificaciones.sinLeer} sin leer`
-    : 'Notificaciones'
-)
-
 // La campana se consulta cada 20 segundos mientras la pestana este visible.
 usarSondeo(() => notificaciones.cargar(), 20000)
 
@@ -53,45 +50,6 @@ watch(
 
 <template>
   <div class="armazon">
-    <!-- Barra superior en celular -->
-    <header class="superior">
-      <RouterLink
-        :to="{ name: 'menu' }"
-        class="superior__marca"
-        aria-label="CitX, ir al inicio"
-      >
-        <LogoCitx
-          :tamano="30"
-          con-nombre
-          direccion="horizontal"
-          alternativo=""
-        />
-      </RouterLink>
-      <div class="superior__acciones">
-        <RouterLink
-          :to="{ name: 'notificaciones' }"
-          class="boton-icono campana"
-          :aria-label="textoCampana"
-        >
-          <Bell :size="22" aria-hidden="true" />
-          <span
-            v-if="notificaciones.sinLeer"
-            class="contador"
-            aria-hidden="true"
-          >
-            {{ notificaciones.sinLeer > 9 ? '9+' : notificaciones.sinLeer }}
-          </span>
-        </RouterLink>
-        <RouterLink
-          :to="{ name: 'configuracion' }"
-          class="boton-icono"
-          aria-label="Configuración"
-        >
-          <Settings :size="22" aria-hidden="true" />
-        </RouterLink>
-      </div>
-    </header>
-
     <!-- Barra lateral en computadora -->
     <aside class="lateral" aria-label="Navegación principal">
       <RouterLink
@@ -99,12 +57,16 @@ watch(
         class="lateral__marca"
         aria-label="CitX, ir al inicio"
       >
-        <LogoCitx
-          :tamano="40"
-          con-nombre
-          direccion="horizontal"
-          alternativo=""
-        />
+        <EscudoCit :tamano="46" alternativo="" />
+        <span class="lateral__marca-textos">
+          <LogoCitx
+            :tamano="28"
+            con-nombre
+            direccion="horizontal"
+            alternativo=""
+          />
+          <span class="lateral__colegio">Complejo Educativo CIT</span>
+        </span>
       </RouterLink>
       <nav>
         <ul class="lateral__lista">
@@ -135,9 +97,12 @@ watch(
       </nav>
       <ul class="lateral__lista lateral__lista--abajo">
         <li v-if="auth.puedeEntrarAlPanel">
-          <RouterLink to="/admin" class="lateral__enlace">
+          <RouterLink
+            to="/admin"
+            class="lateral__enlace lateral__enlace--panel"
+          >
             <LayoutDashboard :size="20" aria-hidden="true" />
-            Panel
+            Panel de administración
           </RouterLink>
         </li>
         <li>
@@ -147,7 +112,7 @@ watch(
             :class="{ 'es-activa': route.name === 'notificaciones' }"
           >
             <Bell :size="20" aria-hidden="true" />
-            Notificaciones
+            Avisos
             <span
               v-if="notificaciones.sinLeer"
               class="lateral__cuenta lateral__cuenta--alerta"
@@ -170,18 +135,65 @@ watch(
       </ul>
       <p class="lateral__usuario">
         <strong>{{ auth.usuario?.nombre }}</strong>
-        <span
-          >{{ auth.nombreRol
+        <span>
+          {{ auth.nombreRol
           }}<template v-if="auth.usuario?.seccion">
             · {{ auth.usuario.seccion }}</template
-          ></span
-        >
+          >
+        </span>
       </p>
     </aside>
 
-    <main class="contenido">
-      <slot />
-    </main>
+    <div class="columna">
+      <!-- Barra superior: en celular lleva la marca; en computadora, la campanita y los ajustes -->
+      <header class="superior">
+        <RouterLink
+          :to="{ name: 'menu' }"
+          class="superior__marca"
+          aria-label="CitX, ir al inicio"
+        >
+          <EscudoCit :tamano="32" alternativo="" />
+          <LogoCitx
+            :tamano="28"
+            con-nombre
+            direccion="horizontal"
+            alternativo=""
+          />
+        </RouterLink>
+        <p class="superior__colegio">Complejo Educativo CIT</p>
+        <div class="superior__acciones">
+          <RouterLink
+            v-if="auth.puedeEntrarAlPanel"
+            to="/admin"
+            class="boton-icono superior__panel"
+            aria-label="Panel de administración"
+          >
+            <LayoutDashboard :size="22" aria-hidden="true" />
+          </RouterLink>
+          <CampanaAvisos />
+          <RouterLink
+            :to="{ name: 'configuracion' }"
+            class="boton-icono"
+            aria-label="Configuración"
+          >
+            <Settings :size="22" aria-hidden="true" />
+          </RouterLink>
+        </div>
+      </header>
+
+      <RouterLink
+        v-if="auth.usuario?.debeCambiarContrasena"
+        :to="{ name: 'configuracion' }"
+        class="aviso-clave"
+      >
+        <KeyRound :size="18" aria-hidden="true" />
+        Estás usando una contraseña temporal. Tocá aquí para cambiarla.
+      </RouterLink>
+
+      <main class="contenido">
+        <slot />
+      </main>
+    </div>
 
     <!-- Navegacion inferior en celular -->
     <nav class="inferior" aria-label="Navegación principal">
@@ -225,6 +237,10 @@ watch(
   min-height: 100dvh;
 }
 
+.columna {
+  min-width: 0;
+}
+
 .superior {
   position: sticky;
   top: 0;
@@ -242,48 +258,55 @@ watch(
 
 .superior__marca {
   display: inline-flex;
-  min-height: var(--objetivo-tactil);
   align-items: center;
+  gap: var(--e-2);
+  min-height: var(--objetivo-tactil);
   text-decoration: none;
+}
+
+.superior__colegio {
+  display: none;
 }
 
 .superior__acciones {
   display: flex;
+  align-items: center;
   gap: var(--e-1);
 }
 
-.campana,
-.icono-envoltura {
-  position: relative;
+.aviso-clave {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  padding: var(--e-3) var(--margen-lateral);
+  background: var(--aviso-fondo);
+  color: var(--texto);
+  font-size: var(--txt-sm);
+  font-weight: var(--peso-semi);
+  text-decoration: none;
 }
 
 .icono-envoltura {
+  position: relative;
   display: inline-flex;
 }
 
 .contador {
   position: absolute;
-  top: 4px;
-  right: 2px;
+  top: -7px;
+  right: -12px;
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
   display: grid;
   place-items: center;
   border-radius: var(--radio-pildora);
-  background: var(--error);
-  color: #ffffff;
+  background: var(--principal-fuerte);
+  color: var(--sobre-principal);
   font-size: 0.6875rem;
   font-weight: var(--peso-fuerte);
   line-height: 1;
   border: 2px solid var(--fondo);
-}
-
-.icono-envoltura .contador {
-  top: -7px;
-  right: -12px;
-  background: var(--principal-fuerte);
-  color: var(--sobre-principal);
 }
 
 .contenido {
@@ -344,8 +367,13 @@ watch(
   display: none;
 }
 
+@media (max-width: 380px) {
+  .superior__panel {
+    display: none;
+  }
+}
+
 @media (min-width: 1024px) {
-  .superior,
   .inferior {
     display: none;
   }
@@ -355,6 +383,21 @@ watch(
     grid-template-columns: var(--ancho-lateral) minmax(0, 1fr);
   }
 
+  .superior {
+    padding: var(--e-2) var(--e-6);
+  }
+
+  .superior__marca,
+  .superior__panel {
+    display: none;
+  }
+
+  .superior__colegio {
+    display: block;
+    font-family: var(--fuente-titulo);
+    color: var(--texto-suave);
+  }
+
   .lateral {
     position: sticky;
     top: 0;
@@ -362,15 +405,30 @@ watch(
     display: flex;
     flex-direction: column;
     gap: var(--e-6);
-    padding: var(--e-6) var(--e-4);
+    padding: var(--e-5) var(--e-4);
     background: var(--fondo-elevado);
     border-right: 1px solid var(--borde);
     overflow-y: auto;
   }
 
   .lateral__marca {
-    padding: var(--e-1) var(--e-3);
+    display: flex;
+    align-items: center;
+    gap: var(--e-3);
+    padding: var(--e-1) var(--e-2);
     text-decoration: none;
+  }
+
+  .lateral__marca-textos {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .lateral__colegio {
+    font-size: var(--txt-xs);
+    color: var(--texto-tenue);
+    font-weight: var(--peso-semi);
   }
 
   .lateral__lista {
@@ -408,6 +466,21 @@ watch(
     color: var(--principal-fuerte);
   }
 
+  .lateral__enlace--panel {
+    background: var(--marca);
+    color: #ffffff;
+  }
+
+  :root[data-tema='oscuro'] .lateral__enlace--panel {
+    color: var(--gris-950);
+  }
+
+  .lateral__enlace--panel:hover {
+    background: var(--marca);
+    color: #ffffff;
+    filter: brightness(1.1);
+  }
+
   .lateral__cuenta {
     margin-left: auto;
     min-width: 24px;
@@ -439,7 +512,6 @@ watch(
 
   .contenido {
     padding-bottom: var(--e-12);
-    min-width: 0;
   }
 }
 </style>

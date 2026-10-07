@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import {
   BellOff,
   CalendarDays,
@@ -9,14 +9,19 @@ import {
   PackageSearch,
   Bell,
   CheckCheck,
+  MapPin,
+  Megaphone,
 } from 'lucide-vue-next'
 import EncabezadoPagina from '@/components/EncabezadoPagina.vue'
 import EstadoVacio from '@/components/EstadoVacio.vue'
 import { useNotificaciones } from '@/stores/notificaciones'
+import { useLugares } from '@/stores/lugares'
 import { fechaRelativa, horaDe } from '@compartido/hora.js'
 
 const notificaciones = useNotificaciones()
 const router = useRouter()
+const lugares = useLugares()
+lugares.cargar()
 const cargando = ref(!notificaciones.cargado)
 
 const iconos = {
@@ -24,6 +29,7 @@ const iconos = {
   pedido: ShoppingBag,
   recordatorio: ListChecks,
   objeto: PackageSearch,
+  anuncio: Megaphone,
   general: Bell,
 }
 
@@ -44,7 +50,7 @@ onMounted(async () => {
 <template>
   <div class="pagina notificaciones">
     <EncabezadoPagina
-      titulo="Notificaciones"
+      titulo="Avisos"
       bajada="Avisos de tus pedidos, eventos nuevos y recordatorios."
       :volver="{ name: 'menu' }"
     >
@@ -97,6 +103,18 @@ onMounted(async () => {
           </span>
           <span v-if="!n.leida" class="aviso__nueva">Nueva</span>
         </button>
+        <RouterLink
+          v-if="n.lugarClave"
+          :to="{ name: 'mapa', query: { lugar: n.lugarClave } }"
+          class="boton boton--texto boton--pequeno aviso__mapa"
+          @click="notificaciones.marcarLeida(n.id)"
+        >
+          <MapPin :size="16" aria-hidden="true" /> Ver en el mapa{{
+            lugares.nombreDe(n.lugarClave)
+              ? `: ${lugares.nombreDe(n.lugarClave)}`
+              : ''
+          }}
+        </RouterLink>
       </li>
     </ul>
   </div>
@@ -170,5 +188,8 @@ onMounted(async () => {
   font-size: var(--txt-xs);
   font-weight: var(--peso-fuerte);
   color: var(--principal-fuerte);
+}
+.aviso__mapa {
+  margin: 2px 0 var(--e-2) calc(36px + var(--e-6));
 }
 </style>

@@ -3,7 +3,7 @@ import { parseCookie, stringifySetCookie } from 'cookie'
 import { ObjectId } from 'mongodb'
 import { col, COLECCIONES, asegurarIndices } from './db.js'
 import { noAutenticado, sinPermiso, noExiste } from './respuesta.js'
-import { puede } from '../../compartido/permisos.js'
+import { puede, permisosDe } from '../../compartido/permisos.js'
 
 /**
  * Sesion con JWT guardado en una cookie httpOnly: JavaScript del navegador no
@@ -29,9 +29,15 @@ function esLocal(req) {
 }
 
 export function firmar(usuario) {
-  return jwt.sign({ sub: String(usuario._id), rol: usuario.rol }, secreto(), {
-    expiresIn: DURACION_SEGUNDOS,
-  })
+  // `v` permite cerrar todas las sesiones de alguien: si la version cambia en
+  // la base, los tokens viejos dejan de servir.
+  return jwt.sign(
+    { sub: String(usuario._id), v: usuario.versionSesion ?? 0 },
+    secreto(),
+    {
+      expiresIn: DURACION_SEGUNDOS,
+    }
+  )
 }
 
 export function ponerCookie(req, res, usuario) {
@@ -76,6 +82,9 @@ export function usuarioPublico(u) {
     favoritos: u.favoritos ?? [],
     configuracion: u.configuracion ?? null,
     activo: u.activo !== false,
+    permisos: permisosDe(u),
+    permisosAjustados: Array.isArray(u.permisos),
+    debeCambiarContrasena: u.debeCambiarContrasena === true,
   }
 }
 
@@ -100,6 +109,7 @@ export async function usuarioDeSesion(req) {
   const usuarios = await col(COLECCIONES.usuarios)
   const usuario = await usuarios.findOne({ _id: new ObjectId(datos.sub) })
   if (!usuario || usuario.activo === false) return null
+  if ((datos.v ?? 0) !== (usuario.versionSesion ?? 0)) return null
   return usuario
 }
 
@@ -107,7 +117,7 @@ export async function usuarioDeSesion(req) {
 export async function requerir(req, accion = null) {
   const usuario = await usuarioDeSesion(req)
   if (!usuario) throw noAutenticado()
-  if (accion && !puede(usuario.rol, accion)) throw sinPermiso()
+  if (accion && !puede(usuario, accion)) throw sinPermiso()
   return usuario
 }
 

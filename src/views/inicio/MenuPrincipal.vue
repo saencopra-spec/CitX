@@ -9,6 +9,7 @@ import {
   Search,
   Megaphone,
   MapPin,
+  ChevronDown,
 } from 'lucide-vue-next'
 import MapaMiniatura from '@/components/mapa/MapaMiniatura.vue'
 import { useAuth } from '@/stores/auth'
@@ -30,6 +31,7 @@ const inicio = ref(null)
 const busqueda = ref('')
 const anuncios = ref([])
 const lugares = useLugares()
+const anunciosAbiertos = ref(false)
 
 const saludo = saludoSegunHora()
 const enfermeria = estadoEnfermeria()
@@ -177,35 +179,53 @@ onMounted(async () => {
       class="anuncios"
       aria-labelledby="t-anuncios"
     >
-      <h2 id="t-anuncios" class="anuncios__titulo">
-        <Megaphone :size="18" aria-hidden="true" /> Avisos del colegio
-      </h2>
-      <ul>
-        <li
-          v-for="a in anuncios"
-          :key="a.id"
-          class="anuncio"
-          :class="{ 'es-importante': a.importante }"
-        >
-          <div>
-            <p class="anuncio__titulo">
-              <span v-if="a.importante" class="etiqueta etiqueta--error"
-                >Importante</span
-              >
-              {{ a.titulo }}
-            </p>
-            <p class="anuncio__cuerpo">{{ a.cuerpo }}</p>
-          </div>
-          <RouterLink
-            v-if="a.lugarClave"
-            :to="{ name: 'mapa', query: { lugar: a.lugarClave } }"
-            class="boton boton--contorno boton--pequeno"
+      <button
+        id="t-anuncios"
+        type="button"
+        class="anuncios__cabecera"
+        :aria-expanded="anunciosAbiertos"
+        @click="anunciosAbiertos = !anunciosAbiertos"
+      >
+        <span class="anuncios__cabecera-izq">
+          <Megaphone :size="16" aria-hidden="true" />
+          <span class="anuncios__titulo">Avisos del colegio</span>
+          <span v-if="!anunciosAbiertos" class="anuncios__contador">{{ anuncios.length }}</span>
+        </span>
+        <ChevronDown
+          :size="16"
+          aria-hidden="true"
+          class="anuncios__chevron"
+          :class="{ 'es-abierto': anunciosAbiertos }"
+        />
+      </button>
+      <Transition name="desplegar">
+        <ul v-show="anunciosAbiertos" class="anuncios__lista">
+          <li
+            v-for="a in anuncios"
+            :key="a.id"
+            class="anuncio"
+            :class="{ 'es-importante': a.importante }"
           >
-            <MapPin :size="16" aria-hidden="true" />
-            {{ lugares.nombreDe(a.lugarClave) ?? 'Ver en el mapa' }}
-          </RouterLink>
-        </li>
-      </ul>
+            <div class="anuncio__contenido">
+              <p class="anuncio__titulo">
+                <span v-if="a.importante" class="etiqueta etiqueta--error"
+                  >Importante</span
+                >
+                {{ a.titulo }}
+              </p>
+              <p class="anuncio__cuerpo">{{ a.cuerpo }}</p>
+            </div>
+            <RouterLink
+              v-if="a.lugarClave"
+              :to="{ name: 'mapa', query: { lugar: a.lugarClave } }"
+              class="boton boton--contorno boton--pequeno"
+            >
+              <MapPin :size="16" aria-hidden="true" />
+              {{ lugares.nombreDe(a.lugarClave) ?? 'Ver en el mapa' }}
+            </RouterLink>
+          </li>
+        </ul>
+      </Transition>
     </section>
 
     <div class="accesos">
@@ -364,25 +384,70 @@ onMounted(async () => {
 }
 
 .anuncios {
-  padding: var(--e-4);
   border-radius: var(--radio-lg);
-  background: var(--aviso-fondo);
-  border: 1px solid color-mix(in srgb, var(--aviso) 30%, transparent);
+  border: 1px solid var(--borde);
+  background: var(--superficie);
+  overflow: hidden;
 }
 
-.anuncios__titulo {
+.anuncios__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--e-3) var(--e-4);
+  gap: var(--e-3);
+  background: transparent;
+  color: var(--texto);
+  cursor: pointer;
+  text-align: left;
+}
+
+.anuncios__cabecera:hover {
+  background: var(--superficie-hover);
+}
+
+.anuncios__cabecera-izq {
   display: flex;
   align-items: center;
   gap: var(--e-2);
-  font-size: var(--txt-md);
-  margin-bottom: var(--e-3);
-  color: var(--aviso);
+  color: var(--texto-suave);
 }
 
-.anuncios ul {
+.anuncios__titulo {
+  font-size: var(--txt-sm);
+  font-weight: var(--peso-semi);
+  color: var(--texto);
+}
+
+.anuncios__contador {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: var(--radio-pildora);
+  background: var(--aviso-fondo);
+  color: var(--aviso);
+  font-size: 0.7rem;
+  font-weight: var(--peso-fuerte);
+  line-height: 1;
+}
+
+.anuncios__chevron {
+  color: var(--texto-tenue);
+  transition: transform var(--dur-media) var(--curva);
+  flex-shrink: 0;
+}
+
+.anuncios__chevron.es-abierto {
+  transform: rotate(180deg);
+}
+
+.anuncios__lista {
   display: flex;
   flex-direction: column;
-  gap: var(--e-3);
+  border-top: 1px solid var(--borde);
 }
 
 .anuncio {
@@ -391,13 +456,22 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   gap: var(--e-2) var(--e-4);
-  padding: var(--e-3);
-  border-radius: var(--radio-md);
-  background: var(--superficie);
+  padding: var(--e-3) var(--e-4);
+  border-bottom: 1px solid var(--borde-sutil);
+}
+
+.anuncio:last-child {
+  border-bottom: none;
 }
 
 .anuncio.es-importante {
-  border-left: 4px solid var(--error);
+  border-left: 3px solid var(--error);
+  padding-left: calc(var(--e-4) - 3px);
+}
+
+.anuncio__contenido {
+  flex: 1;
+  min-width: 0;
 }
 
 .anuncio__titulo {
@@ -406,11 +480,23 @@ onMounted(async () => {
   align-items: center;
   gap: var(--e-2);
   font-weight: var(--peso-semi);
+  font-size: var(--txt-sm);
 }
 
 .anuncio__cuerpo {
   font-size: var(--txt-sm);
   color: var(--texto-suave);
+  margin-top: 2px;
+}
+
+.desplegar-enter-active,
+.desplegar-leave-active {
+  transition: opacity var(--dur-media) var(--curva);
+}
+
+.desplegar-enter-from,
+.desplegar-leave-to {
+  opacity: 0;
 }
 
 .destacado {

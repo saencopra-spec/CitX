@@ -61,6 +61,7 @@ function cuerpoDe(f) {
     horario: f.horario ?? '',
     restringido: Boolean(f.restringido),
     notaAcceso: f.notaAcceso ?? '',
+    color: f.color || null,
     numero:
       f.numero === '' || f.numero === null || f.numero === undefined
         ? null
@@ -76,8 +77,10 @@ function editar(l) {
   formulario.value = {
     notaAcceso: '',
     horario: '',
+    color: '',
     ...l,
     numero: l.numero ?? '',
+    color: l.color ?? '',
   }
   limpiar()
 }
@@ -91,6 +94,7 @@ function nuevo() {
     horario: '',
     restringido: false,
     notaAcceso: '',
+    color: '',
     numero: '',
     x: Math.round(LIENZO.ancho / 2),
     y: Math.round(LIENZO.alto / 2),
@@ -351,6 +355,25 @@ onMounted(() => lugares.cargar({ forzar: true }))
           :opciones="opcionesCategoria"
           :error="errores.categoria"
         />
+        <div class="color-pin">
+          <label class="campo__etiqueta" for="lu-color">Color del pin</label>
+          <div class="color-pin__fila">
+            <input
+              id="lu-color"
+              v-model="formulario.color"
+              type="color"
+              class="color-pin__entrada"
+              title="Elige un color personalizado"
+            />
+            <span class="color-pin__info">{{ formulario.color || CATEGORIAS[formulario.categoria]?.color }}</span>
+            <button
+              v-if="formulario.color"
+              type="button"
+              class="boton boton--texto boton--pequeno"
+              @click="formulario.color = ''"
+            >Usar color de categoría</button>
+          </div>
+        </div>
         <Campo
           id="lu-descripcion"
           v-model="formulario.descripcion"
@@ -544,6 +567,34 @@ onMounted(() => lugares.cargar({ forzar: true }))
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   gap: var(--e-4);
+}
+
+.color-pin {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+}
+
+.color-pin__fila {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+}
+
+.color-pin__entrada {
+  width: 40px;
+  height: 36px;
+  padding: 2px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-sm);
+  background: var(--superficie);
+  cursor: pointer;
+}
+
+.color-pin__info {
+  font-size: var(--txt-sm);
+  color: var(--texto-suave);
+  font-family: monospace;
 }
 
 .interruptor-fila {

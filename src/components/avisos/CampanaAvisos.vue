@@ -255,7 +255,7 @@ onUnmounted(() => {
 .panel {
   position: absolute;
   top: calc(100% + 8px);
-  right: calc(var(--e-2) * -1);
+  left: 0;
   z-index: var(--z-modal);
   width: min(calc(100vw - 1.5rem), 25rem);
   max-height: min(75dvh, 36rem);
@@ -392,7 +392,7 @@ onUnmounted(() => {
   transition:
     opacity var(--dur-media) var(--curva),
     transform var(--dur-media) var(--curva);
-  transform-origin: top right;
+  transform-origin: top left;
 }
 
 .panel-enter-from,

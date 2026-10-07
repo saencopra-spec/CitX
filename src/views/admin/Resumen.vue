@@ -83,7 +83,7 @@ const hoy = fechaLarga(new Date())
           <span class="cifra__numero cifra__numero--dinero">{{
             colones(datos.soda.vendidoHoy)
           }}</span>
-          <span class="cifra__texto">vendido hoy (simulado)</span>
+          <span class="cifra__texto">vendido hoy</span>
           <span class="cifra__ir"
             >Ver reportes <ArrowRight :size="16" aria-hidden="true"
           /></span>
@@ -108,9 +108,7 @@ const hoy = fechaLarga(new Date())
       >
         <Users :size="22" aria-hidden="true" />
         <span class="cifra__numero">{{ datos.personas.total }}</span>
-        <span class="cifra__texto"
-          >cuentas registradas ({{ datos.personas.nuevosHoy }} nuevas hoy)</span
-        >
+        <span class="cifra__texto">cuentas registradas</span>
       </RouterLink>
       <RouterLink
         v-if="datos?.personas"

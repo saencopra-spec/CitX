@@ -62,7 +62,7 @@ function forma(R) {
 }
 
 function color(l) {
-  return CATEGORIAS[l.categoria]?.color ?? '#5b6573'
+  return l.color || CATEGORIAS[l.categoria]?.color || '#5b6573'
 }
 
 function limitar(v) {

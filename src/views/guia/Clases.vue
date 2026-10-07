@@ -180,34 +180,34 @@ onUnmounted(() => clearInterval(reloj))
           class="bloque"
           :class="{
             'bloque--pausa': f.tipo === 'pausa',
+            'bloque--almuerzo': f.tipo === 'pausa' && f.clave === 'almuerzo',
             'es-ahora': f.enCurso,
           }"
           :aria-current="f.enCurso ? 'time' : undefined"
         >
+          <div class="bloque__franja" aria-hidden="true" />
           <span class="bloque__hora">{{ horaLegible(f.inicio) }}</span>
           <span class="bloque__contenido">
             <template v-if="f.tipo === 'pausa'">
-              <component
-                :is="f.clave === 'almuerzo' ? Utensils : Coffee"
-                :size="16"
-                aria-hidden="true"
-              />
-              {{ f.nombre }}
+              <span class="bloque__pausa-nombre">
+                <component
+                  :is="f.clave === 'almuerzo' ? Utensils : Coffee"
+                  :size="14"
+                  aria-hidden="true"
+                />
+                {{ f.nombre }}
+              </span>
             </template>
             <template v-else>
-              <strong>{{ f.materia }}</strong>
-              <span v-if="f.aula" class="bloque__aula">{{ f.aula }}</span>
+              <strong class="bloque__materia">{{ f.materia }}</strong>
+              <span v-if="f.aula" class="bloque__aula">
+                <span class="bloque__aula-etiqueta">Aula</span> {{ f.aula }}
+              </span>
             </template>
           </span>
-          <span v-if="f.enCurso" class="etiqueta etiqueta--principal"
-            >Ahora</span
-          >
+          <span v-if="f.enCurso" class="bloque__ahora-badge">En curso</span>
         </li>
       </ol>
-      <p class="nota-ejemplo texto-suave">
-        Horario de ejemplo. Lecciones de 40 minutos, de
-        {{ horaLegible('07:00') }} a {{ horaLegible('15:30') }}.
-      </p>
     </section>
 
     <!-- Especialidades -->
@@ -322,49 +322,93 @@ onUnmounted(() => clearInterval(reloj))
   display: flex;
   flex-direction: column;
   border: 1px solid var(--borde);
-  border-radius: var(--radio-lg);
+  border-radius: var(--radio-xl);
   overflow: hidden;
   background: var(--superficie);
+  box-shadow: var(--sombra-1);
 }
 
 .bloque {
   display: grid;
-  grid-template-columns: 6.5rem minmax(0, 1fr) auto;
+  grid-template-columns: 4px 7rem minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--e-3);
-  min-height: 56px;
-  padding: var(--e-2) var(--e-4);
+  min-height: 60px;
+  padding: var(--e-3) var(--e-4) var(--e-3) 0;
   border-bottom: 1px solid var(--borde-sutil);
+  transition: background var(--dur-corta) var(--curva);
 }
 
 .bloque:last-child {
   border-bottom: none;
 }
 
+.bloque__franja {
+  height: 100%;
+  min-height: 60px;
+  background: transparent;
+  border-radius: 0;
+  flex-shrink: 0;
+}
+
+.es-ahora .bloque__franja {
+  background: var(--principal);
+}
+
 .bloque__hora {
-  font-size: var(--txt-sm);
-  color: var(--texto-suave);
+  font-size: var(--txt-xs);
+  color: var(--texto-tenue);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  padding-left: var(--e-3);
 }
 
 .bloque__contenido {
   display: flex;
   flex-direction: column;
+  gap: 3px;
   min-width: 0;
 }
 
+.bloque__materia {
+  font-size: var(--txt-base);
+  font-weight: var(--peso-semi);
+  color: var(--texto);
+}
+
 .bloque__aula {
-  font-size: var(--txt-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--e-1);
+  font-size: var(--txt-xs);
+  color: var(--texto-tenue);
+}
+
+.bloque__aula-etiqueta {
+  background: var(--superficie-2);
+  border-radius: var(--radio-sm);
+  padding: 1px 5px;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
   color: var(--texto-suave);
 }
 
 .bloque--pausa {
-  min-height: 40px;
+  min-height: 44px;
   background: var(--superficie-2);
 }
 
-.bloque--pausa .bloque__contenido {
-  flex-direction: row;
+.bloque--pausa .bloque__franja {
+  min-height: 44px;
+}
+
+.bloque--almuerzo {
+  background: color-mix(in srgb, var(--exito-fondo) 60%, var(--superficie-2));
+}
+
+.bloque__pausa-nombre {
+  display: inline-flex;
   align-items: center;
   gap: var(--e-2);
   font-size: var(--txt-sm);
@@ -374,12 +418,20 @@ onUnmounted(() => clearInterval(reloj))
 
 .es-ahora {
   background: var(--principal-suave);
-  box-shadow: inset 4px 0 0 var(--principal);
 }
 
-.nota-ejemplo {
-  margin-top: var(--e-3);
-  font-size: var(--txt-sm);
+.bloque__ahora-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radio-pildora);
+  background: var(--principal);
+  color: var(--sobre-principal);
+  font-size: 0.6875rem;
+  font-weight: var(--peso-fuerte);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .introduccion {

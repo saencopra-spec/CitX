@@ -1,7 +1,5 @@
 <script setup>
-import { Lightbulb } from 'lucide-vue-next'
-
-/** Titulo de cada seccion del panel con una ayuda corta, sin jerga. */
+/** Titulo de cada seccion del panel. */
 defineProps({
   titulo: { type: String, required: true },
   ayuda: { type: String, default: '' },
@@ -16,10 +14,7 @@ defineProps({
         <slot name="acciones" />
       </div>
     </div>
-    <p v-if="ayuda" class="encabezado__ayuda">
-      <Lightbulb :size="18" aria-hidden="true" />
-      <span>{{ ayuda }}</span>
-    </p>
+    <p v-if="ayuda" class="encabezado__ayuda">{{ ayuda }}</p>
   </header>
 </template>
 
@@ -50,16 +45,8 @@ defineProps({
 }
 
 .encabezado__ayuda {
-  display: flex;
-  gap: var(--e-2);
   max-width: 62ch;
   font-size: var(--txt-sm);
   color: var(--texto-suave);
-}
-
-.encabezado__ayuda svg {
-  flex-shrink: 0;
-  color: var(--aviso);
-  margin-top: 1px;
 }
 </style>

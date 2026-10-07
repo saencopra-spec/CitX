@@ -87,11 +87,16 @@ onMounted(async () => {
   <div ref="raiz" class="pagina menu">
     <header data-entra class="portada">
       <img
-        src="/fotos/campus-aereo.webp"
+        src="/fotos/carrusel/estudiantes-1280.webp"
+        srcset="
+          /fotos/carrusel/estudiantes-1280.webp 1280w,
+          /fotos/carrusel/estudiantes-1920.webp 1920w
+        "
+        sizes="(min-width: 1024px) 70vw, 100vw"
         alt=""
         class="portada__foto"
-        width="358"
-        height="292"
+        width="1280"
+        height="853"
       />
       <div class="portada__contenido">
         <EscudoCit :tamano="64" />

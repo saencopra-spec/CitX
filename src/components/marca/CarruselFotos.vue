@@ -8,22 +8,21 @@ import { sinMovimiento } from '@/lib/movimiento'
  */
 const props = defineProps({
   intervalo: { type: Number, default: 5500 },
+  /** Ancho que ocupa en pantalla, para que el navegador elija la foto justa. */
+  sizes: { type: String, default: '(min-width: 1024px) 150vh, 100vw' },
 })
 
 const fotos = [
-  { src: '/fotos/campus-aereo.webp', texto: 'Vista aérea del campus' },
-  {
-    src: '/fotos/portada-estudiantes.webp',
-    texto: 'Estudiantes de secundaria',
-  },
-  { src: '/fotos/lugar-secundaria.webp', texto: 'Pasillo de secundaria' },
-  {
-    src: '/fotos/lugar-deportes.webp',
-    texto: 'Piscina del complejo deportivo',
-  },
-  { src: '/fotos/lugar-vivero.webp', texto: 'Vivero Retoño' },
-  { src: '/fotos/portada-guia.webp', texto: 'Laboratorio de innovación' },
-]
+  { nombre: 'estudiantes', texto: 'Estudiantes de secundaria' },
+  { nombre: 'secundaria', texto: 'Pasillo de secundaria' },
+  { nombre: 'innovacion', texto: 'Laboratorio de innovación' },
+  { nombre: 'piscina', texto: 'Piscina del complejo deportivo' },
+  { nombre: 'vivero', texto: 'Vivero Retoño' },
+].map((f) => ({
+  ...f,
+  src: `/fotos/carrusel/${f.nombre}-1280.webp`,
+  srcset: `/fotos/carrusel/${f.nombre}-1280.webp 1280w, /fotos/carrusel/${f.nombre}-1920.webp 1920w`,
+}))
 
 const actual = ref(0)
 const animado = ref(false)
@@ -50,6 +49,8 @@ onUnmounted(() => clearInterval(temporizador))
       v-for="(f, i) in fotos"
       :key="f.src"
       :src="f.src"
+      :srcset="f.srcset"
+      :sizes="sizes"
       alt=""
       class="carrusel__foto"
       :class="{ 'es-visible': i === actual }"
@@ -98,7 +99,7 @@ onUnmounted(() => clearInterval(temporizador))
     transform: scale(1.02);
   }
   to {
-    transform: scale(1.14) translate(-1.5%, -1%);
+    transform: scale(1.06) translate(-1%, -0.5%);
   }
 }
 

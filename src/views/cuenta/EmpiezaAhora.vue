@@ -38,7 +38,7 @@ onMounted(() => {
 <template>
   <main ref="raiz" class="empieza">
     <div class="empieza__foto" aria-hidden="true">
-      <CarruselFotos />
+      <CarruselFotos sizes="100vw" />
     </div>
 
     <header data-entra class="empieza__marca">

@@ -46,7 +46,7 @@ function cambiar(clave, valor) {
 }
 
 const temas = [
-  { valor: 'sistema', texto: 'Automático (como tu dispositivo)' },
+  { valor: 'sistema', texto: 'Automático' },
   { valor: 'claro', texto: 'Claro' },
   { valor: 'oscuro', texto: 'Oscuro' },
 ]
@@ -66,7 +66,7 @@ const daltonismos = [
 ]
 
 const movimientos = [
-  { valor: 'sistema', texto: 'Automático (como tu dispositivo)' },
+  { valor: 'sistema', texto: 'Automático' },
   { valor: 'si', texto: 'Reducir animaciones' },
   { valor: 'no', texto: 'Animaciones normales' },
 ]
@@ -289,7 +289,7 @@ onMounted(() => entradaEscalonada(raiz.value))
           <label class="fila__texto" for="cfg-tema">
             <span class="fila__titulo">Tema</span>
             <span class="fila__explica"
-              >Claro, oscuro o igual que tu dispositivo.</span
+              >Automático usa el mismo modo que tu celular o computadora.</span
             >
           </label>
           <select
@@ -392,7 +392,7 @@ onMounted(() => entradaEscalonada(raiz.value))
             <label class="fila__texto" for="cfg-mov">
               <span class="fila__titulo">Movimiento</span>
               <span class="fila__explica"
-                >Quita las animaciones si te marean.</span
+                >Quitalas si te marean. Automático sigue a tu dispositivo.</span
               >
             </label>
             <select

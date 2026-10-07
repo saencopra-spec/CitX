@@ -28,10 +28,11 @@ defineProps({
       <defs>
         <linearGradient
           :id="`grad-${tamano}-${direccion}`"
-          x1="0.1"
+          gradientUnits="userSpaceOnUse"
+          x1="13"
           y1="0"
-          x2="0.9"
-          y2="1"
+          x2="115"
+          y2="163"
         >
           <stop offset="0%" stop-color="#0AD0C0" />
           <stop offset="38%" stop-color="#04AFA8" />

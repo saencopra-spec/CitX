@@ -287,6 +287,8 @@ ol {
 
 .boton--ancho {
   width: 100%;
+  white-space: normal;
+  padding-block: var(--e-2);
 }
 
 .boton--grande {
@@ -769,4 +771,46 @@ select.campo__control {
   font-size: var(--txt-sm);
   font-weight: var(--peso-semi);
   color: var(--texto-tenue);
+}
+
+/* --------------------------------------------------------------------------
+   Tablas del panel: se desplazan de lado en pantallas angostas sin mover
+   la pagina completa.
+   -------------------------------------------------------------------------- */
+.tabla-envoltura {
+  overflow-x: auto;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-lg);
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--txt-sm);
+}
+
+.tabla th {
+  padding: var(--e-3) var(--e-4);
+  text-align: left;
+  font-weight: var(--peso-semi);
+  color: var(--texto-suave);
+  background: var(--superficie-2);
+  border-bottom: 1px solid var(--borde);
+  white-space: nowrap;
+}
+
+.tabla td {
+  padding: var(--e-3) var(--e-4);
+  border-bottom: 1px solid var(--borde-sutil);
+  vertical-align: middle;
+}
+
+.tabla tr:last-child td {
+  border-bottom: none;
+}
+
+.tabla .acciones {
+  white-space: nowrap;
+  text-align: right;
 }

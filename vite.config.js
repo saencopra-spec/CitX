@@ -8,12 +8,12 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'logo-citx.svg'],
+      includeAssets: ['favicon.svg', 'logo-citx.svg', 'icons/apple-touch-icon.png'],
       manifest: {
         name: 'CitX - Complejo Educativo CIT',
         short_name: 'CitX',
         description:
-          'Mapa interactivo, guia digital y soda del Complejo Educativo CIT.',
+          'Mapa interactivo, guía digital y soda del Complejo Educativo CIT.',
         lang: 'es-CR',
         dir: 'ltr',
         theme_color: '#04AFA8',
@@ -60,7 +60,15 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: /\/api\/(lugares|clases|enfermeria)/,
+            urlPattern: /\/api\/imagenes\/.*/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'citx-imagenes',
+              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
+          {
+            urlPattern: /\/api\/(lugares|clases|enfermeria|soda\/productos)$/,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'citx-datos-estaticos',

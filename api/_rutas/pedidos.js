@@ -15,7 +15,11 @@ import { requerir } from '../_lib/sesion.js'
 import { notificar } from '../_lib/notificar.js'
 import { puede } from '../../compartido/permisos.js'
 import { calcularTotal } from '../../compartido/dinero.js'
-import { franjaValida, nombreFranja } from '../../compartido/jornada.js'
+import {
+  franjaValida,
+  nombreFranja,
+  inicioFranja,
+} from '../../compartido/jornada.js'
 import { partesCR } from '../../compartido/hora.js'
 import {
   validarTarjeta,
@@ -182,7 +186,11 @@ registrar('POST', '/pedidos', async ({ req, res }) => {
     usuarioSeccion: usuario.seccion ?? null,
     items,
     total: calcularTotal(items),
-    franja: { ...datos.franja, nombre: nombreFranja(datos.franja.clave) },
+    franja: {
+      ...datos.franja,
+      nombre: nombreFranja(datos.franja.clave),
+      inicio: inicioFranja(datos.franja.clave),
+    },
     pago,
     estado: 'recibido',
     historial: [{ estado: 'recibido', en: ahora }],

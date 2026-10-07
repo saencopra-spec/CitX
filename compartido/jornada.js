@@ -126,3 +126,7 @@ export function franjaValida(fecha, clave, ahora = new Date()) {
 export function nombreFranja(clave) {
   return PAUSAS.find((p) => p.clave === clave)?.nombre ?? clave
 }
+
+export function inicioFranja(clave) {
+  return PAUSAS.find((p) => p.clave === clave)?.inicio ?? null
+}

@@ -80,7 +80,14 @@ onUnmounted(() => {
         aria-label="CitX"
       >
         <defs>
-          <linearGradient id="grad-bienvenida" x1="0.1" y1="0" x2="0.9" y2="1">
+          <linearGradient
+            id="grad-bienvenida"
+            gradientUnits="userSpaceOnUse"
+            x1="13"
+            y1="0"
+            x2="115"
+            y2="163"
+          >
             <stop offset="0%" stop-color="#0AD0C0" />
             <stop offset="38%" stop-color="#04AFA8" />
             <stop offset="72%" stop-color="#1F8DAD" />

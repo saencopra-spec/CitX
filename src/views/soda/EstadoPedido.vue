@@ -33,6 +33,8 @@ import { NOMBRE_MARCA } from '@compartido/pagos.js'
 const props = defineProps({ codigo: { type: String, required: true } })
 const route = useRoute()
 const avisos = useAvisos()
+/** El QR lleva un enlace a esta misma app, para abrirlo con cualquier camara. */
+const origen = window.location.origin
 
 const pedido = ref(null)
 const error = ref('')
@@ -175,7 +177,7 @@ onMounted(() => {
             <template v-else>Mostrá este código al retirar</template>
           </p>
           <CodigoQR
-            :texto="textoQR(pedido.codigo)"
+            :texto="textoQR(pedido.codigo, origen)"
             :tamano="180"
             :alt="`Código QR del pedido ${pedido.codigo}`"
           />

@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import gsap from 'gsap'
 import { Mail } from 'lucide-vue-next'
 import LogoCitx from '@/components/marca/LogoCitx.vue'
@@ -8,6 +8,9 @@ import EscudoCit from '@/components/marca/EscudoCit.vue'
 import CarruselFotos from '@/components/marca/CarruselFotos.vue'
 import { useAvisos } from '@/stores/avisos'
 import { useConfiguracion } from '@/stores/configuracion'
+
+const route = useRoute()
+const seguir = typeof route.query.seguir === 'string' ? { seguir: route.query.seguir } : {}
 
 const avisos = useAvisos()
 const configuracion = useConfiguracion()
@@ -87,7 +90,7 @@ onMounted(() => {
 
         <RouterLink
           data-entra
-          :to="{ name: 'entrar' }"
+          :to="{ name: 'entrar', query: seguir }"
           class="boton boton--principal boton--ancho boton--grande"
         >
           <Mail :size="20" aria-hidden="true" />

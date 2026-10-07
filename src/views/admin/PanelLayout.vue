@@ -4,6 +4,7 @@ import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import {
   LayoutDashboard,
   ClipboardList,
+  ScanLine,
   ChartColumn,
   UtensilsCrossed,
   Megaphone,
@@ -49,6 +50,12 @@ const grupos = [
         nombre: 'admin-pedidos',
         texto: 'Pedidos',
         icono: ClipboardList,
+        permiso: 'pedidos.gestionar',
+      },
+      {
+        nombre: 'admin-verificar',
+        texto: 'Verificar pedido',
+        icono: ScanLine,
         permiso: 'pedidos.gestionar',
       },
       {

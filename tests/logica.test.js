@@ -362,10 +362,17 @@ describe('Pedidos', () => {
     }
   })
 
-  it('lee el codigo desde el QR', () => {
+  it('el QR lleva un enlace a la pagina de verificacion', () => {
+    expect(textoQR('AB2CD', 'https://citx.vercel.app')).toBe('https://citx.vercel.app/verificar/AB2CD')
+  })
+
+  it('lee el codigo desde el QR, el formato viejo o escrito a mano', () => {
     expect(codigoDesdeQR(textoQR('AB2CD'))).toBe('AB2CD')
-    expect(codigoDesdeQR('ab2cd')).toBe('AB2CD')
+    expect(codigoDesdeQR('http://localhost:5173/verificar/ab2cd')).toBe('AB2CD')
+    expect(codigoDesdeQR('CITX-PEDIDO:AB2CD')).toBe('AB2CD')
+    expect(codigoDesdeQR(' ab2cd ')).toBe('AB2CD')
     expect(codigoDesdeQR('https://otra-cosa.com')).toBe(null)
+    expect(codigoDesdeQR('https://citx.vercel.app/verificar/A0OI1')).toBe(null)
   })
 })
 

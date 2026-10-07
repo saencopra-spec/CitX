@@ -1,5 +1,6 @@
 <script setup>
-import { computed, nextTick, onUnmounted, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   Search,
   ScanLine,
@@ -10,10 +11,9 @@ import {
   Clock,
   Banknote,
   CircleCheck,
-  X,
 } from 'lucide-vue-next'
 import EncabezadoPanel from '@/components/estructura/EncabezadoPanel.vue'
-import Dialogo from '@/components/avisos/Dialogo.vue'
+import EscanerQR from '@/components/soda/EscanerQR.vue'
 import { api } from '@/lib/api'
 import { usarSondeo } from '@/lib/sondeo'
 import { sonarCampana } from '@/lib/avisosNavegador'
@@ -35,6 +35,7 @@ import {
 } from '@compartido/pedidos.js'
 import { inicioFranja } from '@compartido/jornada.js'
 
+const router = useRouter()
 const avisos = useAvisos()
 const configuracion = useConfiguracion()
 
@@ -129,7 +130,7 @@ function anterior(estado) {
 async function irAPedido(codigo) {
   const pedido = pedidos.value.find((p) => p.codigo === codigo)
   if (!pedido) {
-    avisos.aviso(`No hay ningún pedido activo con el código ${codigo}.`)
+    abrirPedido(codigo)
     return
   }
   busqueda.value = ''
@@ -142,55 +143,13 @@ async function irAPedido(codigo) {
   setTimeout(() => (resaltado.value = null), 3000)
 }
 
-// --- Escanear el QR con la camara ---
+// El QR (o el codigo) abre la pagina del pedido, donde se entrega.
 const escaneando = ref(false)
-const video = ref(null)
-const problemaCamara = ref('')
-let flujo = null
-let ciclo = null
 
-async function abrirEscaner() {
-  problemaCamara.value = ''
-  escaneando.value = true
-  if (!('BarcodeDetector' in window)) {
-    problemaCamara.value =
-      'Este navegador no puede leer códigos QR. Escribí el código en el buscador.'
-    return
-  }
-  try {
-    flujo = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment' },
-    })
-    await nextTick()
-    video.value.srcObject = flujo
-    await video.value.play()
-    const detector = new window.BarcodeDetector({ formats: ['qr_code'] })
-    ciclo = setInterval(async () => {
-      try {
-        const [r] = await detector.detect(video.value)
-        const codigo = r && codigoDesdeQR(r.rawValue)
-        if (codigo) {
-          cerrarEscaner()
-          irAPedido(codigo)
-        }
-      } catch {
-        // Cuadro sin QR: se sigue intentando.
-      }
-    }, 300)
-  } catch {
-    problemaCamara.value =
-      'No pudimos usar la cámara. Revisá que el navegador tenga permiso o escribí el código.'
-  }
-}
-
-function cerrarEscaner() {
+function abrirPedido(codigo) {
   escaneando.value = false
-  clearInterval(ciclo)
-  flujo?.getTracks().forEach((t) => t.stop())
-  flujo = null
+  router.push({ name: 'admin-verificar', params: { codigo } })
 }
-
-onUnmounted(cerrarEscaner)
 
 function alternarSonido() {
   configuracion.cambiar('sonidoPedidos', !configuracion.ajustes.sonidoPedidos)
@@ -230,7 +189,7 @@ function buscarCodigo() {
         <button
           type="button"
           class="boton boton--accion boton--pequeno"
-          @click="abrirEscaner"
+          @click="escaneando = true"
         >
           <ScanLine :size="18" aria-hidden="true" /> Escanear QR
         </button>
@@ -375,20 +334,11 @@ function buscarCodigo() {
       </section>
     </div>
 
-    <Dialogo
+    <EscanerQR
       :abierto="escaneando"
-      titulo="Escanear el código QR"
-      descripcion="Apuntá la cámara al QR que muestra la persona."
-      @cerrar="cerrarEscaner"
-    >
-      <p v-if="problemaCamara" class="nota nota--aviso">
-        <X :size="18" aria-hidden="true" /><span>{{ problemaCamara }}</span>
-      </p>
-      <div v-else class="camara">
-        <video ref="video" playsinline muted />
-        <span class="camara__marco" aria-hidden="true" />
-      </div>
-    </Dialogo>
+      @cerrar="escaneando = false"
+      @leido="abrirPedido"
+    />
   </div>
 </template>
 
@@ -554,28 +504,6 @@ function buscarCodigo() {
   align-items: flex-start;
   gap: var(--e-1);
   margin-top: var(--e-1);
-}
-
-.camara {
-  position: relative;
-  border-radius: var(--radio-md);
-  overflow: hidden;
-  background: #000000;
-  aspect-ratio: 1;
-}
-
-.camara video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.camara__marco {
-  position: absolute;
-  inset: 18%;
-  border: 3px solid #ffffff;
-  border-radius: var(--radio-lg);
-  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.35);
 }
 
 .tarjeta-enter-active,

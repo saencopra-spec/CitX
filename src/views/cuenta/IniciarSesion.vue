@@ -38,10 +38,14 @@ async function enviar() {
     avisos.exito(`Hola, ${auth.nombreCorto}.`)
     const seguir =
       typeof route.query.seguir === 'string' &&
-      route.query.seguir.startsWith('/')
+      route.query.seguir.startsWith('/') &&
+      !route.query.seguir.startsWith('//')
         ? route.query.seguir
         : null
-    if (auth.soloPanel) router.replace(auth.inicioDe(usuario))
+    // La soda y objetos perdidos solo vuelven a paginas del panel (por
+    // ejemplo, el QR de un pedido que escanearon antes de entrar).
+    const seguirPanel = seguir && /^\/(admin|verificar)(\/|$)/.test(seguir)
+    if (auth.soloPanel) router.replace(seguirPanel ? seguir : auth.inicioDe(usuario))
     else router.replace(seguir ?? { name: 'menu' })
   } catch (e) {
     if (e.campos) mostrar(e, { aviso: false })

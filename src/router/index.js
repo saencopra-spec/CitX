@@ -117,6 +117,20 @@ const rutas = [
     meta: { titulo: 'Mis pedidos' },
   },
   {
+    // Enlace que lleva el QR de cada pedido. La soda ve el pedido para
+    // entregarlo; quien lo pidio ve el estado de su pedido.
+    path: '/verificar/:codigo',
+    name: 'verificar',
+    component: () => import('@/views/inicio/NoEncontrado.vue'),
+    meta: { titulo: 'Verificar pedido' },
+    beforeEnter: (hacia) => {
+      const codigo = String(hacia.params.codigo).toUpperCase()
+      return useAuth().puede('pedidos.gestionar')
+        ? { name: 'admin-verificar', params: { codigo } }
+        : { name: 'pedido', params: { codigo } }
+    },
+  },
+  {
     path: '/configuracion',
     name: 'configuracion',
     component: () => import('@/views/cuenta/Configuracion.vue'),
@@ -147,6 +161,13 @@ const rutas = [
         name: 'admin-pedidos',
         component: () => import('@/views/admin/PedidosTablero.vue'),
         meta: { permiso: 'pedidos.gestionar', titulo: 'Pedidos' },
+      },
+      {
+        path: 'verificar/:codigo?',
+        name: 'admin-verificar',
+        component: () => import('@/views/admin/VerificarPedido.vue'),
+        props: true,
+        meta: { permiso: 'pedidos.gestionar', titulo: 'Verificar pedido' },
       },
       {
         path: 'reportes',
@@ -278,6 +299,7 @@ router.beforeEach(async (hacia) => {
     haySesion &&
     auth.soloPanel &&
     !hacia.path.startsWith('/admin') &&
+    hacia.name !== 'verificar' &&
     !hacia.meta.publica
   ) {
     return auth.inicioDe()

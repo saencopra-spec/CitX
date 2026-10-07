@@ -136,6 +136,8 @@ ol {
 /* Texto solo para lectores de pantalla. */
 .solo-lectores {
   position: absolute;
+  top: 0;
+  left: 0;
   width: 1px;
   height: 1px;
   padding: 0;
@@ -778,6 +780,7 @@ select.campo__control {
    la pagina completa.
    -------------------------------------------------------------------------- */
 .tabla-envoltura {
+  position: relative;
   overflow-x: auto;
   background: var(--superficie);
   border: 1px solid var(--borde);

@@ -272,8 +272,16 @@ onUnmounted(() => clearInterval(reloj))
 
 <style scoped>
 .pestanas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  max-width: 34rem;
   margin-bottom: var(--e-5);
-  max-width: 100%;
+}
+
+.pestanas button {
+  line-height: 1.2;
+  padding-inline: var(--e-2);
 }
 
 .panel {

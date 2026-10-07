@@ -586,7 +586,7 @@ onMounted(async () => {
   right: 0;
   bottom: 0;
   z-index: var(--z-hoja);
-  max-height: 62%;
+  max-height: 58%;
   overflow-y: auto;
   background: var(--fondo-elevado);
   border-radius: var(--radio-xl) var(--radio-xl) 0 0;
@@ -610,7 +610,7 @@ onMounted(async () => {
 }
 
 .hoja__foto {
-  height: 120px;
+  height: 88px;
   border-radius: var(--radio-md);
 }
 

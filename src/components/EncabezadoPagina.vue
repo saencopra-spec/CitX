@@ -45,6 +45,7 @@ function regresar() {
 <style scoped>
 .encabezado {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   gap: var(--e-2);
   padding-block: var(--e-5) var(--e-4);
@@ -56,7 +57,7 @@ function regresar() {
 }
 
 .encabezado__textos {
-  flex: 1;
+  flex: 1 1 13rem;
   min-width: 0;
   padding-top: 4px;
 }

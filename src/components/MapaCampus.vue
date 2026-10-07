@@ -33,7 +33,7 @@ const transformacion = computed(
 
 /** Evita que el mapa se vaya del todo fuera de la pantalla. */
 function limitar(v) {
-  const margen = 80
+  const margen = 320
   const minX = LIENZO.ancho - LIENZO.ancho * v.k - margen
   const minY = LIENZO.alto - LIENZO.alto * v.k - margen
   return {
@@ -96,17 +96,25 @@ function enfocar(clave) {
   if (!zona) return
   const caja = cajaDe(zona)
   const centro = centroDe(zona)
+  const angosto = window.matchMedia('(max-width: 767px)').matches
+  // En celular se acerca mas porque la pantalla es chica; en computadora menos.
+  const tope = angosto ? 3.2 : 2.2
   const k = Math.min(
-    3.2,
+    tope,
     Math.max(
-      1.6,
+      1.5,
       Math.min(LIENZO.ancho / (caja.w * 3), LIENZO.alto / (caja.h * 3))
     )
   )
-  const angosto = window.matchMedia('(max-width: 767px)').matches
-  const objetivoY = LIENZO.alto * (angosto ? 0.36 : 0.5)
+  // La hoja de informacion tapa abajo en celular y a la derecha en computadora,
+  // asi que el lugar se lleva a la parte de la pantalla que queda libre.
+  const marco = svg.value.getBoundingClientRect()
+  const objetivo = aLienzo(
+    marco.left + marco.width * (angosto ? 0.5 : 0.36),
+    marco.top + marco.height * (angosto ? 0.24 : 0.5)
+  )
   aplicar(
-    { k, x: LIENZO.ancho / 2 - centro.x * k, y: objetivoY - centro.y * k },
+    { k, x: objetivo.x - centro.x * k, y: objetivo.y - centro.y * k },
     true
   )
 }

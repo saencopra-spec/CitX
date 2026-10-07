@@ -147,9 +147,7 @@ onMounted(() => {
           >
           <template v-else>
             El pago quedó
-            {{
-              pedido.pago.metodo === 'sinpe' ? 'verificado' : 'aprobado'
-            }}
+            {{ pedido.pago.metodo === 'sinpe' ? 'verificado' : 'aprobado' }}
             (simulado).</template
           >
         </span>

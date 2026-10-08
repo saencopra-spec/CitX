@@ -77,6 +77,7 @@ function editar(l) {
   formulario.value = {
     notaAcceso: '',
     horario: '',
+    color: '',
     ...l,
     numero: l.numero ?? '',
     color: l.color ?? '',

@@ -216,12 +216,10 @@ describe('Permisos por rol', () => {
     expect(puede(null, 'pedidos.gestionar')).toBe(false)
   })
 
-  it('las secciones van con letra, de 7-A a 12-C', () => {
-    expect(SECCIONES).toHaveLength(29)
-    expect(seccionValida('10-A')).toBe(true)
-    expect(seccionValida('8-F')).toBe(true)
-    expect(seccionValida('12-D')).toBe(false)
-    expect(seccionValida('10-1')).toBe(false)
+  it('las secciones van de 7-1 a 12-6', () => {
+    expect(SECCIONES).toHaveLength(36)
+    expect(seccionValida('10-1')).toBe(true)
+    expect(seccionValida('13-1')).toBe(false)
     expect(seccionValida('Contraseña...')).toBe(false)
   })
 })
@@ -341,7 +339,7 @@ describe('Horas y jornada', () => {
 
   it('reconoce la leccion en curso', () => {
     expect(bloqueActual(cr('2026-10-06T07:10')).numero).toBe(1)
-    expect(bloqueActual(cr('2026-10-06T11:30')).clave).toBe('almuerzo')
+    expect(bloqueActual(cr('2026-10-06T12:05')).clave).toBe('almuerzo')
     expect(bloqueActual(cr('2026-10-06T16:00'))).toBe(null)
   })
 })

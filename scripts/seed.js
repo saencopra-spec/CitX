@@ -78,13 +78,6 @@ async function main() {
       { upsert: true }
     )
     if (r.upsertedCount) nuevos++
-    // Los lugares que se cargaron sin foto reciben la oficial.
-    if (l.foto) {
-      await lugares.updateOne(
-        { clave: l.clave, foto: { $in: [null, ''] } },
-        { $set: { foto: l.foto } }
-      )
-    }
   }
   console.log(`Lugares: ${LUGARES_CIT.length} oficiales (${nuevos} nuevos)`)
 

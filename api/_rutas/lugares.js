@@ -10,7 +10,7 @@ import {
 } from '../_lib/respuesta.js'
 import { requerir } from '../_lib/sesion.js'
 import { campoFoto, guardarFotoSiEsNueva } from '../_lib/imagenes.js'
-import { CATEGORIAS, LIENZO, LUGARES_CIT } from '../../compartido/campus.js'
+import { CATEGORIAS, LIENZO } from '../../compartido/campus.js'
 import { normalizar } from '../../compartido/texto.js'
 
 const esquemaLugar = z.object({
@@ -30,15 +30,10 @@ const esquemaLugar = z.object({
   foto: campoFoto,
 })
 
-/** Foto oficial de cada lugar, para los que en la base todavia no tienen. */
-const FOTO_OFICIAL = Object.fromEntries(
-  LUGARES_CIT.map((l) => [l.clave, l.foto])
-)
-
 function publico(l) {
   const { _id, ...resto } = l
   void _id
-  return { ...resto, foto: resto.foto || FOTO_OFICIAL[resto.clave] || null }
+  return resto
 }
 
 /** La informacion de los lugares es publica: se usa tambien sin conexion. */

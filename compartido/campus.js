@@ -49,7 +49,7 @@ export const LUGARES_CIT = [
       'Entrada principal del colegio. Aquí se atiende a visitas y familias y se hacen los trámites.',
     horario: 'Lunes a viernes, 6:30 a. m. a 4:30 p. m.',
     restringido: false,
-    foto: null,
+    foto: '/fotos/lugares/recepcion.webp',
   },
   {
     clave: 'preescolar',
@@ -89,7 +89,7 @@ export const LUGARES_CIT = [
       'Edificio de primero a sexto grado. Adentro está la enfermería del colegio.',
     horario: 'Lunes a viernes, 7:00 a. m. a 2:30 p. m.',
     restringido: false,
-    foto: null,
+    foto: '/fotos/lugares/primaria.webp',
   },
   {
     clave: 'multiusos-primaria',
@@ -165,7 +165,7 @@ export const LUGARES_CIT = [
     descripcion: 'Cancha de fútbol de zacate natural.',
     horario: 'Según el horario de Educación Física',
     restringido: false,
-    foto: null,
+    foto: '/fotos/lugares/cancha.webp',
   },
   {
     clave: 'soda',
@@ -190,7 +190,7 @@ export const LUGARES_CIT = [
     descripcion: 'Parqueo para personal, familias y visitas.',
     horario: 'Lunes a viernes, 6:00 a. m. a 5:00 p. m.',
     restringido: false,
-    foto: null,
+    foto: '/fotos/lugares/parqueo.webp',
   },
   {
     clave: 'armonia',
@@ -214,7 +214,7 @@ export const LUGARES_CIT = [
     descripcion: 'Restaurante del complejo.',
     horario: 'Consultá el horario en recepción',
     restringido: false,
-    foto: null,
+    foto: '/fotos/lugares/cacaotal.webp',
   },
   {
     clave: 'armonia-tienda',
@@ -227,7 +227,7 @@ export const LUGARES_CIT = [
       'Tienda con productos de Armonía, la agricultura orgánica del colegio.',
     horario: 'Consultá el horario en recepción',
     restringido: false,
-    foto: null,
+    foto: '/fotos/lugares/armonia-tienda.webp',
   },
   {
     clave: 'el-chirel',
@@ -252,7 +252,7 @@ export const LUGARES_CIT = [
     horario: 'Consultá el horario en recepción',
     restringido: true,
     notaAcceso: 'Solo con autorización del personal a cargo.',
-    foto: null,
+    foto: '/fotos/lugares/veterinario.webp',
   },
   {
     clave: 'vivero-retono',

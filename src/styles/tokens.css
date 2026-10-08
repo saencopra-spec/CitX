@@ -78,10 +78,9 @@
   /* --- Degradado de la marca: solo logo y acentos muy puntuales --- */
   --degradado-marca: linear-gradient(
     135deg,
-    #0ad0c0 0%,
-    #04afa8 35%,
-    #1f8dad 70%,
-    #2179d8 100%
+    #63d1b4 0%,
+    #5ab4dc 45%,
+    #436ddd 100%
   );
 
   /* ---------- Tokens semanticos: modo claro ---------- */

@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import gsap from 'gsap'
 import { useConfiguracion } from '@/stores/configuracion'
 import EscudoCit from '@/components/marca/EscudoCit.vue'
+import LogoCitx from '@/components/marca/LogoCitx.vue'
 
 const router = useRouter()
 const configuracion = useConfiguracion()
@@ -27,6 +28,7 @@ onMounted(() => {
   }
 
   const trazos = bombilla.value?.querySelectorAll('[data-trazo]') ?? []
+  const base = bombilla.value?.querySelector('[data-base]')
 
   linea = gsap.timeline()
 
@@ -43,6 +45,11 @@ onMounted(() => {
       stagger: 0.075,
       ease: 'power2.inOut',
     })
+    .from(
+      base,
+      { opacity: 0, y: 6, duration: 0.4, ease: 'power2.out' },
+      '-=0.35'
+    )
     .from(
       '[data-nombre]',
       { opacity: 0, y: 14, duration: 0.45, ease: 'power2.out' },
@@ -73,46 +80,9 @@ onUnmounted(() => {
     @keydown.space.prevent="continuar"
   >
     <div class="bienvenida__centro">
-      <svg
-        ref="bombilla"
-        class="bienvenida__bombilla"
-        viewBox="0 0 128 163"
-        role="img"
-        aria-label="CitX"
-      >
-        <defs>
-          <linearGradient
-            id="grad-bienvenida"
-            gradientUnits="userSpaceOnUse"
-            x1="13"
-            y1="0"
-            x2="115"
-            y2="163"
-          >
-            <stop offset="0%" stop-color="#0AD0C0" />
-            <stop offset="38%" stop-color="#04AFA8" />
-            <stop offset="72%" stop-color="#1F8DAD" />
-            <stop offset="100%" stop-color="#2179D8" />
-          </linearGradient>
-        </defs>
-        <g
-          fill="none"
-          stroke="url(#grad-bienvenida)"
-          stroke-width="11"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path
-            data-trazo
-            d="M42 108 C42 98 38 93 33 88 A43 43 0 1 1 95 88 C90 93 86 98 86 108 Z"
-          />
-          <circle data-trazo cx="64" cy="56" r="21" />
-          <path data-trazo d="M53 57 l8 9 l23 -26" />
-          <path data-trazo d="M44 121 H84" />
-          <path data-trazo d="M46 135 H82" />
-          <path data-trazo d="M54 149 H74" />
-        </g>
-      </svg>
+      <span ref="bombilla" class="bienvenida__bombilla">
+        <LogoCitx :tamano="0" alternativo="CitX" />
+      </span>
 
       <p data-nombre class="bienvenida__nombre">CITX</p>
       <p data-lema class="bienvenida__lema">
@@ -149,7 +119,10 @@ onUnmounted(() => {
 }
 
 .bienvenida__bombilla {
-  width: auto;
+  display: inline-flex;
+}
+
+.bienvenida__bombilla :deep(.marca__bombilla) {
   height: clamp(118px, 26vh, 180px);
 }
 

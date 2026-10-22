@@ -1,259 +1,271 @@
 <script setup>
-import { onMounted, ref } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
-import gsap from 'gsap'
-import { Mail } from 'lucide-vue-next'
+import { ref } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+import {
+  Mail,
+  UserPlus,
+  UserRound,
+  ChevronDown,
+  ArrowLeft,
+} from 'lucide-vue-next'
 import LogoCitx from '@/components/marca/LogoCitx.vue'
 import EscudoCit from '@/components/marca/EscudoCit.vue'
 import CarruselFotos from '@/components/marca/CarruselFotos.vue'
-import { useAvisos } from '@/stores/avisos'
-import { useConfiguracion } from '@/stores/configuracion'
+import BotonesExternos from '@/components/formularios/BotonesExternos.vue'
+import { useAuth } from '@/stores/auth'
 
+/**
+ * Pantalla para elegir como entrar. Llega aqui quien abre una pagina de la
+ * app sin haber iniciado sesion.
+ */
 const route = useRoute()
+const router = useRouter()
+const auth = useAuth()
 const seguir =
   typeof route.query.seguir === 'string' ? { seguir: route.query.seguir } : {}
 
-const avisos = useAvisos()
-const configuracion = useConfiguracion()
-const raiz = ref(null)
+const masOpciones = ref(false)
 
-/**
- * Google y Facebook todavia no estan conectados. En vez de un boton muerto,
- * avisamos con claridad para que nadie se quede esperando.
- */
-function proximamente(servicio) {
-  avisos.aviso(
-    `Entrar con ${servicio} todavía no está disponible. Por ahora usá tu correo.`
-  )
+function comoInvitado() {
+  auth.entrarComoInvitado()
+  router.replace({ name: 'menu' })
 }
-
-onMounted(() => {
-  if (configuracion.movimientoReducido) return
-  gsap.from(raiz.value.querySelectorAll('[data-entra]'), {
-    opacity: 0,
-    y: 16,
-    duration: 0.5,
-    stagger: 0.07,
-    ease: 'power2.out',
-  })
-})
 </script>
 
 <template>
-  <main ref="raiz" class="empieza">
-    <div class="empieza__foto" aria-hidden="true">
-      <CarruselFotos sizes="100vw" />
-    </div>
+  <main class="empieza">
+    <RouterLink
+      :to="{ name: 'bienvenida' }"
+      class="volver"
+      aria-label="Volver a la presentación"
+    >
+      <ArrowLeft :size="22" aria-hidden="true" />
+    </RouterLink>
 
-    <header data-entra class="empieza__marca">
-      <EscudoCit :tamano="92" />
-      <span class="empieza__linea" aria-hidden="true" />
-      <LogoCitx :tamano="84" con-nombre alternativo="CitX" />
-    </header>
-    <p data-entra class="empieza__colegio">La app del Complejo Educativo CIT</p>
+    <div class="empieza__columna">
+      <header class="empieza__marca">
+        <EscudoCit :tamano="64" />
+        <span class="empieza__linea" aria-hidden="true" />
+        <LogoCitx :tamano="56" con-nombre alternativo="CitX" />
+      </header>
 
-    <div class="empieza__cuerpo">
-      <h1 data-entra class="empieza__titulo titulo-manuscrito">
-        ¡Empieza ahora!
-      </h1>
+      <CarruselFotos
+        class="empieza__fotos"
+        sizes="(min-width: 640px) 30rem, 100vw"
+      />
+
+      <h1 class="empieza__titulo titulo-manuscrito">¡Empieza ahora!</h1>
+      <p class="empieza__bajada">
+        Entrá con tu cuenta del CIT o creá una nueva en un minuto.
+      </p>
 
       <div class="empieza__botones">
-        <button
-          data-entra
-          type="button"
-          class="boton boton--principal boton--ancho boton--grande"
-          @click="proximamente('Google')"
-        >
-          <svg
-            class="empieza__logo-externo"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path
-              fill="#EA4335"
-              d="M12 5.04c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.44 15.24.4 12 .4 7.31.4 3.26 3.09 1.28 7l3.99 3.1C6.22 7.25 8.87 5.04 12 5.04z"
-            />
-            <path
-              fill="#4285F4"
-              d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58l3.86 3c2.26-2.09 3.56-5.17 3.56-8.82z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M5.27 14.29a7.1 7.1 0 0 1 0-4.58L1.28 6.6a11.96 11.96 0 0 0 0 10.8l3.99-3.11z"
-            />
-            <path
-              fill="#34A853"
-              d="M12 23.6c3.24 0 5.96-1.07 7.93-2.91l-3.86-3c-1.07.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.21-6.73-5.06l-3.99 3.11C3.26 20.91 7.31 23.6 12 23.6z"
-            />
-          </svg>
-          Iniciar con Google
-        </button>
-
         <RouterLink
-          data-entra
           :to="{ name: 'entrar', query: seguir }"
           class="boton boton--principal boton--ancho boton--grande"
         >
           <Mail :size="20" aria-hidden="true" />
           Iniciar con correo
         </RouterLink>
-
-        <button
-          data-entra
-          type="button"
-          class="boton boton--principal boton--ancho boton--grande"
-          @click="proximamente('Facebook')"
+        <RouterLink
+          :to="{ name: 'registro', query: seguir }"
+          class="boton boton--contorno boton--ancho boton--grande"
         >
-          <svg
-            class="empieza__logo-externo"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path
-              fill="#1877F2"
-              d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.09 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.956.93-1.956 1.89v2.25h3.33l-.53 3.49h-2.8V24C19.61 23.09 24 18.1 24 12.07z"
-            />
-          </svg>
-          Iniciar con Facebook
+          <UserPlus :size="20" aria-hidden="true" />
+          Crear cuenta
+        </RouterLink>
+        <button
+          type="button"
+          class="boton boton--suave boton--ancho"
+          @click="comoInvitado"
+        >
+          <UserRound :size="20" aria-hidden="true" />
+          Entrar como invitado
         </button>
       </div>
 
-      <p data-entra class="empieza__pie">
-        ¿Todavía no tenés cuenta?
-        <RouterLink :to="{ name: 'registro' }" class="empieza__enlace">
-          Crear cuenta
-        </RouterLink>
-      </p>
-    </div>
+      <button
+        type="button"
+        class="alternar"
+        :aria-expanded="masOpciones"
+        aria-controls="empieza-opciones"
+        @click="masOpciones = !masOpciones"
+      >
+        {{ masOpciones ? 'Ocultar opciones' : 'Más opciones para entrar' }}
+        <ChevronDown
+          :size="16"
+          class="alternar__flecha"
+          :class="{ 'es-abierto': masOpciones }"
+          aria-hidden="true"
+        />
+      </button>
+      <div
+        id="empieza-opciones"
+        class="desplegable empieza__mas"
+        :class="{ 'es-abierto': masOpciones }"
+        :inert="!masOpciones"
+      >
+        <div><BotonesExternos /></div>
+      </div>
 
-    <footer data-entra class="empieza__nota">
-      <RouterLink :to="{ name: 'configuracion' }" class="empieza__ajustes">
-        Ajustes de accesibilidad
-      </RouterLink>
-    </footer>
+      <footer class="empieza__nota">
+        <RouterLink :to="{ name: 'configuracion' }" class="empieza__ajustes">
+          Ajustes de accesibilidad
+        </RouterLink>
+      </footer>
+    </div>
   </main>
 </template>
 
 <style scoped>
 .empieza {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: calc(var(--e-10) + env(safe-area-inset-top)) var(--margen-lateral)
+    calc(var(--e-6) + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(
+      36rem 22rem at 50% -6%,
+      color-mix(in srgb, var(--principal) 14%, transparent),
+      transparent 70%
+    ),
+    var(--fondo-elevado);
+}
+
+.volver {
+  position: absolute;
+  top: calc(var(--e-3) + env(safe-area-inset-top));
+  left: var(--e-3);
+  display: grid;
+  place-items: center;
+  width: var(--objetivo-tactil);
+  height: var(--objetivo-tactil);
+  border-radius: 50%;
+  color: var(--texto-suave);
+  transition:
+    background-color var(--dur-rapida) ease,
+    transform var(--dur-toque) var(--curva-salida);
+}
+
+.volver:hover {
+  background: var(--superficie-hover);
+  color: var(--texto);
+}
+
+.volver:active {
+  transform: scale(0.92);
+}
+
+.empieza__columna {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 100dvh;
-  padding: var(--e-10) var(--margen-lateral)
-    calc(var(--e-6) + env(safe-area-inset-bottom));
-  background: var(--fondo-elevado);
-}
-
-.empieza {
-  position: relative;
-  overflow: hidden;
-}
-
-.empieza__foto {
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 300px;
-  z-index: 0;
-}
-
-.empieza__foto img {
+  gap: var(--e-4);
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  max-width: 26rem;
 }
 
-.empieza__foto::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: linear-gradient(
-    180deg,
-    transparent 40%,
-    var(--fondo-elevado) 98%
-  );
+.empieza__columna > * {
+  animation: entra calc(650ms * var(--mov)) var(--curva-salida) backwards;
 }
 
-.empieza__marca,
-.empieza__colegio,
-.empieza__cuerpo,
-.empieza__nota {
-  position: relative;
-  z-index: 1;
+.empieza__columna > :nth-child(2) {
+  animation-delay: calc(80ms * var(--mov));
+}
+.empieza__columna > :nth-child(3) {
+  animation-delay: calc(150ms * var(--mov));
+}
+.empieza__columna > :nth-child(4) {
+  animation-delay: calc(200ms * var(--mov));
+}
+.empieza__columna > :nth-child(n + 5) {
+  animation-delay: calc(260ms * var(--mov));
+}
+
+@keyframes entra {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+    filter: blur(4px);
+  }
 }
 
 .empieza__marca {
   display: flex;
   align-items: center;
-  gap: var(--e-5);
-  margin-top: 170px;
-  padding: var(--e-4) var(--e-6);
-  border-radius: var(--radio-xl);
-  background: var(--fondo-elevado);
-  box-shadow: var(--sombra-3);
+  gap: var(--e-4);
 }
 
 .empieza__linea {
   width: 1px;
-  height: 72px;
+  height: 56px;
   background: var(--borde-fuerte);
 }
 
-.empieza__colegio {
-  margin-top: var(--e-3);
-  font-family: var(--fuente-titulo);
+.empieza__fotos {
+  width: 100%;
+  margin-top: var(--e-2);
   color: var(--texto-suave);
 }
 
-.empieza__cuerpo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--e-6);
-  width: 100%;
-  max-width: 24rem;
-  margin-block: auto;
+.empieza__fotos :deep(.carrusel__marco) {
+  border-radius: var(--radio-xl);
+  box-shadow: var(--sombra-3);
 }
 
 .empieza__titulo {
-  font-size: var(--txt-2xl);
+  font-size: var(--txt-3xl);
+  text-align: center;
+}
+
+.empieza__bajada {
+  margin-top: calc(var(--e-3) * -1);
+  color: var(--texto-suave);
   text-align: center;
 }
 
 .empieza__botones {
   display: flex;
   flex-direction: column;
-  gap: var(--e-4);
+  gap: var(--e-3);
   width: 100%;
 }
 
-.empieza__logo-externo {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  background: #ffffff;
+.alternar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  min-height: var(--objetivo-tactil);
+  padding-inline: var(--e-3);
   border-radius: var(--radio-pildora);
-  padding: 1px;
-}
-
-.empieza__pie {
-  font-family: var(--fuente-titulo);
-  font-size: var(--txt-base);
   color: var(--texto-suave);
-  text-align: center;
+  font-size: var(--txt-sm);
+  font-weight: var(--peso-semi);
 }
 
-.empieza__enlace {
-  display: inline-block;
-  color: var(--accion);
-  font-weight: var(--peso-semi);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+.alternar:hover {
+  background: var(--superficie-hover);
+  color: var(--texto);
+}
+
+.alternar__flecha {
+  transition: transform calc(360ms * var(--mov)) var(--curva);
+}
+
+.alternar__flecha.es-abierto {
+  transform: rotate(180deg);
+}
+
+.empieza__mas {
+  width: 100%;
+  margin-top: calc(var(--e-3) * -1);
 }
 
 .empieza__nota {
-  padding-top: var(--e-6);
+  margin-top: auto;
+  padding-top: var(--e-4);
 }
 
 .empieza__ajustes {
@@ -269,11 +281,5 @@ onMounted(() => {
 .empieza__ajustes:hover {
   color: var(--texto);
   text-decoration: underline;
-}
-
-@media (min-width: 768px) {
-  .empieza__titulo {
-    font-size: var(--txt-3xl);
-  }
 }
 </style>

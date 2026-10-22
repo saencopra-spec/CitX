@@ -141,6 +141,10 @@ function cerrar() {
 
 async function alternarFavorito() {
   if (!lugar.value) return
+  if (!auth.usuario) {
+    avisos.info('Con una cuenta podés guardar tus lugares favoritos.')
+    return
+  }
   try {
     const ahora = await auth.alternarFavorito(lugar.value.clave)
     avisos.exito(
@@ -359,7 +363,6 @@ onMounted(async () => {
         {{ mostrarPines ? 'Solo el mapa' : 'Mostrar lugares' }}
       </button>
 
-
       <p v-if="lugaresStore.sinConexion" class="sin-datos" role="status">
         Sin conexión: se muestran los lugares guardados en la app.
       </p>
@@ -447,13 +450,15 @@ onMounted(async () => {
   position: relative;
   display: flex;
   flex-direction: column;
+  /* La barra inferior flota: el mapa termina justo encima de ella. */
   height: calc(
-    100dvh - 61px - var(--alto-barra-inferior) - env(safe-area-inset-bottom) -
-      env(safe-area-inset-top)
+    100dvh - 61px - var(--alto-franja, 0px) - var(--alto-barra-inferior) -
+      var(--e-5) - env(safe-area-inset-bottom) - env(safe-area-inset-top)
   );
   min-height: 460px;
   margin-bottom: calc(
-    (var(--alto-barra-inferior) + env(safe-area-inset-bottom) + var(--e-6)) * -1
+    (var(--alto-barra-inferior) + env(safe-area-inset-bottom) + var(--e-10)) *
+      -1
   );
 }
 
@@ -614,7 +619,6 @@ onMounted(async () => {
   color: #ffffff;
 }
 
-
 .icono-restringido {
   color: var(--error);
 }
@@ -666,7 +670,8 @@ onMounted(async () => {
 }
 
 .hoja__foto {
-  height: 110px;
+  aspect-ratio: 16 / 9;
+  max-height: 34vh;
   border-radius: var(--radio-md);
 }
 
@@ -762,7 +767,7 @@ onMounted(async () => {
   }
 
   .hoja__foto {
-    height: 150px;
+    max-height: none;
   }
 
   .hoja-enter-from,
@@ -774,7 +779,7 @@ onMounted(async () => {
 @media (min-width: 1024px) {
   .mapa-pagina {
     flex-direction: row;
-    height: calc(100dvh - 57px);
+    height: calc(100dvh - 69px - var(--alto-franja, 0px));
     margin-bottom: calc(var(--e-12) * -1);
   }
 

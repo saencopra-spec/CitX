@@ -1,4 +1,5 @@
 <script setup>
+import FotoCompleta from '@/components/marca/FotoCompleta.vue'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import {
@@ -227,12 +228,10 @@ onMounted(cargar)
                 </button>
               </div>
             </div>
-            <img
+            <FotoCompleta
               v-if="e.imagen"
               :src="e.imagen"
-              alt=""
               class="evento__imagen"
-              loading="lazy"
             />
           </li>
         </ul>
@@ -336,7 +335,6 @@ onMounted(cargar)
 .evento__imagen {
   width: 100%;
   aspect-ratio: 16 / 9;
-  object-fit: cover;
   border-radius: var(--radio-md);
   order: -1;
 }

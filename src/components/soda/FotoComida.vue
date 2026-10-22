@@ -1,8 +1,12 @@
 <script setup>
 import { ref } from 'vue'
 import { UtensilsCrossed } from 'lucide-vue-next'
+import FotoCompleta from '@/components/marca/FotoCompleta.vue'
 
-/** Foto de un producto o lugar, con un respaldo sobrio si no hay o si falla. */
+/**
+ * Foto de un producto, lugar u objeto, siempre completa (sin recortes), con un
+ * respaldo sobrio si no hay o si falla.
+ */
 defineProps({
   src: { type: String, default: null },
   alt: { type: String, default: '' },
@@ -12,12 +16,11 @@ const fallo = ref(false)
 
 <template>
   <div class="foto-comida">
-    <img
+    <FotoCompleta
       v-if="src && !fallo"
       :src="src"
       :alt="alt"
-      loading="lazy"
-      decoding="async"
+      class="foto-comida__foto"
       @error="fallo = true"
     />
     <div
@@ -39,10 +42,9 @@ const fallo = ref(false)
   background: var(--superficie-3);
 }
 
-.foto-comida img {
+.foto-comida__foto {
   width: 100%;
   height: 100%;
-  object-fit: cover;
 }
 
 .foto-comida__respaldo {

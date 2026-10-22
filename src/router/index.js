@@ -1,10 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuth } from '@/stores/auth'
+import { useAvisos } from '@/stores/avisos'
 
 /**
  * Rutas de CitX.
  *
  * `meta.publica`  -> se puede ver sin iniciar sesion.
+ * `meta.invitado` -> tambien la puede ver quien entra como invitado.
  * `meta.permiso`  -> permiso que hace falta (ver compartido/permisos.js). Si no esta, basta con
  *                    tener sesion iniciada.
  * `meta.titulo`   -> se usa para el <title> y para anunciar el cambio de
@@ -14,7 +16,7 @@ const rutas = [
   {
     path: '/',
     name: 'bienvenida',
-    component: () => import('@/views/cuenta/Bienvenida.vue'),
+    component: () => import('@/views/cuenta/Presentacion.vue'),
     meta: { publica: true, soloInvitados: true, titulo: 'Bienvenida' },
   },
   {
@@ -41,31 +43,31 @@ const rutas = [
     path: '/menu',
     name: 'menu',
     component: () => import('@/views/inicio/MenuPrincipal.vue'),
-    meta: { titulo: 'Menú principal' },
+    meta: { invitado: true, titulo: 'Menú principal' },
   },
   {
     path: '/mapa',
     name: 'mapa',
     component: () => import('@/views/mapa/Mapa.vue'),
-    meta: { titulo: 'Mapa interactivo' },
+    meta: { invitado: true, titulo: 'Mapa interactivo' },
   },
   {
     path: '/guia',
     name: 'guia',
     component: () => import('@/views/guia/Guia.vue'),
-    meta: { titulo: 'Guía digital' },
+    meta: { invitado: true, titulo: 'Guía digital' },
   },
   {
     path: '/guia/eventos',
     name: 'eventos',
     component: () => import('@/views/guia/Eventos.vue'),
-    meta: { titulo: 'Próximos eventos' },
+    meta: { invitado: true, titulo: 'Próximos eventos' },
   },
   {
     path: '/guia/clases',
     name: 'clases',
     component: () => import('@/views/guia/Clases.vue'),
-    meta: { titulo: 'Clases' },
+    meta: { invitado: true, titulo: 'Clases' },
   },
   {
     path: '/guia/objetos-perdidos',
@@ -83,13 +85,13 @@ const rutas = [
     path: '/guia/enfermeria',
     name: 'enfermeria',
     component: () => import('@/views/guia/Enfermeria.vue'),
-    meta: { titulo: 'Enfermería' },
+    meta: { invitado: true, titulo: 'Enfermería' },
   },
   {
     path: '/soda',
     name: 'soda',
     component: () => import('@/views/soda/SodaMenu.vue'),
-    meta: { titulo: 'Soda Armonía' },
+    meta: { invitado: true, titulo: 'Soda Armonía' },
   },
   {
     path: '/soda/carrito',
@@ -263,6 +265,13 @@ router.beforeEach(async (hacia) => {
   }
 
   if (!hacia.meta.publica && !haySesion) {
+    if (auth.invitado) {
+      if (hacia.meta.invitado) return true
+      useAvisos().info(
+        'Para usar esa parte necesitás una cuenta. Crearla toma un minuto.'
+      )
+      return { name: 'registro', query: { seguir: hacia.fullPath } }
+    }
     return { name: 'empieza', query: { seguir: hacia.fullPath } }
   }
 

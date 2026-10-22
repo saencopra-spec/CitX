@@ -62,6 +62,46 @@ function regresar() {
   padding-top: 4px;
 }
 
+.encabezado__titulo,
+.encabezado__bajada,
+.encabezado__volver {
+  animation: encabezado-entra calc(560ms * var(--mov)) var(--curva-salida)
+    backwards;
+}
+
+.encabezado__bajada {
+  animation-delay: calc(70ms * var(--mov));
+}
+
+@keyframes encabezado-entra {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(3px);
+  }
+}
+
+.encabezado__volver {
+  animation-name: volver-entra;
+}
+
+@keyframes volver-entra {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .encabezado__volver:hover svg {
+    transform: translateX(-3px);
+  }
+}
+
+.encabezado__volver svg {
+  transition: transform var(--dur-media) var(--curva-salida);
+}
+
 .encabezado__titulo {
   font-size: var(--txt-2xl);
 }

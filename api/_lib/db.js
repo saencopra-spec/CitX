@@ -73,6 +73,7 @@ export const COLECCIONES = {
   solicitudesObjetos: 'solicitudes_objetos',
   recordatorios: 'recordatorios',
   horarios: 'horarios',
+  horariosProfesores: 'horarios_profesores',
   materias: 'materias',
   enfermeria: 'enfermeria',
   notificaciones: 'notificaciones',
@@ -116,6 +117,9 @@ export async function asegurarIndices() {
     base
       .collection(COLECCIONES.horarios)
       .createIndex({ seccion: 1 }, { unique: true }),
+    base
+      .collection(COLECCIONES.horariosProfesores)
+      .createIndex({ usuarioId: 1 }, { unique: true }),
     base
       .collection(COLECCIONES.intentosEntrada)
       .createIndex({ creadoEn: 1 }, { expireAfterSeconds: 900 }),

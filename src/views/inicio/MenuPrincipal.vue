@@ -1,6 +1,6 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
 import {
   ArrowUpRight,
   CalendarDays,
@@ -10,31 +10,71 @@ import {
   Megaphone,
   MapPin,
   ChevronDown,
+  GraduationCap,
+  ListChecks,
+  PackageSearch,
+  Clock,
+  BookOpen,
+  UtensilsCrossed,
+  Map as IconoMapa,
 } from 'lucide-vue-next'
 import MapaMiniatura from '@/components/mapa/MapaMiniatura.vue'
+import FotoCompleta from '@/components/marca/FotoCompleta.vue'
+import EscudoCit from '@/components/marca/EscudoCit.vue'
 import { useAuth } from '@/stores/auth'
 import { useLugares } from '@/stores/lugares'
-import EscudoCit from '@/components/marca/EscudoCit.vue'
 import { api } from '@/lib/api'
 import { entradaEscalonada } from '@/lib/movimiento'
 import {
   saludoSegunHora,
   fechaRelativa,
   horaLegible,
+  fechaLarga,
+  horaDe,
 } from '@compartido/hora.js'
 import { estadoEnfermeria } from '@compartido/enfermeria.js'
 import { NOMBRE_ESTADO } from '@compartido/pedidos.js'
+import { claseDelMomento } from '@compartido/jornada.js'
 
 const auth = useAuth()
+const router = useRouter()
 const raiz = ref(null)
 const inicio = ref(null)
 const busqueda = ref('')
 const anuncios = ref([])
+const horario = ref(null)
 const lugares = useLugares()
 const anunciosAbiertos = ref(false)
 
-const saludo = saludoSegunHora()
-const enfermeria = estadoEnfermeria()
+// El reloj de la portada se actualiza cada 20 segundos.
+const ahora = ref(new Date())
+let reloj = null
+
+const saludo = computed(() => saludoSegunHora(ahora.value))
+const enfermeria = computed(() => estadoEnfermeria(ahora.value))
+const hoy = computed(() => {
+  const texto = fechaLarga(ahora.value)
+  return texto.charAt(0).toUpperCase() + texto.slice(1)
+})
+
+const nombre = computed(() => (auth.usuario ? auth.nombreCorto : ''))
+
+/** Clase en curso o la siguiente: de la seccion o del horario de profesor. */
+const clase = computed(() => {
+  // Se recalcula con el reloj.
+  const momento = claseDelMomento(horario.value?.dias, ahora.value)
+  if (!momento) return null
+  const { estado, leccion, celda } = momento
+  const partes = [celda.materia]
+  if (celda.seccion) partes.push(`sección ${celda.seccion}`)
+  if (celda.aula) partes.push(`aula ${celda.aula}`)
+  return {
+    titulo:
+      estado === 'ahora' ? 'Ahora' : `A las ${horaLegible(leccion.inicio)}`,
+    texto: partes.join(' · '),
+    ahora: estado === 'ahora',
+  }
+})
 
 /** Lo mas util para mostrar arriba: el pedido activo y el proximo evento. */
 const destacados = computed(() => {
@@ -73,47 +113,104 @@ const destacados = computed(() => {
   return lista
 })
 
+const atajos = computed(() => {
+  const lista = [
+    {
+      nombre: 'clases',
+      texto: auth.esProfesor ? 'Mi horario' : 'Horario',
+      icono: GraduationCap,
+      query: auth.esProfesor ? { ver: 'mio' } : undefined,
+    },
+    { nombre: 'eventos', texto: 'Eventos', icono: CalendarDays },
+    { nombre: 'recordatorios', texto: 'Recordatorios', icono: ListChecks },
+    {
+      nombre: 'objetos-perdidos',
+      texto: 'Objetos perdidos',
+      icono: PackageSearch,
+    },
+    { nombre: 'enfermeria', texto: 'Enfermería', icono: HeartPulse },
+  ]
+  // Sin cuenta solo se ofrece lo que se puede ver como invitado.
+  return auth.usuario
+    ? lista
+    : lista.filter((a) =>
+        ['clases', 'eventos', 'enfermeria'].includes(a.nombre)
+      )
+})
+
+function buscar() {
+  router.push({ name: 'mapa', query: { buscar: busqueda.value } })
+}
+
 onMounted(async () => {
   entradaEscalonada(raiz.value)
+  reloj = setInterval(() => (ahora.value = new Date()), 20000)
   lugares.cargar()
-  const [i, a] = await Promise.allSettled([
-    api.get('/inicio'),
-    api.get('/anuncios'),
-  ])
+  if (!auth.usuario) return
+  const tareas = [api.get('/inicio'), api.get('/anuncios')]
+  if (auth.esProfesor || auth.esAdmin)
+    tareas.push(api.get('/horarios/profesor'))
+  else if (auth.usuario.seccion)
+    tareas.push(api.get(`/horarios/${auth.usuario.seccion}`))
+  const [i, a, h] = await Promise.allSettled(tareas)
   inicio.value = i.status === 'fulfilled' ? i.value : null
   anuncios.value = a.status === 'fulfilled' ? a.value.anuncios.slice(0, 3) : []
+  horario.value = h?.status === 'fulfilled' ? h.value.horario : null
 })
+
+onUnmounted(() => clearInterval(reloj))
 </script>
 
 <template>
   <div ref="raiz" class="pagina menu">
+    <!-- Portada: saludo, fecha y lo que pasa ahora -->
     <header data-entra class="portada">
-      <img
-        src="/fotos/carrusel/estudiantes-1280.webp"
-        srcset="
-          /fotos/carrusel/estudiantes-1280.webp 1280w,
-          /fotos/carrusel/estudiantes-1920.webp 1920w
-        "
-        sizes="(min-width: 1024px) 70vw, 100vw"
-        alt=""
-        class="portada__foto"
-        width="1280"
-        height="853"
-      />
-      <div class="portada__contenido">
-        <EscudoCit :tamano="64" />
-        <div>
-          <p class="portada__hola titulo-manuscrito">
-            {{ saludo }}, {{ auth.nombreCorto }}
+      <div class="portada__brillo" aria-hidden="true" />
+      <div class="portada__fila">
+        <EscudoCit :tamano="56" class="portada__escudo" />
+        <div class="portada__textos">
+          <p class="portada__fecha">
+            <Clock :size="14" aria-hidden="true" />
+            {{ hoy }} · {{ horaDe(ahora) }}
           </p>
-          <p class="portada__rol">
+          <h1 class="portada__hola titulo-manuscrito">
+            {{ saludo }}<template v-if="nombre">, {{ nombre }}</template>
+          </h1>
+          <p v-if="auth.usuario" class="portada__rol">
             {{ auth.nombreRol
             }}<template v-if="auth.usuario?.seccion">
               · Sección {{ auth.usuario.seccion }}</template
             >
-            <span class="portada__colegio"> · Complejo Educativo CIT</span>
+            · Complejo Educativo CIT
+          </p>
+          <p v-else class="portada__rol">
+            Estás explorando CitX como invitado · Complejo Educativo CIT
           </p>
         </div>
+      </div>
+
+      <div class="portada__estado">
+        <RouterLink
+          v-if="clase"
+          :to="{
+            name: 'clases',
+            query: auth.esProfesor || auth.esAdmin ? { ver: 'mio' } : undefined,
+          }"
+          class="estado"
+          :class="{ 'estado--vivo': clase.ahora }"
+        >
+          <span class="estado__punto" aria-hidden="true" />
+          <span
+            ><strong>{{ clase.titulo }}:</strong> {{ clase.texto }}</span
+          >
+        </RouterLink>
+        <RouterLink :to="{ name: 'enfermeria' }" class="estado">
+          <HeartPulse :size="15" aria-hidden="true" />
+          <span>
+            <strong>Enfermería:</strong>
+            {{ enfermeria.abierta ? 'abierta' : 'cerrada' }}
+          </span>
+        </RouterLink>
       </div>
     </header>
 
@@ -121,9 +218,7 @@ onMounted(async () => {
       data-entra
       class="buscador menu__buscar"
       role="search"
-      @submit.prevent="
-        $router.push({ name: 'mapa', query: { buscar: busqueda } })
-      "
+      @submit.prevent="buscar"
     >
       <Search :size="20" aria-hidden="true" />
       <label class="solo-lectores" for="buscar-campus"
@@ -136,22 +231,44 @@ onMounted(async () => {
         type="search"
         placeholder="Buscar en el CIT: soda, enfermería, secundaria..."
       />
+      <Transition name="aparece">
+        <button
+          v-if="busqueda.trim()"
+          type="submit"
+          class="boton boton--principal boton--pequeno buscador__ir"
+        >
+          Buscar
+        </button>
+      </Transition>
     </form>
+
+    <!-- Atajos -->
+    <nav data-entra class="atajos" aria-label="Atajos">
+      <RouterLink
+        v-for="(a, i) in atajos"
+        :key="a.nombre"
+        :to="{ name: a.nombre, query: a.query }"
+        class="atajo"
+        :style="{ '--i': i }"
+      >
+        <span class="atajo__icono" aria-hidden="true">
+          <component :is="a.icono" :size="20" />
+        </span>
+        {{ a.texto }}
+      </RouterLink>
+    </nav>
 
     <div v-if="destacados.length" class="destacados">
       <article
         v-for="d in destacados"
         :key="d.clave"
         data-entra
-        class="destacado"
+        class="destacado tocable"
         :class="`destacado--${d.tono}`"
       >
-        <component
-          :is="d.icono"
-          :size="22"
-          aria-hidden="true"
-          class="destacado__icono"
-        />
+        <span class="destacado__icono" aria-hidden="true">
+          <component :is="d.icono" :size="22" />
+        </span>
         <span class="destacado__textos">
           <strong>{{ d.titulo }}</strong>
           <span>{{ d.texto }}</span>
@@ -184,123 +301,130 @@ onMounted(async () => {
         type="button"
         class="anuncios__cabecera"
         :aria-expanded="anunciosAbiertos"
+        aria-controls="lista-anuncios"
         @click="anunciosAbiertos = !anunciosAbiertos"
       >
         <span class="anuncios__cabecera-izq">
-          <Megaphone :size="16" aria-hidden="true" />
+          <span class="anuncios__icono" aria-hidden="true"
+            ><Megaphone :size="16"
+          /></span>
           <span class="anuncios__titulo">Avisos del colegio</span>
-          <span v-if="!anunciosAbiertos" class="anuncios__contador">{{ anuncios.length }}</span>
+          <span class="anuncios__contador">{{ anuncios.length }}</span>
         </span>
         <ChevronDown
-          :size="16"
+          :size="18"
           aria-hidden="true"
           class="anuncios__chevron"
           :class="{ 'es-abierto': anunciosAbiertos }"
         />
       </button>
-      <Transition name="desplegar">
-        <ul v-show="anunciosAbiertos" class="anuncios__lista">
-          <li
-            v-for="a in anuncios"
-            :key="a.id"
-            class="anuncio"
-            :class="{ 'es-importante': a.importante }"
-          >
-            <div class="anuncio__contenido">
-              <p class="anuncio__titulo">
-                <span v-if="a.importante" class="etiqueta etiqueta--error"
-                  >Importante</span
-                >
-                {{ a.titulo }}
-              </p>
-              <p class="anuncio__cuerpo">{{ a.cuerpo }}</p>
-            </div>
-            <RouterLink
-              v-if="a.lugarClave"
-              :to="{ name: 'mapa', query: { lugar: a.lugarClave } }"
-              class="boton boton--contorno boton--pequeno"
+      <div
+        id="lista-anuncios"
+        class="desplegable"
+        :class="{ 'es-abierto': anunciosAbiertos }"
+        :inert="!anunciosAbiertos"
+      >
+        <div>
+          <ul class="anuncios__lista">
+            <li
+              v-for="a in anuncios"
+              :key="a.id"
+              class="anuncio"
+              :class="{ 'es-importante': a.importante }"
             >
-              <MapPin :size="16" aria-hidden="true" />
-              {{ lugares.nombreDe(a.lugarClave) ?? 'Ver en el mapa' }}
-            </RouterLink>
-          </li>
-        </ul>
-      </Transition>
+              <div class="anuncio__contenido">
+                <p class="anuncio__titulo">
+                  <span v-if="a.importante" class="etiqueta etiqueta--error"
+                    >Importante</span
+                  >
+                  {{ a.titulo }}
+                </p>
+                <p class="anuncio__cuerpo">{{ a.cuerpo }}</p>
+              </div>
+              <RouterLink
+                v-if="a.lugarClave"
+                :to="{ name: 'mapa', query: { lugar: a.lugarClave } }"
+                class="boton boton--contorno boton--pequeno"
+              >
+                <MapPin :size="16" aria-hidden="true" />
+                {{ lugares.nombreDe(a.lugarClave) ?? 'Ver en el mapa' }}
+              </RouterLink>
+            </li>
+          </ul>
+        </div>
+      </div>
     </section>
 
+    <!-- Las tres partes de la app -->
+    <h2 data-entra class="menu__subtitulo">Explorá el CIT</h2>
     <div class="accesos">
-      <RouterLink data-entra :to="{ name: 'mapa' }" class="acceso acceso--mapa">
+      <RouterLink
+        data-entra
+        :to="{ name: 'mapa' }"
+        class="acceso acceso--mapa tocable"
+      >
         <div class="acceso__media acceso__media--mapa">
           <MapaMiniatura />
+          <span class="acceso__sello">
+            <IconoMapa :size="14" aria-hidden="true" /> 19 lugares
+          </span>
         </div>
         <div class="acceso__texto">
-          <h2 class="acceso__titulo titulo-manuscrito">Mapa interactivo</h2>
+          <h3 class="acceso__titulo titulo-manuscrito">Mapa interactivo</h3>
           <p>
             Encontrá aulas, la soda, la enfermería o las canchas, y guardá tus
             lugares favoritos.
           </p>
         </div>
-        <ArrowUpRight :size="22" class="acceso__flecha" aria-hidden="true" />
+        <span class="acceso__flecha" aria-hidden="true"
+          ><ArrowUpRight :size="20"
+        /></span>
       </RouterLink>
 
-      <RouterLink
-        data-entra
-        :to="{ name: 'guia' }"
-        class="acceso acceso--horizontal"
-      >
-        <div class="acceso__media">
-          <img
+      <RouterLink data-entra :to="{ name: 'guia' }" class="acceso tocable">
+        <div class="acceso__media acceso__media--guia">
+          <FotoCompleta
             src="/fotos/portadas/guia.webp"
-            alt=""
-            loading="lazy"
-            width="900"
-            height="648"
+            ancho="1280"
+            alto="855"
+            class="acceso__foto"
           />
+          <span class="acceso__sello">
+            <BookOpen :size="14" aria-hidden="true" /> Guía
+          </span>
         </div>
         <div class="acceso__texto">
-          <h2 class="acceso__titulo titulo-manuscrito">Guía digital</h2>
+          <h3 class="acceso__titulo titulo-manuscrito">Guía digital</h3>
           <p>
             Eventos, tu horario, recordatorios, objetos perdidos y enfermería.
           </p>
         </div>
-        <ArrowUpRight :size="22" class="acceso__flecha" aria-hidden="true" />
+        <span class="acceso__flecha" aria-hidden="true"
+          ><ArrowUpRight :size="20"
+        /></span>
       </RouterLink>
 
-      <RouterLink
-        data-entra
-        :to="{ name: 'soda' }"
-        class="acceso acceso--horizontal acceso--soda"
-      >
-        <div class="acceso__media">
-          <img
+      <RouterLink data-entra :to="{ name: 'soda' }" class="acceso tocable">
+        <div class="acceso__media acceso__media--soda">
+          <FotoCompleta
             src="/fotos/portadas/soda.webp"
-            alt=""
-            loading="lazy"
-            width="900"
-            height="648"
+            ancho="900"
+            alto="648"
+            class="acceso__foto"
           />
+          <span class="acceso__sello">
+            <UtensilsCrossed :size="14" aria-hidden="true" /> Soda
+          </span>
         </div>
         <div class="acceso__texto">
-          <h2 class="acceso__titulo titulo-manuscrito">Soda Armonía</h2>
+          <h3 class="acceso__titulo titulo-manuscrito">Soda Armonía</h3>
           <p>Pedí desde aquí y retirá en el recreo, sin hacer fila.</p>
         </div>
-        <ArrowUpRight :size="22" class="acceso__flecha" aria-hidden="true" />
+        <span class="acceso__flecha" aria-hidden="true"
+          ><ArrowUpRight :size="20"
+        /></span>
       </RouterLink>
     </div>
-
-    <RouterLink
-      data-entra
-      :to="{ name: 'enfermeria' }"
-      class="enfermeria-linea"
-    >
-      <HeartPulse :size="18" aria-hidden="true" />
-      <span>Enfermería:</span>
-      <span
-        class="estado-punto"
-        :class="enfermeria.abierta ? 'es-abierta' : 'es-cerrada'"
-        >{{ enfermeria.mensaje }}</span
-      >
-    </RouterLink>
   </div>
 </template>
 
@@ -312,63 +436,304 @@ onMounted(async () => {
   padding-top: var(--e-5);
 }
 
+/* ---------- Portada ---------- */
 .portada {
   position: relative;
   display: flex;
-  align-items: flex-end;
-  min-height: 170px;
+  flex-direction: column;
+  gap: var(--e-5);
+  padding: var(--e-6) var(--e-5) var(--e-5);
   border-radius: var(--radio-xl);
-  overflow: hidden;
+  background: var(--marino-800);
   color: #ffffff;
-  box-shadow: var(--sombra-2);
+  overflow: hidden;
+  box-shadow: 0 18px 40px -18px rgba(21, 35, 74, 0.7);
+  isolation: isolate;
 }
 
-.portada__foto {
+.portada__brillo {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  z-index: -1;
+  background:
+    radial-gradient(
+      24rem 16rem at 100% 0%,
+      rgba(99, 209, 180, 0.32),
+      transparent 70%
+    ),
+    radial-gradient(
+      22rem 14rem at 0% 120%,
+      rgba(67, 109, 221, 0.4),
+      transparent 70%
+    );
+  animation: respira calc(8s * var(--mov)) ease-in-out infinite alternate;
 }
 
-.portada::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(21, 35, 74, 0.05) 0%,
-    rgba(21, 35, 74, 0.82) 72%
-  );
+@keyframes respira {
+  to {
+    transform: scale(1.12) translate(-2%, 2%);
+  }
 }
 
-.portada__contenido {
-  position: relative;
-  z-index: 1;
+.portada__fila {
   display: flex;
   align-items: center;
   gap: var(--e-4);
-  padding: var(--e-4) var(--e-5);
+}
+
+.portada__escudo {
+  flex-shrink: 0;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.35));
+}
+
+.portada__textos {
+  min-width: 0;
+}
+
+.portada__fecha {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--txt-xs);
+  font-weight: var(--peso-semi);
+  color: var(--marino-100);
 }
 
 .portada__hola {
+  margin-top: 2px;
   font-size: var(--txt-2xl);
+  line-height: 1.15;
   color: #ffffff;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
 .portada__rol {
+  margin-top: 2px;
   font-size: var(--txt-sm);
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--marino-100);
 }
 
-.portada__colegio {
+.portada__estado {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-2);
+}
+
+.estado {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  min-height: 36px;
+  padding: 6px var(--e-3);
+  border-radius: var(--radio-pildora);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: var(--txt-sm);
+  text-decoration: none;
+  transition:
+    background-color var(--dur-rapida) ease,
+    transform var(--dur-toque) var(--curva-salida);
+}
+
+.estado:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.estado:active {
+  transform: scale(0.97);
+}
+
+.estado__punto {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--turquesa-200);
+}
+
+.estado--vivo .estado__punto {
+  background: #63d1b4;
+}
+
+.estado--vivo .estado__punto::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #63d1b4;
+  animation: late calc(1.8s * var(--mov)) var(--curva-salida) infinite;
+}
+
+@keyframes late {
+  to {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+/* ---------- Buscador ---------- */
+.menu__buscar .entrada {
+  min-height: 52px;
+  background: var(--fondo-elevado);
+  box-shadow: var(--sombra-1);
+  padding-right: 6.5rem;
+}
+
+.buscador__ir {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.buscador__ir:active:not(:disabled) {
+  transform: translateY(-50%) scale(0.97);
+}
+
+.aparece-enter-active,
+.aparece-leave-active {
+  transition:
+    opacity calc(200ms * var(--mov)) ease,
+    translate calc(260ms * var(--mov)) var(--curva-salida);
+}
+
+.aparece-enter-from,
+.aparece-leave-to {
+  opacity: 0;
+  translate: 8px 0;
+}
+
+/* ---------- Atajos ---------- */
+.atajos {
+  display: flex;
+  gap: var(--e-2);
+  overflow-x: auto;
+  margin-inline: calc(var(--margen-lateral) * -1);
+  padding: 2px var(--margen-lateral) var(--e-1);
+  scrollbar-width: none;
+}
+
+.atajos::-webkit-scrollbar {
   display: none;
 }
 
+.atajo {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  min-height: 46px;
+  padding: 0 var(--e-4) 0 6px;
+  border-radius: var(--radio-pildora);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  color: var(--texto);
+  font-size: var(--txt-sm);
+  font-weight: var(--peso-semi);
+  text-decoration: none;
+  box-shadow: var(--sombra-1);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--dur-toque) var(--curva-salida),
+    border-color var(--dur-rapida) ease,
+    box-shadow var(--dur-media) var(--curva-salida);
+}
+
+.atajo:hover {
+  color: var(--texto);
+  border-color: var(--principal-borde);
+  box-shadow: var(--sombra-2);
+}
+
+.atajo:active {
+  transform: scale(0.95);
+}
+
+.atajo__icono {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--principal-suave);
+  color: var(--principal-fuerte);
+  transition: transform var(--dur-media) var(--curva-rebote);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .atajo:hover .atajo__icono {
+    transform: rotate(-8deg) scale(1.08);
+  }
+}
+
+/* ---------- Destacados ---------- */
 .destacados {
   display: grid;
   gap: var(--e-3);
+}
+
+.destacado {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--e-1) var(--e-3);
+  align-items: center;
+  padding: var(--e-4);
+  border-radius: var(--radio-lg);
+  border: 1px solid var(--borde);
+  background: var(--superficie);
+  color: var(--texto);
+  box-shadow: var(--sombra-1);
+}
+
+.destacado__icono {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radio-md);
+  background: var(--info-fondo);
+  color: var(--info);
+}
+
+.destacado--exito {
+  border-color: color-mix(in srgb, var(--exito) 35%, transparent);
+  background: var(--exito-fondo);
+}
+
+.destacado--exito .destacado__icono {
+  background: var(--fondo-elevado);
+  color: var(--exito);
+  animation: alegre calc(1.6s * var(--mov)) var(--curva-rebote) infinite;
+}
+
+@keyframes alegre {
+  0%,
+  60%,
+  100% {
+    transform: none;
+  }
+  70% {
+    transform: rotate(-10deg) scale(1.08);
+  }
+  85% {
+    transform: rotate(8deg) scale(1.04);
+  }
+}
+
+.destacado--evento .destacado__icono {
+  background: var(--accion-suave);
+  color: var(--accion);
+}
+
+.destacado__textos {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.destacado__textos span {
+  color: var(--texto-suave);
+  font-size: var(--txt-sm);
 }
 
 .destacado__acciones {
@@ -379,15 +744,13 @@ onMounted(async () => {
   margin-left: calc(var(--e-3) * -1);
 }
 
-.destacado--evento {
-  border-left-color: var(--accion);
-}
-
+/* ---------- Anuncios ---------- */
 .anuncios {
   border-radius: var(--radio-lg);
   border: 1px solid var(--borde);
   background: var(--superficie);
   overflow: hidden;
+  box-shadow: var(--sombra-1);
 }
 
 .anuncios__cabecera {
@@ -395,12 +758,12 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: var(--e-3) var(--e-4);
+  min-height: 56px;
+  padding: var(--e-2) var(--e-4);
   gap: var(--e-3);
-  background: transparent;
   color: var(--texto);
-  cursor: pointer;
   text-align: left;
+  transition: background-color var(--dur-rapida) ease;
 }
 
 .anuncios__cabecera:hover {
@@ -410,33 +773,40 @@ onMounted(async () => {
 .anuncios__cabecera-izq {
   display: flex;
   align-items: center;
-  gap: var(--e-2);
-  color: var(--texto-suave);
+  gap: var(--e-3);
+}
+
+.anuncios__icono {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radio-sm);
+  background: var(--aviso-fondo);
+  color: var(--aviso);
 }
 
 .anuncios__titulo {
-  font-size: var(--txt-sm);
   font-weight: var(--peso-semi);
-  color: var(--texto);
 }
 
 .anuncios__contador {
   display: inline-grid;
   place-items: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
   border-radius: var(--radio-pildora);
-  background: var(--aviso-fondo);
-  color: var(--aviso);
-  font-size: 0.7rem;
+  background: var(--aviso);
+  color: #ffffff;
+  font-size: var(--txt-xs);
   font-weight: var(--peso-fuerte);
   line-height: 1;
 }
 
 .anuncios__chevron {
   color: var(--texto-tenue);
-  transition: transform var(--dur-media) var(--curva);
+  transition: transform calc(360ms * var(--mov)) var(--curva);
   flex-shrink: 0;
 }
 
@@ -489,54 +859,12 @@ onMounted(async () => {
   margin-top: 2px;
 }
 
-.desplegar-enter-active,
-.desplegar-leave-active {
-  transition: opacity var(--dur-media) var(--curva);
-}
-
-.desplegar-enter-from,
-.desplegar-leave-to {
-  opacity: 0;
-}
-
-.destacado {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--e-1) var(--e-3);
-  align-items: center;
-  padding: var(--e-4);
-  border-radius: var(--radio-lg);
-  border: 1px solid var(--borde);
-  border-left: 5px solid var(--info);
-  background: var(--superficie);
-  color: var(--texto);
-  text-decoration: none;
-  box-shadow: var(--sombra-1);
-  transition: box-shadow var(--dur-media) var(--curva);
-}
-
-.destacado--exito {
-  border-left-color: var(--exito);
-  background: var(--exito-fondo);
-}
-
-.destacado__icono {
-  color: var(--info);
-}
-
-.destacado--exito .destacado__icono {
-  color: var(--exito);
-}
-
-.destacado__textos {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.destacado__textos span {
-  color: var(--texto-suave);
-  font-size: var(--txt-sm);
+/* ---------- Accesos ---------- */
+.menu__subtitulo {
+  margin-top: var(--e-2);
+  font-family: var(--fuente-titulo);
+  font-size: var(--txt-xl);
+  color: var(--texto-titulo);
 }
 
 .accesos {
@@ -555,41 +883,61 @@ onMounted(async () => {
   color: var(--texto);
   text-decoration: none;
   box-shadow: var(--sombra-2);
-  transition:
-    transform var(--dur-media) var(--curva),
-    box-shadow var(--dur-media) var(--curva);
 }
 
 .acceso:hover {
   color: var(--texto);
-  box-shadow: var(--sombra-4);
-  transform: translateY(-3px);
-}
-
-.acceso:active {
-  transform: scale(0.99);
 }
 
 .acceso__media {
   position: relative;
-  aspect-ratio: 16 / 9;
   overflow: hidden;
   background: var(--superficie-3);
 }
 
-.acceso__media img {
+/* Cada caja tiene la proporcion de su foto: nada se corta. */
+.acceso__media--mapa {
+  aspect-ratio: 1452 / 1426;
+  background: #ffffff;
+}
+
+.acceso__media--guia {
+  aspect-ratio: 1280 / 855;
+}
+
+.acceso__media--soda {
+  aspect-ratio: 900 / 648;
+}
+
+.acceso__foto {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  transition: transform calc(700ms * var(--mov)) var(--curva);
 }
 
-.acceso:hover .acceso__media img {
-  transform: scale(1.04);
+.acceso__media > :first-child {
+  transition: transform calc(800ms * var(--mov)) var(--curva-salida);
 }
 
-.acceso__media--mapa {
-  aspect-ratio: 1000 / 600;
+@media (hover: hover) and (pointer: fine) {
+  .acceso:hover .acceso__media > :first-child {
+    transform: scale(1.03);
+  }
+}
+
+.acceso__sello {
+  position: absolute;
+  left: var(--e-3);
+  top: var(--e-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px var(--e-3);
+  border-radius: var(--radio-pildora);
+  background: var(--fondo-elevado);
+  color: var(--texto);
+  font-size: var(--txt-xs);
+  font-weight: var(--peso-semi);
+  box-shadow: var(--sombra-2);
 }
 
 .acceso__texto {
@@ -610,73 +958,23 @@ onMounted(async () => {
   position: absolute;
   right: var(--e-4);
   bottom: var(--e-5);
-  color: var(--texto-tenue);
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--superficie-3);
+  color: var(--texto-suave);
   transition:
-    transform var(--dur-media) var(--curva),
-    color var(--dur-media) var(--curva);
+    transform var(--dur-media) var(--curva-salida),
+    background-color var(--dur-media) ease,
+    color var(--dur-media) ease;
 }
 
 .acceso:hover .acceso__flecha {
-  transform: translate(2px, -2px);
-  color: var(--accion);
-}
-
-.acceso--horizontal {
-  flex-direction: row;
-  align-items: stretch;
-}
-
-.acceso--horizontal .acceso__media {
-  width: 38%;
-  flex-shrink: 0;
-  aspect-ratio: auto;
-  min-height: 132px;
-}
-
-.acceso--horizontal .acceso__texto {
-  align-self: center;
-}
-
-.enfermeria-linea {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--e-2);
-  min-height: var(--objetivo-tactil);
-  color: var(--texto-suave);
-  font-size: var(--txt-sm);
-  text-decoration: none;
-}
-
-.estado-punto {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: var(--peso-semi);
-}
-
-.estado-punto::before {
-  content: '';
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-}
-
-.es-abierta {
-  color: var(--exito);
-}
-
-.es-abierta::before {
-  background: var(--exito);
-}
-
-.es-cerrada {
-  color: var(--texto-suave);
-}
-
-.es-cerrada::before {
-  background: transparent;
-  border: 2px solid var(--texto-tenue);
+  transform: rotate(45deg);
+  background: var(--principal);
+  color: var(--sobre-principal);
 }
 
 @media (min-width: 768px) {
@@ -685,7 +983,7 @@ onMounted(async () => {
   }
 
   .portada {
-    min-height: 210px;
+    padding: var(--e-8);
   }
 
   .portada__hola {
@@ -693,46 +991,22 @@ onMounted(async () => {
   }
 
   .accesos {
-    grid-template-columns: 1.25fr 1fr;
-    grid-template-rows: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
   }
 
   .acceso--mapa {
     grid-row: span 2;
   }
-
-  .acceso--mapa .acceso__media {
-    flex: 1;
-    aspect-ratio: auto;
-    min-height: 260px;
-  }
-
-  .acceso--horizontal {
-    flex-direction: column;
-  }
-
-  .acceso--horizontal .acceso__media {
-    width: 100%;
-    min-height: 0;
-    aspect-ratio: 16 / 7;
-  }
-
-  .acceso--horizontal .acceso__texto {
-    align-self: stretch;
-  }
 }
 
 @media (min-width: 1024px) {
-  .portada__colegio {
-    display: inline;
-  }
-
   .destacados {
     grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
   }
 
   .menu__buscar {
-    max-width: 34rem;
+    max-width: 36rem;
   }
 }
 </style>

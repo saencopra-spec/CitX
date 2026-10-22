@@ -197,14 +197,24 @@ onUnmounted(() => {
   border-top: 1px solid var(--borde);
 }
 
-.dialogo-enter-active,
-.dialogo-leave-active {
-  transition: opacity var(--dur-media) var(--curva);
+.dialogo-enter-active {
+  transition: opacity calc(280ms * var(--mov)) ease;
 }
 
-.dialogo-enter-active .panel,
+.dialogo-leave-active {
+  transition: opacity calc(200ms * var(--mov)) ease;
+}
+
+.dialogo-enter-active .panel {
+  transition:
+    transform calc(460ms * var(--mov)) var(--curva),
+    opacity calc(260ms * var(--mov)) ease;
+}
+
 .dialogo-leave-active .panel {
-  transition: transform var(--dur-media) var(--curva);
+  transition:
+    transform calc(200ms * var(--mov)) var(--curva-suave),
+    opacity calc(180ms * var(--mov)) ease;
 }
 
 .dialogo-enter-from,
@@ -214,12 +224,13 @@ onUnmounted(() => {
 
 .dialogo-enter-from .panel,
 .dialogo-leave-to .panel {
-  transform: translateY(40px);
+  transform: translateY(100%);
 }
 
 .fondo--centro.dialogo-enter-from .panel,
 .fondo--centro.dialogo-leave-to .panel {
-  transform: scale(0.96);
+  transform: translateY(12px) scale(0.95);
+  opacity: 0;
 }
 
 @media (min-width: 768px) {
@@ -234,7 +245,8 @@ onUnmounted(() => {
 
   .dialogo-enter-from .panel,
   .dialogo-leave-to .panel {
-    transform: scale(0.96);
+    transform: translateY(12px) scale(0.95);
+    opacity: 0;
   }
 }
 </style>

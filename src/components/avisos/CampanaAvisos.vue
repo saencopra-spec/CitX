@@ -133,7 +133,7 @@ onUnmounted(() => {
       </span>
     </button>
 
-    <Transition name="panel">
+    <Transition name="emergente">
       <div
         v-if="abierta"
         :id="id"
@@ -163,10 +163,12 @@ onUnmounted(() => {
 
         <ul v-else class="lista">
           <li
-            v-for="n in recientes"
+            v-for="(n, i) in recientes"
             :key="n.id"
             class="aviso"
             :class="{ 'es-nuevo': !n.leida }"
+            data-escalon
+            :style="{ '--i': i }"
           >
             <span class="aviso__icono" :data-tipo="n.tipo" aria-hidden="true">
               <component :is="iconos[n.tipo] ?? Bell" :size="18" />
@@ -250,22 +252,38 @@ onUnmounted(() => {
   font-weight: var(--peso-fuerte);
   line-height: 1;
   border: 2px solid var(--fondo);
+  animation: cuenta-entra calc(420ms * var(--mov)) var(--curva-rebote);
+}
+
+@keyframes cuenta-entra {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+
+.aviso {
+  transition: background-color var(--dur-rapida) ease;
+}
+
+.aviso:hover {
+  background: var(--superficie-hover);
 }
 
 .panel {
   position: absolute;
   top: calc(100% + 8px);
-  left: 0;
+  right: 0;
   z-index: var(--z-modal);
   width: min(calc(100vw - 1.5rem), 25rem);
   max-height: min(75dvh, 36rem);
   display: flex;
   flex-direction: column;
   background: var(--fondo-elevado);
-  border: 1px solid var(--borde);
   border-radius: var(--radio-lg);
-  box-shadow: var(--sombra-4);
+  box-shadow: var(--sombra-flotante);
   overflow: hidden;
+  --origen: top right;
 }
 
 .panel__encabezado {
@@ -385,19 +403,5 @@ onUnmounted(() => {
     right: var(--e-3);
     width: auto;
   }
-}
-
-.panel-enter-active,
-.panel-leave-active {
-  transition:
-    opacity var(--dur-media) var(--curva),
-    transform var(--dur-media) var(--curva);
-  transform-origin: top left;
-}
-
-.panel-enter-from,
-.panel-leave-to {
-  opacity: 0;
-  transform: translateY(-6px) scale(0.98);
 }
 </style>

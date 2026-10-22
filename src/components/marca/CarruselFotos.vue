@@ -3,13 +3,17 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { sinMovimiento } from '@/lib/movimiento'
 
 /**
- * Fotos reales del colegio que se van turnando con un acercamiento lento.
+ * Fotos reales del colegio que se van turnando con un fundido. Cada foto se
+ * ve completa (sin recortes): el marco tiene la misma proporcion que las
+ * fotos (3:2) y lo que sobre se llena con la misma foto desenfocada.
  * Si la persona pidio reducir el movimiento, se queda fija la primera.
  */
 const props = defineProps({
-  intervalo: { type: Number, default: 5500 },
+  intervalo: { type: Number, default: 5000 },
   /** Ancho que ocupa en pantalla, para que el navegador elija la foto justa. */
-  sizes: { type: String, default: '(min-width: 1024px) 150vh, 100vw' },
+  sizes: { type: String, default: '(min-width: 1024px) 45vw, 100vw' },
+  /** Muestra el nombre de cada foto abajo. */
+  conPie: { type: Boolean, default: false },
 })
 
 const fotos = [
@@ -25,118 +29,192 @@ const fotos = [
 }))
 
 const actual = ref(0)
-const animado = ref(false)
 let temporizador = null
 
-onMounted(() => {
+function ir(i) {
+  actual.value = (i + fotos.length) % fotos.length
+  reiniciar()
+}
+
+function reiniciar() {
+  clearInterval(temporizador)
   if (sinMovimiento()) return
-  animado.value = true
   temporizador = setInterval(() => {
     actual.value = (actual.value + 1) % fotos.length
   }, props.intervalo)
-})
+}
 
+onMounted(reiniciar)
 onUnmounted(() => clearInterval(temporizador))
 </script>
 
 <template>
-  <div
-    class="carrusel"
-    :class="{ 'carrusel--animado': animado }"
-    aria-hidden="true"
-  >
-    <img
-      v-for="(f, i) in fotos"
-      :key="f.src"
-      :src="f.src"
-      :srcset="f.srcset"
-      :sizes="sizes"
-      alt=""
-      class="carrusel__foto"
-      :class="{ 'es-visible': i === actual }"
-      :loading="i === 0 ? 'eager' : 'lazy'"
-      decoding="async"
-    />
-    <div class="carrusel__velo" />
-    <div class="carrusel__puntos">
-      <span
+  <figure class="carrusel">
+    <div class="carrusel__marco">
+      <div
         v-for="(f, i) in fotos"
         :key="f.src"
-        :class="{ 'es-activo': i === actual }"
-      />
+        class="carrusel__capa"
+        :class="{ 'es-visible': i === actual }"
+        :aria-hidden="i !== actual"
+      >
+        <img
+          :src="f.src"
+          alt=""
+          class="carrusel__fondo"
+          aria-hidden="true"
+          :loading="i === 0 ? 'eager' : 'lazy'"
+          decoding="async"
+        />
+        <img
+          :src="f.src"
+          :srcset="f.srcset"
+          :sizes="sizes"
+          :alt="f.texto"
+          class="carrusel__foto"
+          :loading="i === 0 ? 'eager' : 'lazy'"
+          decoding="async"
+        />
+      </div>
     </div>
-  </div>
+    <figcaption class="carrusel__pie">
+      <Transition name="pie" mode="out-in">
+        <span v-if="conPie" :key="actual" class="carrusel__texto">{{
+          fotos[actual].texto
+        }}</span>
+      </Transition>
+      <span class="carrusel__puntos">
+        <button
+          v-for="(f, i) in fotos"
+          :key="f.src"
+          type="button"
+          :class="{ 'es-activo': i === actual }"
+          :aria-label="`Ver foto: ${f.texto}`"
+          :aria-pressed="i === actual"
+          @click="ir(i)"
+        />
+      </span>
+    </figcaption>
+  </figure>
 </template>
 
 <style scoped>
 .carrusel {
-  position: absolute;
-  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+}
+
+.carrusel__marco {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  border-radius: inherit;
   overflow: hidden;
   background: var(--marino-800);
 }
 
-.carrusel__foto {
+.carrusel__capa {
   position: absolute;
   inset: 0;
+  opacity: 0;
+  transform: scale(1.02);
+  filter: blur(6px);
+  transition:
+    opacity calc(1s * var(--mov)) ease,
+    transform calc(1.4s * var(--mov)) var(--curva-salida),
+    filter calc(1s * var(--mov)) ease;
+}
+
+.carrusel__capa.es-visible {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+.carrusel__fondo {
+  position: absolute;
+  inset: -10%;
+  width: 120%;
+  height: 120%;
+  max-width: none;
+  object-fit: cover;
+  filter: blur(20px) saturate(1.2);
+  opacity: 0.8;
+}
+
+.carrusel__foto {
+  position: relative;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  opacity: 0;
-  transition: opacity 1.4s ease;
+  object-fit: contain;
 }
 
-.carrusel__foto.es-visible {
-  opacity: 1;
+.carrusel__pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-3);
+  min-height: 24px;
 }
 
-.carrusel--animado .carrusel__foto.es-visible {
-  animation: acercar 9s ease-out forwards;
-}
-
-@keyframes acercar {
-  from {
-    transform: scale(1.02);
-  }
-  to {
-    transform: scale(1.06) translate(-1%, -0.5%);
-  }
-}
-
-.carrusel__velo {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(
-      180deg,
-      rgba(21, 35, 74, 0.35) 0%,
-      rgba(21, 35, 74, 0.15) 35%,
-      rgba(21, 35, 74, 0.85) 100%
-    ),
-    linear-gradient(120deg, rgba(3, 122, 118, 0.35), transparent 60%);
+.carrusel__texto {
+  font-size: var(--txt-sm);
+  color: inherit;
+  opacity: 0.85;
 }
 
 .carrusel__puntos {
-  position: absolute;
-  left: 50%;
-  bottom: var(--e-4);
-  transform: translateX(-50%);
   display: flex;
-  gap: 6px;
+  gap: 2px;
+  margin-left: auto;
 }
 
-.carrusel__puntos span {
-  width: 6px;
-  height: 6px;
+.carrusel__puntos button {
+  position: relative;
+  width: 22px;
+  height: 24px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.carrusel__puntos button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  width: 7px;
+  height: 7px;
   border-radius: var(--radio-pildora);
-  background: rgba(255, 255, 255, 0.45);
+  background: currentColor;
+  opacity: 0.35;
+  transform: translateY(-50%);
   transition:
-    width var(--dur-lenta) var(--curva),
-    background-color var(--dur-lenta) var(--curva);
+    width calc(400ms * var(--mov)) var(--curva-salida),
+    opacity calc(300ms * var(--mov)) ease;
 }
 
-.carrusel__puntos .es-activo {
-  width: 20px;
-  background: #ffffff;
+.carrusel__puntos button.es-activo {
+  width: 32px;
+}
+
+.carrusel__puntos button.es-activo::after {
+  width: 22px;
+  opacity: 1;
+}
+
+.pie-enter-active,
+.pie-leave-active {
+  transition:
+    opacity calc(260ms * var(--mov)) ease,
+    transform calc(320ms * var(--mov)) var(--curva-salida);
+}
+
+.pie-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.pie-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 </style>

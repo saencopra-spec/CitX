@@ -11,13 +11,50 @@ import { useNotificaciones } from './notificaciones'
 
 export const ROLES = NOMBRE_ROL
 
+const LLAVE_INVITADO = 'citx-invitado'
+
+function leerInvitado() {
+  try {
+    return localStorage.getItem(LLAVE_INVITADO) === '1'
+  } catch {
+    return false
+  }
+}
+
+function guardarInvitado(valor) {
+  try {
+    if (valor) localStorage.setItem(LLAVE_INVITADO, '1')
+    else localStorage.removeItem(LLAVE_INVITADO)
+  } catch {
+    // Sin almacenamiento, el modo invitado dura hasta recargar.
+  }
+}
+
 export const useAuth = defineStore('auth', () => {
   const usuario = ref(null)
   /** `listo` indica que ya preguntamos a la API si habia sesion abierta. */
   const listo = ref(false)
   const cargando = ref(false)
 
+  /**
+   * Modo invitado: se puede recorrer la app sin cuenta (mapa, eventos de
+   * todo el colegio, menu de la soda, enfermeria), pero no pedir ni guardar.
+   */
+  const invitado = ref(leerInvitado())
+
   const haySesion = computed(() => Boolean(usuario.value))
+  /** Esta dentro de la app, con cuenta o como invitado. */
+  const dentro = computed(() => haySesion.value || invitado.value)
+
+  function entrarComoInvitado() {
+    invitado.value = true
+    guardarInvitado(true)
+  }
+
+  function dejarDeSerInvitado() {
+    invitado.value = false
+    guardarInvitado(false)
+  }
   const esAdmin = computed(() => usuario.value?.rol === 'admin')
   const esPersonalSoda = computed(() => usuario.value?.rol === 'soda')
   /** Soda y objetos perdidos trabajan solo en el panel, en su seccion. */
@@ -27,7 +64,7 @@ export const useAuth = defineStore('auth', () => {
 
   /** Adonde va cada persona al entrar. */
   function inicioDe(u = usuario.value) {
-    if (!u) return { name: 'empieza' }
+    if (!u) return invitado.value ? { name: 'menu' } : { name: 'empieza' }
     if (u.rol === 'soda') return { name: 'admin-pedidos' }
     if (u.rol === 'objetos') return { name: 'admin-objetos' }
     return { name: 'menu' }
@@ -53,11 +90,17 @@ export const useAuth = defineStore('auth', () => {
   }
 
   const nombreCorto = computed(() => {
-    if (!usuario.value?.nombre) return ''
+    if (!usuario.value?.nombre) return invitado.value ? 'invitado' : ''
     return usuario.value.nombre.trim().split(/\s+/)[0]
   })
 
-  const nombreRol = computed(() => ROLES[usuario.value?.rol] ?? '')
+  const nombreRol = computed(() =>
+    usuario.value
+      ? (ROLES[usuario.value.rol] ?? '')
+      : invitado.value
+        ? 'Invitado'
+        : ''
+  )
 
   /** Pregunta a la API quien es el usuario de la cookie de sesion. */
   async function cargarSesion() {
@@ -66,6 +109,7 @@ export const useAuth = defineStore('auth', () => {
     try {
       const datos = await api.get('/auth/yo')
       usuario.value = datos?.usuario ?? null
+      if (usuario.value) dejarDeSerInvitado()
       if (datos?.usuario?.configuracion) {
         useConfiguracion().adoptarDeCuenta(datos.usuario.configuracion)
       }
@@ -80,6 +124,7 @@ export const useAuth = defineStore('auth', () => {
   async function entrar(correo, contrasena) {
     const datos = await api.post('/auth/entrar', { correo, contrasena })
     usuario.value = datos.usuario
+    dejarDeSerInvitado()
     if (datos.usuario?.configuracion) {
       useConfiguracion().adoptarDeCuenta(datos.usuario.configuracion)
     }
@@ -90,6 +135,7 @@ export const useAuth = defineStore('auth', () => {
   async function registrar(formulario) {
     const datos = await api.post('/auth/registro', formulario)
     usuario.value = datos.usuario
+    dejarDeSerInvitado()
     listo.value = true
     return datos.usuario
   }
@@ -102,6 +148,10 @@ export const useAuth = defineStore('auth', () => {
   }
 
   async function salir() {
+    if (!usuario.value) {
+      dejarDeSerInvitado()
+      return
+    }
     try {
       await api.post('/auth/salir')
     } finally {
@@ -125,6 +175,10 @@ export const useAuth = defineStore('auth', () => {
     listo,
     cargando,
     haySesion,
+    invitado,
+    dentro,
+    entrarComoInvitado,
+    dejarDeSerInvitado,
     esAdmin,
     esPersonalSoda,
     soloPanel,

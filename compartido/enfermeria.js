@@ -13,22 +13,23 @@ export function estadoEnfermeria(
   const p = partesCR(ahora)
   const abre = aMinutos(horario.abre)
   const cierra = aMinutos(horario.cierra)
+  // La hora ya termina en punto ('7:00 a. m.'), asi que no se agrega otro.
   const textoAbre = horaLegible(abre)
 
   if (p.diaSemana === 0 || p.diaSemana === 6) {
     return {
       abierta: false,
-      mensaje: `Cerrada. Abre el lunes a las ${textoAbre}.`,
+      mensaje: `Cerrada. Abre el lunes a las ${textoAbre}`,
     }
   }
   if (p.minutos < abre) {
-    return { abierta: false, mensaje: `Cerrada. Abre hoy a las ${textoAbre}.` }
+    return { abierta: false, mensaje: `Cerrada. Abre hoy a las ${textoAbre}` }
   }
   if (p.minutos >= cierra) {
     const cuando = p.diaSemana === 5 ? 'el lunes' : 'mañana'
     return {
       abierta: false,
-      mensaje: `Cerrada. Abre ${cuando} a las ${textoAbre}.`,
+      mensaje: `Cerrada. Abre ${cuando} a las ${textoAbre}`,
     }
   }
   const faltan = cierra - p.minutos
@@ -37,6 +38,6 @@ export function estadoEnfermeria(
   }
   return {
     abierta: true,
-    mensaje: `Abierta hasta las ${horaLegible(cierra)}.`,
+    mensaje: `Abierta hasta las ${horaLegible(cierra)}`,
   }
 }

@@ -1,17 +1,14 @@
 <script setup>
-import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import gsap from 'gsap'
 import { ArrowLeft } from 'lucide-vue-next'
 import LogoCitx from '@/components/marca/LogoCitx.vue'
 import EscudoCit from '@/components/marca/EscudoCit.vue'
 import CarruselFotos from '@/components/marca/CarruselFotos.vue'
-import { sinMovimiento } from '@/lib/movimiento'
 
 /**
- * Marco de las pantallas para entrar y crear cuenta: arriba (o a la
- * izquierda en computadora) fotos del colegio con el escudo, y el
- * formulario en una tarjeta que sube encima.
+ * Marco de las pantallas para entrar y crear cuenta. En computadora, a la
+ * izquierda va la marca con fotos del colegio (completas, sin recortes); en
+ * celular, la marca arriba y el formulario debajo.
  */
 defineProps({
   titulo: { type: String, required: true },
@@ -19,65 +16,45 @@ defineProps({
 })
 
 const router = useRouter()
-const raiz = ref(null)
 
 function volver() {
   if (window.history.state?.back) router.back()
-  else router.push({ name: 'empieza' })
+  else router.push({ name: 'bienvenida' })
 }
-
-onMounted(() => {
-  if (sinMovimiento() || !raiz.value) return
-  const q = (s) => raiz.value.querySelectorAll(s)
-  gsap
-    .timeline({ defaults: { ease: 'power3.out' } })
-    .from(q('[data-escudo]'), {
-      opacity: 0,
-      scale: 0.7,
-      rotate: -8,
-      duration: 0.7,
-    })
-    .from(q('[data-logo]'), { opacity: 0, x: -14, duration: 0.5 }, '-=0.35')
-    .from(q('[data-lema]'), { opacity: 0, y: 10, duration: 0.5 }, '-=0.25')
-    .from(q('.tarjeta'), { y: 48, opacity: 0, duration: 0.65 }, 0.15)
-    .from(
-      q('.tarjeta [data-entra]'),
-      { opacity: 0, y: 12, duration: 0.4, stagger: 0.06, clearProps: 'all' },
-      0.4
-    )
-})
 </script>
 
 <template>
-  <div ref="raiz" class="entrada-pantalla">
+  <div class="entrada-pantalla">
     <section class="portada">
-      <CarruselFotos />
       <button type="button" class="volver" aria-label="Volver" @click="volver">
         <ArrowLeft :size="22" aria-hidden="true" />
       </button>
       <div class="portada__marca">
         <div class="portada__logos">
-          <span data-escudo class="portada__escudo"
-            ><EscudoCit :tamano="96"
-          /></span>
+          <span class="portada__escudo"><EscudoCit :tamano="64" /></span>
           <span class="portada__linea" aria-hidden="true" />
-          <span data-logo
-            ><LogoCitx :tamano="72" con-nombre alternativo="CitX"
-          /></span>
+          <LogoCitx
+            :tamano="52"
+            con-nombre
+            direccion="horizontal"
+            alternativo="CitX"
+            class="portada__logo"
+          />
         </div>
-        <p data-lema class="portada__lema">
+        <p class="portada__lema">
           El mapa del campus, la guía del colegio y la soda, en el mismo lugar.
         </p>
+        <CarruselFotos class="portada__fotos" con-pie />
         <p class="portada__pie">
           Complejo Educativo CIT · La Asunción de Belén, Heredia
         </p>
       </div>
     </section>
 
-    <main class="tarjeta">
+    <main id="contenido" class="tarjeta">
       <div class="tarjeta__contenido">
-        <h1 data-entra class="titulo titulo-manuscrito">{{ titulo }}</h1>
-        <p v-if="bajada" data-entra class="bajada">{{ bajada }}</p>
+        <h1 class="titulo titulo-manuscrito">{{ titulo }}</h1>
+        <p v-if="bajada" class="bajada">{{ bajada }}</p>
         <slot />
       </div>
     </main>
@@ -94,10 +71,22 @@ onMounted(() => {
 
 .portada {
   position: relative;
-  min-height: max(36dvh, 250px);
   display: flex;
-  align-items: flex-end;
   justify-content: center;
+  padding: calc(var(--e-5) + env(safe-area-inset-top)) var(--margen-lateral)
+    var(--e-12);
+  background:
+    radial-gradient(
+      28rem 18rem at 85% 0%,
+      rgba(99, 209, 180, 0.22),
+      transparent 70%
+    ),
+    radial-gradient(
+      24rem 16rem at 0% 100%,
+      rgba(67, 109, 221, 0.25),
+      transparent 70%
+    ),
+    var(--marino-800);
   color: #ffffff;
   overflow: hidden;
 }
@@ -112,23 +101,28 @@ onMounted(() => {
   width: var(--objetivo-tactil);
   height: var(--objetivo-tactil);
   border-radius: 50%;
-  background: rgba(13, 17, 23, 0.35);
-  backdrop-filter: blur(6px);
+  background: rgba(255, 255, 255, 0.08);
   color: #ffffff;
+  transition:
+    background-color var(--dur-rapida) ease,
+    transform var(--dur-toque) var(--curva-salida);
 }
 
 .volver:hover {
-  background: rgba(13, 17, 23, 0.55);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.volver:active {
+  transform: scale(0.92);
 }
 
 .portada__marca {
-  position: relative;
-  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--e-2);
-  padding: var(--e-8) var(--margen-lateral) calc(var(--e-10) + var(--e-4));
+  gap: var(--e-3);
+  width: 100%;
+  max-width: 34rem;
   text-align: center;
 }
 
@@ -136,46 +130,44 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: var(--e-4);
-  padding: var(--e-3) var(--e-5);
-  border-radius: var(--radio-xl);
-  background: #000;
-  box-shadow: 0 10px 30px rgba(13, 17, 23, 0.3);
+  animation: entra calc(700ms * var(--mov)) var(--curva-salida) backwards;
 }
 
-.portada__escudo,
-[data-logo] {
+.portada__escudo {
   display: inline-flex;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
 }
 
-.portada__escudo :deep(.escudo) {
-  height: 76px !important;
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
-}
-
-[data-logo] :deep(.marca__bombilla) {
-  height: 56px !important;
-}
-
-[data-logo] :deep(.marca__nombre) {
-  color: #fff;
-  font-size: 26px !important;
+.portada__logo :deep(.marca__nombre) {
+  color: #ffffff;
 }
 
 .portada__linea {
   width: 1px;
-  height: 60px;
-  background: rgba(255, 255, 255, 0.25);
+  height: 52px;
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .portada__lema {
   max-width: 30ch;
   font-family: var(--fuente-titulo);
   font-size: var(--txt-md);
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  color: var(--marino-100);
+  animation: entra calc(700ms * var(--mov)) var(--curva-salida)
+    calc(100ms * var(--mov)) backwards;
 }
 
+.portada__fotos,
 .portada__pie {
   display: none;
+}
+
+@keyframes entra {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(4px);
+  }
 }
 
 .tarjeta {
@@ -183,11 +175,19 @@ onMounted(() => {
   z-index: 2;
   flex: 1;
   margin-top: calc(var(--e-8) * -1);
-  padding: var(--e-6) var(--margen-lateral)
+  padding: var(--e-8) var(--margen-lateral)
     calc(var(--e-8) + env(safe-area-inset-bottom));
   background: var(--fondo-elevado);
   border-radius: var(--radio-xl) var(--radio-xl) 0 0;
   box-shadow: 0 -10px 30px rgba(13, 17, 23, 0.12);
+  animation: tarjeta-sube calc(650ms * var(--mov)) var(--curva) backwards;
+}
+
+@keyframes tarjeta-sube {
+  from {
+    transform: translateY(48px);
+    opacity: 0;
+  }
 }
 
 .tarjeta__contenido {
@@ -197,6 +197,23 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: var(--e-5);
+}
+
+/* Lo que va dentro de la tarjeta entra en cascada. */
+.tarjeta__contenido > :deep(*) {
+  animation: entra calc(600ms * var(--mov)) var(--curva-salida) backwards;
+}
+
+.tarjeta__contenido > :deep(:nth-child(2)) {
+  animation-delay: calc(60ms * var(--mov));
+}
+
+.tarjeta__contenido > :deep(:nth-child(3)) {
+  animation-delay: calc(120ms * var(--mov));
+}
+
+.tarjeta__contenido > :deep(:nth-child(n + 4)) {
+  animation-delay: calc(180ms * var(--mov));
 }
 
 .titulo {
@@ -219,52 +236,63 @@ onMounted(() => {
     top: 0;
     height: 100dvh;
     align-items: center;
+    padding: var(--e-10) var(--e-12);
   }
 
   .portada__marca {
     gap: var(--e-5);
-    padding: var(--e-12);
-  }
-
-  .portada__escudo :deep(.escudo) {
-    height: 120px !important;
-  }
-
-  [data-logo] :deep(.marca__bombilla) {
-    height: 88px !important;
-  }
-
-  [data-logo] :deep(.marca__nombre) {
-    font-size: 40px !important;
-  }
-
-  .portada__logos {
-    padding: var(--e-5) var(--e-8);
   }
 
   .portada__linea {
-    height: 100px;
+    height: 80px;
+  }
+
+  .portada__escudo :deep(.escudo) {
+    height: 96px !important;
+  }
+
+  .portada__logo :deep(.marca__bombilla) {
+    height: 76px !important;
+  }
+
+  .portada__logo :deep(.marca__nombre) {
+    font-size: 34px !important;
   }
 
   .portada__lema {
-    font-size: var(--txt-2xl);
-    line-height: 1.3;
+    font-size: var(--txt-xl);
+    line-height: 1.35;
+  }
+
+  .portada__fotos {
+    display: flex;
+    width: 100%;
+    margin-top: var(--e-4);
+    border-radius: var(--radio-xl);
+    color: #ffffff;
+    animation: entra calc(800ms * var(--mov)) var(--curva-salida)
+      calc(200ms * var(--mov)) backwards;
+  }
+
+  .portada__fotos :deep(.carrusel__marco) {
+    border-radius: var(--radio-xl);
+    box-shadow: 0 24px 48px -16px rgba(0, 0, 0, 0.55);
   }
 
   .portada__pie {
     display: block;
-    margin-top: var(--e-6);
     font-size: var(--txt-sm);
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--marino-200);
   }
 
   .tarjeta {
     display: flex;
     align-items: center;
     margin: 0;
-    padding: var(--e-10) var(--e-10);
+    padding: var(--e-10);
     border-radius: 0;
     box-shadow: none;
+    animation: none;
   }
 
   .titulo {

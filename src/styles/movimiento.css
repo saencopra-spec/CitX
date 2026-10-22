@@ -1,0 +1,196 @@
+/* ==========================================================================
+   CitX - Movimiento
+   Transiciones compartidas. Todas usan --mov, asi que se apagan solas cuando
+   la persona pide reducir el movimiento.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Menus emergentes: crecen desde el boton que los abre. Cada menu define su
+   punto de origen con --origen (por ejemplo, 'top right').
+   -------------------------------------------------------------------------- */
+.emergente-enter-active {
+  transition:
+    opacity var(--dur-emergente) var(--curva-salida),
+    transform calc(300ms * var(--mov)) var(--curva-salida),
+    filter var(--dur-emergente) var(--curva-salida);
+}
+
+.emergente-leave-active {
+  transition:
+    opacity calc(140ms * var(--mov)) ease,
+    transform calc(140ms * var(--mov)) ease,
+    filter calc(140ms * var(--mov)) ease;
+}
+
+.emergente-enter-from,
+.emergente-leave-to {
+  opacity: 0;
+  transform: scale(0.94) translateY(-6px);
+  filter: blur(2px);
+}
+
+.emergente-enter-active,
+.emergente-leave-active {
+  transform-origin: var(--origen, top right);
+}
+
+/* Los elementos de un menu entran uno detras del otro. */
+.emergente-enter-active [data-escalon] {
+  animation: escalon calc(320ms * var(--mov)) var(--curva-salida) both;
+  animation-delay: calc(var(--i, 0) * 28ms * var(--mov) + 40ms * var(--mov));
+}
+
+@keyframes escalon {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Velo oscuro detras de dialogos y hojas.
+   -------------------------------------------------------------------------- */
+.velo-enter-active {
+  transition: opacity calc(260ms * var(--mov)) ease;
+}
+
+.velo-leave-active {
+  transition: opacity calc(180ms * var(--mov)) ease;
+}
+
+.velo-enter-from,
+.velo-leave-to {
+  opacity: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Hoja que sube desde abajo (celular) o dialogo centrado (computadora).
+   -------------------------------------------------------------------------- */
+.hoja-sube-enter-active {
+  transition:
+    transform calc(420ms * var(--mov)) var(--curva),
+    opacity calc(260ms * var(--mov)) ease;
+}
+
+.hoja-sube-leave-active {
+  transition:
+    transform calc(220ms * var(--mov)) var(--curva-suave),
+    opacity calc(180ms * var(--mov)) ease;
+}
+
+.hoja-sube-enter-from,
+.hoja-sube-leave-to {
+  transform: translateY(100%);
+}
+
+@media (min-width: 768px) {
+  .hoja-sube-enter-from,
+  .hoja-sube-leave-to {
+    transform: translateY(16px) scale(0.97);
+    opacity: 0;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Desplegable con alto automatico (grid 0fr a 1fr, sin medir con JS).
+   -------------------------------------------------------------------------- */
+.desplegable {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows calc(360ms * var(--mov)) var(--curva),
+    opacity calc(240ms * var(--mov)) ease;
+}
+
+.desplegable > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.desplegable.es-abierto {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+/* --------------------------------------------------------------------------
+   Aparecer al hacer scroll (ver la directiva v-revelar en lib/revelar.js).
+   -------------------------------------------------------------------------- */
+[data-revelar] {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity calc(700ms * var(--mov)) var(--curva-salida),
+    transform calc(800ms * var(--mov)) var(--curva-salida);
+  transition-delay: calc(var(--retraso, 0ms) * var(--mov));
+}
+
+[data-revelar='izquierda'] {
+  transform: translateX(-28px);
+}
+
+[data-revelar='derecha'] {
+  transform: translateX(28px);
+}
+
+[data-revelar='escala'] {
+  transform: scale(0.94);
+}
+
+[data-revelar].es-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* --------------------------------------------------------------------------
+   Pulso suave para marcar "en vivo" o "ahora".
+   -------------------------------------------------------------------------- */
+.pulso {
+  position: relative;
+}
+
+.pulso::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 0 currentColor;
+  animation: pulso calc(2s * var(--mov)) var(--curva-salida) infinite;
+  pointer-events: none;
+}
+
+@keyframes pulso {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 45%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+
+:root[data-movimiento='reducido'] .pulso::after {
+  animation: none;
+}
+
+/* Brillo que cruza un elemento una vez (para llamar la atencion sin gritar). */
+@keyframes brillo-cruza {
+  from {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+  to {
+    transform: translateX(220%) skewX(-18deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-movimiento='completo']) [data-revelar] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+:root[data-movimiento='reducido'] [data-revelar] {
+  opacity: 1;
+  transform: none;
+}

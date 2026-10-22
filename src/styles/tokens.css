@@ -136,6 +136,24 @@
   --sombra-4:
     0 14px 34px rgba(23, 28, 38, 0.13), 0 4px 10px rgba(23, 28, 38, 0.06);
   --sombra-interior: inset 0 1px 2px rgba(23, 28, 38, 0.06);
+  /* Sombra de lo que flota (menus, hojas): en capas, con un borde de luz. */
+  --sombra-flotante:
+    0 0 0 1px rgba(23, 28, 38, 0.06), 0 4px 8px rgba(23, 28, 38, 0.05),
+    0 18px 40px -8px rgba(21, 35, 74, 0.22);
+  --velo: rgba(8, 14, 30, 0.62);
+
+  /* Fondo de la app: dos luces muy tenues con los colores de la marca. */
+  --fondo-ambiente:
+    radial-gradient(
+      60rem 40rem at 100% -10%,
+      rgba(4, 175, 168, 0.07),
+      transparent 60%
+    ),
+    radial-gradient(
+      50rem 36rem at -10% 110%,
+      rgba(67, 109, 221, 0.06),
+      transparent 60%
+    );
 
   /* --- Tipografia --- */
   --fuente-titulo: 'Delius', 'Figtree', ui-rounded, system-ui, sans-serif;
@@ -202,6 +220,12 @@
   --curva: cubic-bezier(0.32, 0.72, 0, 1);
   --curva-suave: cubic-bezier(0.4, 0, 0.2, 1);
   --curva-rebote: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Salida fuerte para lo que entra o responde a un toque. */
+  --curva-salida: cubic-bezier(0.23, 1, 0.32, 1);
+  /* Para lo que se mueve de un lado a otro dentro de la pantalla. */
+  --curva-mover: cubic-bezier(0.77, 0, 0.175, 1);
+  --dur-toque: calc(160ms * var(--mov));
+  --dur-emergente: calc(220ms * var(--mov));
 
   /* --- Capas --- */
   --z-base: 1;
@@ -281,6 +305,21 @@
   --sombra-3: 0 6px 16px rgba(0, 0, 0, 0.55);
   --sombra-4: 0 14px 34px rgba(0, 0, 0, 0.6);
   --sombra-interior: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sombra-flotante:
+    0 0 0 1px rgba(255, 255, 255, 0.07), 0 4px 8px rgba(0, 0, 0, 0.4),
+    0 18px 40px -8px rgba(0, 0, 0, 0.7);
+  --velo: rgba(0, 0, 0, 0.72);
+  --fondo-ambiente:
+    radial-gradient(
+      60rem 40rem at 100% -10%,
+      rgba(79, 200, 194, 0.07),
+      transparent 60%
+    ),
+    radial-gradient(
+      50rem 36rem at -10% 110%,
+      rgba(67, 109, 221, 0.08),
+      transparent 60%
+    );
 
   --mapa-suelo: #131a20;
   --mapa-camino: #232c36;
@@ -328,6 +367,8 @@
   --sombra-2: 0 0 0 1px #000000;
   --sombra-3: 0 0 0 2px #000000;
   --sombra-4: 0 0 0 2px #000000;
+  --sombra-flotante: 0 0 0 2px #000000;
+  --fondo-ambiente: none;
 }
 
 :root[data-tema='oscuro'][data-contraste='alto'] {
@@ -357,6 +398,7 @@
   --sombra-2: 0 0 0 1px #ffffff;
   --sombra-3: 0 0 0 2px #ffffff;
   --sombra-4: 0 0 0 2px #ffffff;
+  --sombra-flotante: 0 0 0 2px #ffffff;
 }
 
 /* ---------- Tamano de texto ---------- */

@@ -385,3 +385,33 @@ describe('Busqueda sin tildes', () => {
     expect(coincide('piscina', 'Canchas')).toBe(false)
   })
 })
+
+describe('claseDelMomento', () => {
+  const lunes = Array.from({ length: 11 }, (_, i) =>
+    i === 0 || i === 4
+      ? { materia: `M${i + 1}`, aula: 'A1', seccion: '10-A' }
+      : { materia: '', aula: '' }
+  )
+  const dias = { lunes, martes: [], miercoles: [], jueves: [], viernes: [] }
+
+  it('da la leccion en curso', async () => {
+    const { claseDelMomento } = await import('../compartido/jornada.js')
+    const r = claseDelMomento(dias, new Date('2026-10-19T07:10:00-06:00'))
+    expect(r.estado).toBe('ahora')
+    expect(r.celda.materia).toBe('M1')
+  })
+
+  it('da la siguiente si la actual esta libre', async () => {
+    const { claseDelMomento } = await import('../compartido/jornada.js')
+    const r = claseDelMomento(dias, new Date('2026-10-19T08:00:00-06:00'))
+    expect(r.estado).toBe('proxima')
+    expect(r.leccion.numero).toBe(5)
+  })
+
+  it('no da nada el fin de semana', async () => {
+    const { claseDelMomento } = await import('../compartido/jornada.js')
+    expect(claseDelMomento(dias, new Date('2026-10-18T08:00:00-06:00'))).toBe(
+      null
+    )
+  })
+})

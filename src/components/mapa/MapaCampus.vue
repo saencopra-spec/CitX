@@ -27,8 +27,16 @@ const props = defineProps({
 const emit = defineEmits(['elegir', 'colocar'])
 
 const MIN = 1
-const MAX = 3
+const MAX = 5
 const svg = ref(null)
+/** El mapa en alta resolucion se muestra con un fundido cuando termina de cargar. */
+const fondoListo = ref(false)
+onMounted(() => {
+  const img = new Image()
+  img.onload = () => (fondoListo.value = true)
+  img.onerror = () => (fondoListo.value = true)
+  img.src = '/mapa/mapa-cit.webp'
+})
 const vista = reactive({ x: 0, y: 0, k: 1 })
 let animacion = null
 
@@ -294,14 +302,22 @@ onUnmounted(() => {
 
       <g :transform="transformacion">
         <image
-          href="/mapa/mapa-cit.webp"
+          href="/mapa/mapa-cit-1452.webp"
           :width="LIENZO.ancho"
           :height="LIENZO.alto"
           class="mapa__fondo"
         />
+        <image
+          href="/mapa/mapa-cit.webp"
+          :width="LIENZO.ancho"
+          :height="LIENZO.alto"
+          class="mapa__fondo mapa__fondo--alta"
+          :class="{ 'es-lista': fondoListo }"
+          preserveAspectRatio="none"
+        />
 
         <g
-          v-for="l in ordenados"
+          v-for="(l, i) in ordenados"
           :key="l.clave"
           class="pin"
           :class="{
@@ -317,65 +333,73 @@ onUnmounted(() => {
           @keydown.enter.prevent="emit('elegir', l.clave)"
           @keydown.space.prevent="emit('elegir', l.clave)"
         >
-          <path
-            :d="forma(radio(l))"
-            :fill="color(l)"
-            class="pin__forma"
-            filter="url(#sombra-pin)"
+          <ellipse
+            v-if="seleccionada === l.clave"
+            class="pin__onda"
+            rx="12"
+            ry="5"
           />
-          <path
-            v-if="l.restringido"
-            :d="forma(radio(l))"
-            fill="url(#rayado-pin)"
-            class="pin__rayado"
-          />
-          <circle
-            :cy="-radio(l) * 1.75"
-            :r="radio(l) * 0.68"
-            class="pin__centro"
-          />
-          <text
-            v-if="l.numero"
-            :y="-radio(l) * 1.75"
-            class="pin__numero"
-            :style="{ fontSize: `${radio(l) * 0.82}px` }"
-          >
-            {{ l.numero }}
-          </text>
-          <!-- La enfermeria lleva una cruz en vez de numero -->
-          <path
-            v-else
-            :transform="`translate(0 ${-radio(l) * 1.75})`"
-            d="M-2.2 -6 H2.2 V-2.2 H6 V2.2 H2.2 V6 H-2.2 V2.2 H-6 V-2.2 H-2.2 Z"
-            :fill="color(l)"
-          />
-          <g
-            v-if="l.restringido"
-            :transform="`translate(${radio(l) * 0.8} ${-radio(l) * 2.55})`"
-            class="pin__candado"
-          >
-            <circle r="6.5" />
-            <rect x="-3" y="-0.5" width="6" height="4.5" rx="0.8" />
-            <path d="M-1.8 -0.5 V-2.2 a1.8 1.8 0 0 1 3.6 0 V-0.5" />
-          </g>
-          <g
-            v-if="favoritos.includes(l.clave)"
-            :transform="`translate(${-radio(l) * 0.85} ${-radio(l) * 2.55})`"
-            class="pin__favorito"
-          >
-            <circle r="6.5" />
+          <g class="pin__cuerpo" :style="{ '--i': i }">
             <path
-              transform="scale(0.42) translate(-12 -12.5)"
-              d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"
+              :d="forma(radio(l))"
+              :fill="color(l)"
+              class="pin__forma"
+              filter="url(#sombra-pin)"
             />
+            <path
+              v-if="l.restringido"
+              :d="forma(radio(l))"
+              fill="url(#rayado-pin)"
+              class="pin__rayado"
+            />
+            <circle
+              :cy="-radio(l) * 1.75"
+              :r="radio(l) * 0.68"
+              class="pin__centro"
+            />
+            <text
+              v-if="l.numero"
+              :y="-radio(l) * 1.75"
+              class="pin__numero"
+              :style="{ fontSize: `${radio(l) * 0.82}px` }"
+            >
+              {{ l.numero }}
+            </text>
+            <!-- La enfermeria lleva una cruz en vez de numero -->
+            <path
+              v-else
+              :transform="`translate(0 ${-radio(l) * 1.75})`"
+              d="M-2.2 -6 H2.2 V-2.2 H6 V2.2 H2.2 V6 H-2.2 V2.2 H-6 V-2.2 H-2.2 Z"
+              :fill="color(l)"
+            />
+            <g
+              v-if="l.restringido"
+              :transform="`translate(${radio(l) * 0.8} ${-radio(l) * 2.55})`"
+              class="pin__candado"
+            >
+              <circle r="6.5" />
+              <rect x="-3" y="-0.5" width="6" height="4.5" rx="0.8" />
+              <path d="M-1.8 -0.5 V-2.2 a1.8 1.8 0 0 1 3.6 0 V-0.5" />
+            </g>
+            <g
+              v-if="favoritos.includes(l.clave)"
+              :transform="`translate(${-radio(l) * 0.85} ${-radio(l) * 2.55})`"
+              class="pin__favorito"
+            >
+              <circle r="6.5" />
+              <path
+                transform="scale(0.42) translate(-12 -12.5)"
+                d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"
+              />
+            </g>
+            <text
+              v-if="mostrarNombres || seleccionada === l.clave"
+              :y="5"
+              class="pin__nombre"
+            >
+              {{ l.nombre }}
+            </text>
           </g>
-          <text
-            v-if="mostrarNombres || seleccionada === l.clave"
-            :y="5"
-            class="pin__nombre"
-          >
-            {{ l.nombre }}
-          </text>
         </g>
       </g>
     </svg>
@@ -435,6 +459,61 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
+.mapa__fondo--alta {
+  opacity: 0;
+  transition: opacity calc(600ms * var(--mov)) ease;
+}
+
+.mapa__fondo--alta.es-lista {
+  opacity: 1;
+}
+
+/* Los pines caen uno detras del otro la primera vez que se dibuja el mapa. */
+.pin__cuerpo {
+  animation: pin-cae calc(520ms * var(--mov)) var(--curva-salida) backwards;
+  animation-delay: calc((180ms + var(--i, 0) * 24ms) * var(--mov));
+  transition: transform calc(240ms * var(--mov)) var(--curva-salida);
+}
+
+@keyframes pin-cae {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pin:hover .pin__cuerpo {
+    transform: translateY(-3px);
+  }
+}
+
+.pin__onda {
+  fill: none;
+  stroke: var(--mapa-seleccion);
+  stroke-width: 2.5;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: onda calc(1.8s * var(--mov)) var(--curva-salida) infinite;
+  pointer-events: none;
+}
+
+@keyframes onda {
+  from {
+    transform: scale(0.4);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+:root[data-movimiento='reducido'] .pin__onda {
+  animation: none;
+  opacity: 0.6;
+}
+
 .pin {
   cursor: pointer;
   outline: none;
@@ -463,8 +542,10 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-.pin:hover .pin__forma {
-  filter: brightness(1.1);
+.pin .pin__forma {
+  transition:
+    stroke var(--dur-rapida) ease,
+    stroke-width var(--dur-rapida) ease;
 }
 
 .pin:focus-visible .pin__forma,
@@ -525,7 +606,7 @@ onUnmounted(() => {
   flex-direction: column;
   border-radius: var(--radio-md);
   background: var(--fondo-elevado);
-  box-shadow: var(--sombra-3);
+  box-shadow: var(--sombra-flotante);
   overflow: hidden;
 }
 
@@ -539,6 +620,16 @@ onUnmounted(() => {
 
 .control + .control {
   border-top: 1px solid var(--borde);
+}
+
+.control {
+  transition:
+    background-color var(--dur-rapida) ease,
+    transform var(--dur-toque) var(--curva-salida);
+}
+
+.control:active {
+  transform: scale(0.9);
 }
 
 .control:hover {

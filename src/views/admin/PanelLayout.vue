@@ -183,11 +183,17 @@ async function salir() {
         </RouterLink>
       </div>
       <nav class="lateral__nav">
-        <div v-for="g in visibles" :key="g.titulo" class="grupo">
+        <div
+          v-for="(g, gi) in visibles"
+          :key="g.titulo"
+          class="grupo"
+          :style="{ '--g': gi }"
+        >
           <p class="grupo__titulo">{{ g.titulo }}</p>
           <RouterLink
-            v-for="e in g.enlaces"
+            v-for="(e, ei) in g.enlaces"
             :key="e.nombre"
+            :style="{ '--e': ei }"
             :to="{ name: e.nombre }"
             class="enlace"
             :class="{ 'es-activo': route.name === e.nombre }"
@@ -272,7 +278,6 @@ async function salir() {
   font-weight: var(--peso-semi);
 }
 
-
 .lateral__volver-movil {
   display: grid;
   place-items: center;
@@ -309,6 +314,7 @@ async function salir() {
 }
 
 .enlace {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: var(--e-2);
@@ -322,6 +328,17 @@ async function salir() {
   white-space: nowrap;
   flex-shrink: 0;
   text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--dur-media) var(--curva-salida),
+    color var(--dur-media) ease,
+    transform var(--dur-toque) var(--curva-salida),
+    box-shadow var(--dur-media) var(--curva-salida);
+}
+
+.enlace svg {
+  flex-shrink: 0;
+  transition: transform var(--dur-media) var(--curva-salida);
 }
 
 .enlace:hover {
@@ -329,9 +346,22 @@ async function salir() {
   color: #ffffff;
 }
 
+.enlace:hover svg {
+  transform: translateX(2px);
+}
+
+.enlace:active {
+  transform: scale(0.97);
+}
+
 .enlace.es-activo {
   background: #ffffff;
   color: var(--marino-800);
+  box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.45);
+}
+
+.enlace.es-activo svg {
+  color: var(--principal-fuerte);
 }
 
 .lateral__pie {
@@ -389,6 +419,26 @@ async function salir() {
   .enlace {
     width: 100%;
     font-size: var(--txt-base);
+    animation: enlace-entra calc(420ms * var(--mov)) var(--curva-salida)
+      backwards;
+    animation-delay: calc((var(--g) * 90ms + var(--e) * 35ms) * var(--mov));
+  }
+
+  @keyframes enlace-entra {
+    from {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+  }
+
+  .lateral {
+    background:
+      radial-gradient(
+        20rem 14rem at 0% 0%,
+        rgba(99, 209, 180, 0.14),
+        transparent 70%
+      ),
+      var(--marino-800);
   }
 
   .lateral__pie {

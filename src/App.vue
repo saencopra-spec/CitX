@@ -19,7 +19,7 @@ const route = useRoute()
  */
 const conArmazon = computed(
   () =>
-    auth.haySesion &&
+    auth.dentro &&
     !route.meta.soloInvitados &&
     !route.path.startsWith('/admin') &&
     !auth.soloPanel

@@ -246,7 +246,7 @@ onMounted(cargar)
 }
 
 .objeto__foto {
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 640 / 461;
 }
 
 .objeto__cuerpo {

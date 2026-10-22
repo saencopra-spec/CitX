@@ -8,7 +8,7 @@ import {
   noExiste,
   sinPermiso,
 } from '../_lib/respuesta.js'
-import { requerir, idValido } from '../_lib/sesion.js'
+import { requerir, idValido, usuarioDeSesion } from '../_lib/sesion.js'
 import { campoFoto, guardarFotoSiEsNueva } from '../_lib/imagenes.js'
 import { notificar, destinatarios } from '../_lib/notificar.js'
 import { puede, SECCIONES } from '../../compartido/permisos.js'
@@ -58,6 +58,8 @@ const esquemaEvento = z
 
 /** Lo que ve cada persona: los de todo el colegio y los de su seccion. */
 function filtroVisibles(usuario) {
+  // Sin cuenta (modo invitado) solo se ven los eventos de todo el colegio.
+  if (!usuario) return { todos: true }
   if (usuario.rol === 'estudiante') {
     return { $or: [{ todos: true }, { secciones: usuario.seccion }] }
   }
@@ -83,13 +85,16 @@ function publico(e) {
 }
 
 registrar('GET', '/eventos', async ({ req, res, query }) => {
-  const usuario = await requerir(req)
+  const usuario = await usuarioDeSesion(req)
   const eventos = await col(COLECCIONES.eventos)
   const filtro = filtroVisibles(usuario)
   if (query.pasados !== '1') {
     filtro.inicio = { $gte: fechaDesdeCR(partesCR().iso, '00:00') }
   }
-  if (query.mios === '1') filtro.autorId = String(usuario._id)
+  if (query.mios === '1') {
+    if (!usuario) return ok(res, { eventos: [] })
+    filtro.autorId = String(usuario._id)
+  }
   const lista = await eventos
     .find(filtro)
     .sort({ inicio: query.pasados === '1' ? -1 : 1 })

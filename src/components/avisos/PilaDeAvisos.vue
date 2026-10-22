@@ -68,7 +68,8 @@ function ejecutarAccion(aviso) {
   left: 50%;
   transform: translateX(-50%);
   bottom: calc(
-    var(--alto-barra-inferior) + env(safe-area-inset-bottom) + var(--e-4)
+    var(--alto-barra-inferior) + var(--e-3) + env(safe-area-inset-bottom) +
+      var(--e-4)
   );
   z-index: var(--z-aviso);
   display: flex;

@@ -12,6 +12,7 @@ import {
   Accessibility,
   Palette,
   BadgeCheck,
+  Compass,
 } from 'lucide-vue-next'
 import EncabezadoPagina from '@/components/estructura/EncabezadoPagina.vue'
 import EscudoCit from '@/components/marca/EscudoCit.vue'
@@ -22,6 +23,7 @@ import { useConfiguracion } from '@/stores/configuracion'
 import { useAuth } from '@/stores/auth'
 import { useAvisos } from '@/stores/avisos'
 import { useConfirmar } from '@/stores/confirmar'
+import { useRecorrido } from '@/stores/recorrido'
 import { usarErrores, opcionesSeccion } from '@/lib/errores'
 import { leerEnVoz, vozDisponible } from '@/lib/voz'
 import {
@@ -37,6 +39,7 @@ const auth = useAuth()
 const avisos = useAvisos()
 const confirmar = useConfirmar()
 const router = useRouter()
+const recorrido = useRecorrido()
 const raiz = ref(null)
 
 const a = computed(() => configuracion.ajustes)
@@ -206,6 +209,10 @@ async function salir() {
   router.replace({ name: 'empieza' })
 }
 
+function verRecorrido() {
+  router.push({ name: 'menu' }).then(() => recorrido.iniciar())
+}
+
 async function restablecer() {
   const si = await confirmar.preguntar({
     titulo: '¿Volver a los ajustes de fábrica?',
@@ -230,7 +237,7 @@ onMounted(() => entradaEscalonada(raiz.value))
     <EncabezadoPagina
       titulo="Configuración"
       bajada="Se guarda en este dispositivo y en tu cuenta."
-      :volver="auth.haySesion ? auth.inicioDe() : { name: 'empieza' }"
+      :volver="auth.dentro ? auth.inicioDe() : { name: 'empieza' }"
     />
 
     <div class="columna">
@@ -513,6 +520,17 @@ onMounted(() => entradaEscalonada(raiz.value))
           </div>
         </form>
       </details>
+
+      <button
+        v-if="auth.dentro"
+        data-entra
+        type="button"
+        class="boton boton--contorno boton--ancho"
+        @click="verRecorrido"
+      >
+        <Compass :size="18" aria-hidden="true" /> Ver otra vez el recorrido
+        guiado
+      </button>
 
       <button
         v-if="auth.haySesion"

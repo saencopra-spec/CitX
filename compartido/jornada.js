@@ -127,3 +127,24 @@ export function nombreFranja(clave) {
 export function inicioFranja(clave) {
   return PAUSAS.find((p) => p.clave === clave)?.inicio ?? null
 }
+
+/**
+ * Clase que esta pasando ahora o, si no hay, la siguiente de hoy. Sirve con
+ * el horario de una seccion o con el de un profesor (celdas con materia).
+ * Devuelve { estado: 'ahora' | 'proxima', leccion, celda } o null.
+ */
+export function claseDelMomento(dias, ahora = new Date()) {
+  const p = partesCR(ahora)
+  if (p.diaSemana === 0 || p.diaSemana === 6 || !dias) return null
+  const celdas = dias[DIAS_LECTIVOS[p.diaSemana - 1]] ?? []
+  for (const leccion of LECCIONES) {
+    const celda = celdas[leccion.numero - 1]
+    if (!celda?.materia) continue
+    const inicio = aMinutos(leccion.inicio)
+    const fin = aMinutos(leccion.fin)
+    if (p.minutos >= inicio && p.minutos < fin)
+      return { estado: 'ahora', leccion, celda }
+    if (inicio > p.minutos) return { estado: 'proxima', leccion, celda }
+  }
+  return null
+}

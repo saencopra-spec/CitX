@@ -252,8 +252,9 @@ onMounted(async () => {
 
 .item__foto {
   grid-area: foto;
-  width: 64px;
-  height: 64px;
+  width: 80px;
+  aspect-ratio: 640 / 461;
+  align-self: start;
   border-radius: var(--radio-md);
 }
 

@@ -48,7 +48,8 @@ onUnmounted(detenerVoz)
   position: fixed;
   right: var(--e-4);
   bottom: calc(
-    var(--alto-barra-inferior) + env(safe-area-inset-bottom) + var(--e-4)
+    var(--alto-barra-inferior) + var(--e-3) + env(safe-area-inset-bottom) +
+      var(--e-4)
   );
   z-index: var(--z-barra);
   display: inline-flex;

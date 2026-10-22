@@ -1,6 +1,6 @@
 <script setup>
 import { computed, nextTick, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { Search, ShoppingBag, Plus, Receipt, SearchX } from 'lucide-vue-next'
 import EncabezadoPagina from '@/components/estructura/EncabezadoPagina.vue'
 import EstadoVacio from '@/components/avisos/EstadoVacio.vue'
@@ -8,12 +8,15 @@ import FotoComida from '@/components/soda/FotoComida.vue'
 import Estrellas from '@/components/formularios/Estrellas.vue'
 import Cantidad from '@/components/formularios/Cantidad.vue'
 import { useCarrito } from '@/stores/carrito'
+import { useAuth } from '@/stores/auth'
 import { useAvisos } from '@/stores/avisos'
 import { api } from '@/lib/api'
 import { entradaEscalonada } from '@/lib/movimiento'
 import { colones } from '@compartido/dinero.js'
 import { coincide } from '@compartido/texto.js'
 
+const auth = useAuth()
+const router = useRouter()
 const carrito = useCarrito()
 const avisos = useAvisos()
 
@@ -56,6 +59,14 @@ const grupos = computed(() => {
 })
 
 function agregar(p) {
+  // Sin cuenta se puede mirar el menu, pero no pedir.
+  if (!auth.usuario) {
+    avisos.info(
+      'Para pedir en la soda necesitás una cuenta. Crearla toma un minuto.'
+    )
+    router.push({ name: 'registro', query: { seguir: '/soda' } })
+    return
+  }
   carrito.agregar(p)
   avisos.exito(`${p.nombre} va en el carrito.`, { duracion: 2200 })
 }
@@ -269,8 +280,10 @@ onMounted(cargar)
 
 .producto__foto {
   grid-area: foto;
-  width: 96px;
-  height: 96px;
+  width: 112px;
+  height: auto;
+  aspect-ratio: 640 / 461;
+  align-self: start;
   border-radius: var(--radio-md);
 }
 
@@ -331,7 +344,8 @@ onMounted(cargar)
   left: var(--margen-lateral);
   right: var(--margen-lateral);
   bottom: calc(
-    var(--alto-barra-inferior) + env(safe-area-inset-bottom) + var(--e-3)
+    var(--alto-barra-inferior) + var(--e-3) + env(safe-area-inset-bottom) +
+      var(--e-3)
   );
   z-index: var(--z-pegajoso);
   display: flex;
@@ -418,8 +432,7 @@ onMounted(cargar)
   }
 
   .producto__foto {
-    width: 120px;
-    height: 120px;
+    width: 144px;
   }
 
   .barra-carrito {

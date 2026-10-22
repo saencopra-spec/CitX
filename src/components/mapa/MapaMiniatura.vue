@@ -1,16 +1,15 @@
 <script setup>
-/** Vista previa del mapa del CIT, limpio y sin pines, para la tarjeta del menu. */
+import FotoCompleta from '@/components/marca/FotoCompleta.vue'
+
+/** Vista previa del mapa del CIT, limpio, sin pines y sin recortar. */
 </script>
 
 <template>
-  <img
-    src="/mapa/mapa-cit.webp"
-    alt=""
+  <FotoCompleta
+    src="/mapa/mapa-cit-1452.webp"
     class="mini"
-    width="726"
-    height="713"
-    loading="lazy"
-    decoding="async"
+    ancho="1452"
+    alto="1426"
   />
 </template>
 
@@ -18,8 +17,10 @@
 .mini {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: 50% 45%;
   background: #ffffff;
+}
+
+.mini :deep(.foto-completa__fondo) {
+  display: none;
 }
 </style>

@@ -28,11 +28,32 @@ defineProps({
   padding: var(--e-8) var(--e-5);
   border: 1.5px dashed var(--borde-fuerte);
   border-radius: var(--radio-lg);
+  animation: vacio-entra calc(500ms * var(--mov)) var(--curva-salida) backwards;
+}
+
+@keyframes vacio-entra {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
 }
 
 .vacio__icono {
-  color: var(--texto-tenue);
-  margin-bottom: var(--e-1);
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: var(--e-2);
+  border-radius: var(--radio-lg);
+  background: var(--principal-suave);
+  color: var(--principal-fuerte);
+  animation: vacio-flota calc(3.5s * var(--mov)) ease-in-out infinite;
+}
+
+@keyframes vacio-flota {
+  50% {
+    transform: translateY(-4px) rotate(-4deg);
+  }
 }
 
 .vacio__titulo {

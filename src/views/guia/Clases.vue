@@ -1,5 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import HorarioProfesor from '@/components/guia/HorarioProfesor.vue'
 import { CalendarClock, Coffee, Utensils } from 'lucide-vue-next'
 import EncabezadoPagina from '@/components/estructura/EncabezadoPagina.vue'
 import EstadoVacio from '@/components/avisos/EstadoVacio.vue'
@@ -15,13 +17,31 @@ import {
 import { horaLegible, partesCR } from '@compartido/hora.js'
 
 const auth = useAuth()
+const route = useRoute()
 
-const pestanas = [
-  { valor: 'horario', texto: 'Horario' },
+/** Profesores (y la administracion) llevan su propio horario. */
+const conHorarioPropio = computed(() => auth.esProfesor || auth.esAdmin)
+
+const pestanas = computed(() => [
+  ...(conHorarioPropio.value ? [{ valor: 'mio', texto: 'Mi horario' }] : []),
+  ...(auth.usuario
+    ? [
+        {
+          valor: 'horario',
+          texto: conHorarioPropio.value ? 'Secciones' : 'Horario',
+        },
+      ]
+    : []),
   { valor: 'especialidades', texto: 'Especialidades' },
   { valor: 'materias', texto: 'Talleres y materias' },
-]
-const pestana = ref('horario')
+])
+const pestana = ref(
+  conHorarioPropio.value && (route.query.ver === 'mio' || auth.esProfesor)
+    ? 'mio'
+    : auth.usuario
+      ? 'horario'
+      : 'especialidades'
+)
 
 const materias = ref([])
 const seccionesConHorario = ref([])
@@ -85,7 +105,7 @@ onMounted(async () => {
   reloj = setInterval(() => (actual.value = bloqueActual()), 30000)
   const [m, h] = await Promise.allSettled([
     api.get('/clases'),
-    api.get('/horarios'),
+    auth.usuario ? api.get('/horarios') : Promise.reject(new Error('invitado')),
   ])
   if (m.status === 'fulfilled') materias.value = m.value.materias
   if (h.status === 'fulfilled') {
@@ -103,7 +123,11 @@ onUnmounted(() => clearInterval(reloj))
   <div class="pagina">
     <EncabezadoPagina
       titulo="Clases"
-      bajada="Tu horario de la semana y lo que se estudia en el CIT."
+      :bajada="
+        conHorarioPropio
+          ? 'Tu horario de profesor, el de cada sección y lo que se estudia en el CIT.'
+          : 'Tu horario de la semana y lo que se estudia en el CIT.'
+      "
       :volver="{ name: 'guia' }"
     />
 
@@ -111,6 +135,7 @@ onUnmounted(() => clearInterval(reloj))
       class="segmentos pestanas"
       role="tablist"
       aria-label="Partes de clases"
+      :style="{ '--columnas': pestanas.length }"
     >
       <button
         v-for="p in pestanas"
@@ -127,9 +152,20 @@ onUnmounted(() => clearInterval(reloj))
       </button>
     </div>
 
+    <!-- Horario del profesor -->
+    <section
+      v-if="pestana === 'mio'"
+      id="panel-mio"
+      role="tabpanel"
+      aria-labelledby="tab-mio"
+      class="panel"
+    >
+      <HorarioProfesor :materias="materias.map((m) => m.nombre)" />
+    </section>
+
     <!-- Horario -->
     <section
-      v-if="pestana === 'horario'"
+      v-else-if="pestana === 'horario'"
       id="panel-horario"
       role="tabpanel"
       aria-labelledby="tab-horario"
@@ -273,9 +309,9 @@ onUnmounted(() => clearInterval(reloj))
 <style scoped>
 .pestanas {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--columnas, 3), minmax(0, 1fr));
   width: 100%;
-  max-width: 34rem;
+  max-width: calc(var(--columnas, 3) * 11.5rem);
   margin-bottom: var(--e-5);
 }
 

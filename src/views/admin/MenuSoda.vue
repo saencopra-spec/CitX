@@ -396,8 +396,8 @@ onMounted(async () => {
 }
 
 .producto__foto {
-  width: 56px;
-  height: 56px;
+  width: 72px;
+  aspect-ratio: 640 / 461;
   border-radius: var(--radio-sm);
 }
 

@@ -99,6 +99,9 @@ function aplicar(doc, cambios) {
   for (const [ruta, valor] of Object.entries(cambios.$set ?? {})) {
     ponerEn(doc, ruta, clonar(valor))
   }
+  for (const [ruta, valor] of Object.entries(cambios.$inc ?? {})) {
+    ponerEn(doc, ruta, (Number(valorEn(doc, ruta)) || 0) + valor)
+  }
   for (const [ruta, valor] of Object.entries(cambios.$push ?? {})) {
     const lista = valorEn(doc, ruta) ?? []
     lista.push(clonar(valor))
@@ -128,10 +131,15 @@ function ordenar(lista, orden) {
 
 function cursor(obtener) {
   let orden = null
+  let saltar = 0
   let tope = Infinity
   const c = {
     sort(o) {
       orden = o
+      return c
+    },
+    skip(n) {
+      saltar = n
       return c
     },
     limit(n) {
@@ -141,7 +149,7 @@ function cursor(obtener) {
     async toArray() {
       let lista = obtener()
       if (orden) lista = ordenar(lista, orden)
-      return lista.slice(0, tope).map((d) => clonar(d))
+      return lista.slice(saltar, saltar + tope).map((d) => clonar(d))
     },
     async next() {
       return (await c.toArray())[0] ?? null

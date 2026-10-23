@@ -77,7 +77,6 @@ export const COLECCIONES = {
   materias: 'materias',
   enfermeria: 'enfermeria',
   notificaciones: 'notificaciones',
-  calificaciones: 'calificaciones',
   intentosEntrada: 'intentos_entrada',
   imagenes: 'imagenes',
   invitaciones: 'invitaciones',
@@ -129,9 +128,6 @@ export async function asegurarIndices() {
       .collection(COLECCIONES.solicitudesObjetos)
       .createIndex({ objetoId: 1, usuarioId: 1 }),
     base
-      .collection(COLECCIONES.calificaciones)
-      .createIndex({ productoId: 1, usuarioId: 1 }, { unique: true }),
-    base
       .collection(COLECCIONES.invitaciones)
       .createIndex({ hash: 1 }, { unique: true }),
     base.collection(COLECCIONES.anuncios).createIndex({ creadoEn: -1 }),
@@ -139,6 +135,11 @@ export async function asegurarIndices() {
       .collection(COLECCIONES.sanciones)
       .createIndex({ usuarioId: 1, creadaEn: -1 }),
     base.collection(COLECCIONES.sanciones).createIndex({ tipo: 1, hasta: 1 }),
+    // Historial de alertas, sanciones y descartes del panel.
+    base.collection(COLECCIONES.sanciones).createIndex({ creadaEn: -1 }),
+    base
+      .collection(COLECCIONES.pedidos)
+      .createIndex({ 'caso.resolucion': 1, 'caso.en': -1 }),
   ])
   cache.indicesListos = true
 }

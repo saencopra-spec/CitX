@@ -10,6 +10,7 @@ import {
   noAutenticado,
 } from '../_lib/respuesta.js'
 import { requerir, idValido } from '../_lib/sesion.js'
+import { paginaDe } from '../_lib/paginas.js'
 import { notificar } from '../_lib/notificar.js'
 import {
   revisarNoRecogidos,
@@ -249,42 +250,37 @@ registrar(
 // Panel de sanciones
 // ---------------------------------------------------------------------------
 
-/** Sin texto devuelve a quienes estan sancionados ahora mismo. */
+/**
+ * Todas las cuentas (como en "Usuarios y permisos"), de a una pagina. Con
+ * texto busca por nombre, correo o seccion en toda la base.
+ */
 registrar('GET', '/sanciones/usuarios', async ({ req, res, query }) => {
   await requerir(req, PERMISO)
+  const { pagina, saltar, porPagina } = paginaDe(query)
   const usuarios = await col(COLECCIONES.usuarios)
   const texto = String(query.buscar ?? '')
     .trim()
     .slice(0, 60)
-  let lista
+  const filtro = {}
   if (texto) {
     const t = escaparRegex(texto)
-    lista = await usuarios
-      .find(
-        {
-          rol: { $ne: 'soda' },
-          $or: [
-            { nombre: { $regex: t, $options: 'i' } },
-            { correo: { $regex: t, $options: 'i' } },
-            { seccion: { $regex: `^${t}`, $options: 'i' } },
-          ],
-        },
-        { projection: { nombre: 1, correo: 1, rol: 1, seccion: 1 } }
-      )
-      .sort({ nombre: 1 })
-      .limit(25)
-      .toArray()
-  } else {
-    const sanciones = await col(COLECCIONES.sanciones)
-    const ids = await sanciones.distinct('usuarioId', filtroVigentes())
-    lista = await usuarios
-      .find(
-        { _id: { $in: ids.filter(Boolean).map((id) => idValido(id)) } },
-        { projection: { nombre: 1, correo: 1, rol: 1, seccion: 1 } }
-      )
-      .sort({ nombre: 1 })
-      .toArray()
+    filtro.$or = [
+      { nombre: { $regex: t, $options: 'i' } },
+      { correo: { $regex: t, $options: 'i' } },
+      { seccion: { $regex: `^${t}`, $options: 'i' } },
+    ]
   }
+  const [lista, total] = await Promise.all([
+    usuarios
+      .find(filtro, {
+        projection: { nombre: 1, correo: 1, rol: 1, seccion: 1 },
+      })
+      .sort({ nombre: 1, _id: 1 })
+      .skip(saltar)
+      .limit(porPagina)
+      .toArray(),
+    usuarios.countDocuments(filtro),
+  ])
   const ids = lista.map((u) => String(u._id))
   const [conteos, activas] = await Promise.all([conteosDe(ids), activasDe(ids)])
   ok(res, {
@@ -303,27 +299,9 @@ registrar('GET', '/sanciones/usuarios', async ({ req, res, query }) => {
           : null,
       }
     }),
-  })
-})
-
-registrar('GET', '/sanciones/usuario/:id', async ({ req, res, params }) => {
-  await requerir(req, PERMISO)
-  const u = await usuarioDestino(params.id)
-  const sanciones = await col(COLECCIONES.sanciones)
-  const historial = await sanciones
-    .find({ usuarioId: String(u._id) })
-    .sort({ creadaEn: -1 })
-    .limit(100)
-    .toArray()
-  ok(res, {
-    usuario: {
-      id: String(u._id),
-      nombre: u.nombre,
-      correo: u.correo,
-      rol: u.rol,
-      seccion: u.seccion ?? null,
-    },
-    historial: historial.map((s) => sancionPublica(s, { admin: true })),
+    total,
+    pagina,
+    porPagina,
   })
 })
 
@@ -339,18 +317,23 @@ const esquemaSancion = z.object({
   pedidoCodigo: z.string().max(5).optional(),
 })
 
+/** Quien recibe una alerta o sancion: ni uno mismo ni la cuenta de la soda. */
+function revisarDestino(u, admin, accion) {
+  if (String(u._id) === String(admin._id)) {
+    throw malaPeticion(`No te podés ${accion} a vos mismo.`)
+  }
+  if (u.rol === 'soda') {
+    throw malaPeticion('La cuenta de la soda no hace pedidos.')
+  }
+}
+
 registrar('POST', '/sanciones', async ({ req, res }) => {
   const admin = await requerir(req, PERMISO)
   await asegurarIndices()
   const datos = esquemaSancion.parse(await leerCuerpo(req))
   const u = await usuarioDestino(datos.usuarioId)
   const usuarioId = String(u._id)
-  if (usuarioId === String(admin._id)) {
-    throw malaPeticion('No te podés sancionar a vos mismo.')
-  }
-  if (u.rol === 'soda') {
-    throw malaPeticion('La cuenta de la soda no hace pedidos.')
-  }
+  revisarDestino(u, admin, 'sancionar')
 
   const ahora = new Date()
   const hasta = calcularFin(datos.duracion, { ahora, hasta: datos.hasta })
@@ -417,6 +400,130 @@ registrar('POST', '/sanciones', async ({ req, res }) => {
   creado(res, {
     sancion: sancionPublica({ ...sancion, _id: insertedId }, { admin: true }),
   })
+})
+
+/** Alerta a una persona sin que haya un pedido no recogido de por medio. */
+registrar('POST', '/sanciones/alertas', async ({ req, res }) => {
+  const admin = await requerir(req, PERMISO)
+  await asegurarIndices()
+  const datos = z
+    .object({
+      usuarioId: z.string(),
+      razon: z
+        .string()
+        .trim()
+        .min(3, 'Escribí la razón de la alerta.')
+        .max(300, 'La razón es muy larga.'),
+    })
+    .parse(await leerCuerpo(req))
+  const u = await usuarioDestino(datos.usuarioId)
+  revisarDestino(u, admin, 'alertar')
+
+  const sanciones = await col(COLECCIONES.sanciones)
+  const alerta = {
+    tipo: 'alerta',
+    usuarioId: String(u._id),
+    usuarioNombre: u.nombre,
+    razon: datos.razon,
+    mensaje: '',
+    pedidoCodigo: null,
+    creadaPor: quien(admin),
+    creadaEn: new Date(),
+  }
+  const { insertedId } = await sanciones.insertOne(alerta)
+  await notificar([alerta.usuarioId], {
+    titulo: 'Aviso de la soda',
+    cuerpo: `Administración te envió una alerta. Razón: ${datos.razon}`,
+    enlace: '/soda',
+    tipo: 'alerta',
+  })
+  creado(res, {
+    alerta: sancionPublica({ ...alerta, _id: insertedId }, { admin: true }),
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Historial general: alertas, sanciones y descartes
+// ---------------------------------------------------------------------------
+
+export const FILTROS_HISTORIAL = [
+  'todos',
+  'alertas',
+  'sanciones',
+  'descartados',
+  'activas',
+]
+
+/** Los descartes viven en el pedido (`caso`); se muestran como un registro mas. */
+function descartePublico(p) {
+  return {
+    id: `descarte-${p.codigo}`,
+    tipo: 'descarte',
+    estado: 'descartado',
+    usuarioId: p.usuarioId,
+    usuarioNombre: p.usuarioNombre,
+    razon: 'Pedido no recogido',
+    mensaje: '',
+    pedidoCodigo: p.codigo,
+    hasta: null,
+    permanente: false,
+    creadaEn: p.caso.en,
+    creadaPor: p.caso.por ?? null,
+    levantada: null,
+  }
+}
+
+const FILTRO_DESCARTES = {
+  estado: NO_RECOGIDO,
+  'caso.resolucion': 'descartado',
+}
+
+registrar('GET', '/sanciones/historial', async ({ req, res, query }) => {
+  await requerir(req, PERMISO)
+  const { pagina, saltar, porPagina } = paginaDe(query)
+  const tipo = FILTROS_HISTORIAL.includes(query.tipo) ? query.tipo : 'todos'
+  const sanciones = await col(COLECCIONES.sanciones)
+  const pedidos = await col(COLECCIONES.pedidos)
+
+  const filtroSanciones = {
+    todos: {},
+    alertas: { tipo: 'alerta' },
+    sanciones: { tipo: 'sancion' },
+    activas: filtroVigentes(),
+  }[tipo]
+  const conSanciones = tipo !== 'descartados'
+  const conDescartes = tipo === 'todos' || tipo === 'descartados'
+
+  // Para mezclar las dos colecciones por fecha basta con traer de cada una
+  // los primeros `saltar + porPagina`: la pagina pedida esta entre ellos.
+  const hasta = saltar + porPagina
+  const [listaS, totalS, listaD, totalD] = await Promise.all([
+    conSanciones
+      ? sanciones
+          .find(filtroSanciones)
+          .sort({ creadaEn: -1, _id: -1 })
+          .limit(hasta)
+          .toArray()
+      : [],
+    conSanciones ? sanciones.countDocuments(filtroSanciones) : 0,
+    conDescartes
+      ? pedidos
+          .find(FILTRO_DESCARTES)
+          .sort({ 'caso.en': -1, _id: -1 })
+          .limit(hasta)
+          .toArray()
+      : [],
+    conDescartes ? pedidos.countDocuments(FILTRO_DESCARTES) : 0,
+  ])
+
+  const registros = [
+    ...listaS.map((s) => sancionPublica(s, { admin: true })),
+    ...listaD.map(descartePublico),
+  ]
+    .sort((a, b) => new Date(b.creadaEn) - new Date(a.creadaEn))
+    .slice(saltar, hasta)
+
+  ok(res, { registros, total: totalS + totalD, pagina, porPagina, tipo })
 })
 
 registrar('POST', '/sanciones/:id/levantar', async ({ req, res, params }) => {

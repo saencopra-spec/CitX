@@ -13,7 +13,7 @@ vi.mock('../api/_lib/db.js', async (importOriginal) => {
 import handler from '../api/index.js'
 import { firmar, NOMBRE_COOKIE } from '../api/_lib/sesion.js'
 import { margenGracia } from '../api/_lib/sanciones.js'
-import { puede } from '../compartido/permisos.js'
+import { puede, PERMISOS_POR_ROL } from '../compartido/permisos.js'
 import { partesCR, sumarDias } from '../compartido/hora.js'
 import {
   cambioDeEstadoPermitido,
@@ -90,7 +90,6 @@ async function crearPedido(usuario, { estado = 'listo', fecha, clave } = {}) {
     pago: { metodo: 'efectivo', estado: 'pendiente' },
     estado,
     historial: [{ estado, en: new Date() }],
-    calificados: [],
     creadoEn: new Date(),
   }
   await col('pedidos').insertOne(p)
@@ -251,7 +250,7 @@ describe('Duracion y estado de las sanciones', () => {
 })
 
 describe('Permisos de sanciones', () => {
-  it('solo el rol admin puede alertar, sancionar o levantar', () => {
+  it('por defecto solo el rol admin puede alertar, sancionar o levantar', () => {
     expect(puede('admin', 'sanciones.gestionar')).toBe(true)
     for (const rol of [
       'estudiante',
@@ -264,9 +263,13 @@ describe('Permisos de sanciones', () => {
     }
   })
 
-  it('no se le puede asignar a alguien del personal', () => {
+  it('se le puede asignar a alguien del personal', () => {
     const soda = { rol: 'soda', permisos: ['sanciones.gestionar'] }
-    expect(puede(soda, 'sanciones.gestionar')).toBe(false)
+    expect(puede(soda, 'sanciones.gestionar')).toBe(true)
+  })
+
+  it('no viene con el rol de la soda', () => {
+    expect(PERMISOS_POR_ROL.soda).not.toContain('sanciones.gestionar')
   })
 })
 
@@ -465,15 +468,15 @@ describe('API: panel de sanciones', () => {
     })
     expect(r.estado).toBe(201)
 
-    const h = await llamar('GET', `/sanciones/usuario/${est._id}`, {
+    const h = await llamar('GET', '/sanciones/historial?tipo=sanciones', {
       como: admin,
     })
     const estados = Object.fromEntries(
-      h.cuerpo.historial.map((s) => [s.id, s.estado])
+      h.cuerpo.registros.map((s) => [s.id, s.estado])
     )
     expect(estados[String(vieja._id)]).toBe('reemplazada')
     expect(estados[r.cuerpo.sancion.id]).toBe('activa')
-    const nueva = h.cuerpo.historial.find((s) => s.id === r.cuerpo.sancion.id)
+    const nueva = h.cuerpo.registros.find((s) => s.id === r.cuerpo.sancion.id)
     expect(nueva.creadaPor.nombre).toBe(admin.nombre)
     expect(nueva.razon).toBe('Otra vez sin retirar')
   })
@@ -545,7 +548,7 @@ describe('API: panel de sanciones', () => {
 })
 
 describe('API: permisos', () => {
-  it('nadie que no sea admin puede alertar, sancionar o levantar', async () => {
+  it('sin el permiso nadie puede alertar, sancionar o levantar', async () => {
     const est = await crearUsuario('estudiante')
     const p = await crearPedido(est, { fecha: PASADO, estado: 'no_recogido' })
     const s = await crearSancion(est)
@@ -553,9 +556,9 @@ describe('API: permisos', () => {
       est,
       await crearUsuario('soda'),
       await crearUsuario('profesor'),
-      // Aunque le pongan el permiso a mano, no es del rol admin.
+      // Permisos ajustados a mano, pero sin el de sanciones.
       await crearUsuario('administrativo', {
-        permisos: ['sanciones.gestionar'],
+        permisos: ['anuncios.publicar', 'objetos.gestionar'],
       }),
     ]
     const intentos = [
@@ -563,7 +566,8 @@ describe('API: permisos', () => {
       ['POST', `/sanciones/no-recogidos/${p.codigo}/alertar`],
       ['POST', `/sanciones/no-recogidos/${p.codigo}/descartar`],
       ['GET', '/sanciones/usuarios'],
-      ['GET', `/sanciones/usuario/${est._id}`],
+      ['GET', '/sanciones/historial'],
+      ['POST', '/sanciones/alertas'],
       ['POST', '/sanciones'],
       ['POST', `/sanciones/${s._id}/levantar`],
     ]
@@ -597,5 +601,221 @@ describe('API: permisos', () => {
       cuerpo: { usuarioId: String(admin._id), razon: 'Prueba', duracion: '1d' },
     })
     expect(r.estado).toBe(400)
+  })
+
+  it('alguien del personal con el permiso asignado lo usa sin ser admin', async () => {
+    const est = await crearUsuario('estudiante')
+    const p = await crearPedido(est, { fecha: PASADO, estado: 'no_recogido' })
+    const soda = await crearUsuario('soda', {
+      permisos: ['pedidos.gestionar', 'sanciones.gestionar'],
+    })
+    const lista = await llamar('GET', '/sanciones/no-recogidos', { como: soda })
+    expect(lista.estado).toBe(200)
+    expect(lista.cuerpo.pedidos.map((x) => x.codigo)).toContain(p.codigo)
+    const r = await llamar('POST', '/sanciones', {
+      como: soda,
+      cuerpo: {
+        usuarioId: String(est._id),
+        razon: 'No recogió',
+        duracion: '1d',
+        pedidoCodigo: p.codigo,
+      },
+    })
+    expect(r.estado).toBe(201)
+    const levantar = await llamar(
+      'POST',
+      `/sanciones/${r.cuerpo.sancion.id}/levantar`,
+      { como: soda }
+    )
+    expect(levantar.estado).toBe(200)
+    // Una cuenta de la soda con los permisos normales sigue sin poder.
+    const normal = await crearUsuario('soda')
+    const no = await llamar('GET', '/sanciones/historial', { como: normal })
+    expect(no.estado).toBe(403)
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('API: buscador, alertas sin pedido e historial', () => {
+  it('el buscador muestra todas las cuentas de a 20, con el total', async () => {
+    const admin = await crearUsuario('admin', { nombre: 'Zulema Admin' })
+    for (let i = 0; i < 23; i++) {
+      await crearUsuario('estudiante', {
+        nombre: `Estudiante ${String(i).padStart(2, '0')}`,
+      })
+    }
+    await crearUsuario('soda', { nombre: 'Soda Armonía' })
+    const p1 = await llamar('GET', '/sanciones/usuarios', { como: admin })
+    expect(p1.estado).toBe(200)
+    expect(p1.cuerpo.total).toBe(25)
+    expect(p1.cuerpo.porPagina).toBe(20)
+    expect(p1.cuerpo.usuarios).toHaveLength(20)
+    const p2 = await llamar('GET', '/sanciones/usuarios?pagina=2', {
+      como: admin,
+    })
+    expect(p2.cuerpo.usuarios).toHaveLength(5)
+    const nombres = [...p1.cuerpo.usuarios, ...p2.cuerpo.usuarios].map(
+      (u) => u.nombre
+    )
+    expect(new Set(nombres).size).toBe(25)
+    expect(nombres).toContain('Soda Armonía')
+    // La busqueda recorre toda la base, no solo la pagina que se ve.
+    const b = await llamar('GET', '/sanciones/usuarios?buscar=22', {
+      como: admin,
+    })
+    expect(b.cuerpo.total).toBe(1)
+    expect(b.cuerpo.usuarios[0].nombre).toBe('Estudiante 22')
+  })
+
+  it('alertar sin pedido guarda quien y cuando, avisa y no bloquea', async () => {
+    const admin = await crearUsuario('admin')
+    const est = await crearUsuario('estudiante')
+    const r = await llamar('POST', '/sanciones/alertas', {
+      como: admin,
+      cuerpo: { usuarioId: String(est._id), razon: 'Hizo fila doble' },
+    })
+    expect(r.estado).toBe(201)
+    expect(r.cuerpo.alerta.tipo).toBe('alerta')
+    expect(r.cuerpo.alerta.pedidoCodigo).toBeNull()
+    expect(r.cuerpo.alerta.creadaPor.nombre).toBe(admin.nombre)
+    expect(r.cuerpo.alerta.creadaEn).toBeTruthy()
+    expect(notificacionesDe(est)[0].cuerpo).toContain('Hizo fila doble')
+    const estado = await llamar('GET', '/sanciones/mi-estado', { como: est })
+    expect(estado.cuerpo.sancion).toBeNull()
+
+    const sinRazon = await llamar('POST', '/sanciones/alertas', {
+      como: admin,
+      cuerpo: { usuarioId: String(est._id), razon: ' ' },
+    })
+    expect(sinRazon.estado).toBe(400)
+    const aSiMismo = await llamar('POST', '/sanciones/alertas', {
+      como: admin,
+      cuerpo: { usuarioId: String(admin._id), razon: 'Prueba' },
+    })
+    expect(aSiMismo.estado).toBe(400)
+  })
+
+  it('el historial junta alertas, sanciones y descartes con sus filtros', async () => {
+    const admin = await crearUsuario('admin', { nombre: 'Ana Admin' })
+    const est = await crearUsuario('estudiante', { nombre: 'Beto' })
+    const p1 = await crearPedido(est, { fecha: PASADO, estado: 'no_recogido' })
+    const p2 = await crearPedido(est, { fecha: PASADO, estado: 'no_recogido' })
+    await crearSancion(est, { creadaEn: new Date(Date.now() - DIA) })
+    await crearSancion(est, {
+      hasta: new Date(Date.now() - 1000),
+      creadaEn: new Date(Date.now() - 2 * DIA),
+    })
+    await llamar('POST', `/sanciones/no-recogidos/${p1.codigo}/alertar`, {
+      como: admin,
+    })
+    await new Promise((listo) => setTimeout(listo, 5))
+    await llamar('POST', `/sanciones/no-recogidos/${p2.codigo}/descartar`, {
+      como: admin,
+    })
+
+    const ver = (tipo) =>
+      llamar('GET', `/sanciones/historial?tipo=${tipo}`, { como: admin })
+
+    const todos = await ver('todos')
+    expect(todos.cuerpo.total).toBe(4)
+    expect(todos.cuerpo.registros.map((r) => r.tipo)).toEqual([
+      'descarte',
+      'alerta',
+      'sancion',
+      'sancion',
+    ])
+    const descarte = todos.cuerpo.registros[0]
+    expect(descarte.pedidoCodigo).toBe(p2.codigo)
+    expect(descarte.usuarioNombre).toBe('Beto')
+    expect(descarte.creadaPor.nombre).toBe('Ana Admin')
+    expect(descarte.creadaEn).toBeTruthy()
+
+    expect((await ver('alertas')).cuerpo.total).toBe(1)
+    expect((await ver('sanciones')).cuerpo.total).toBe(2)
+    expect((await ver('descartados')).cuerpo.total).toBe(1)
+    const activas = await ver('activas')
+    expect(activas.cuerpo.total).toBe(1)
+    expect(activas.cuerpo.registros[0].estado).toBe('activa')
+  })
+
+  it('el historial se pagina de a 20 mezclando las dos colecciones', async () => {
+    const admin = await crearUsuario('admin')
+    const est = await crearUsuario('estudiante')
+    const minuto = 60 * 1000
+    for (let i = 0; i < 15; i++) {
+      await crearSancion(est, {
+        tipo: 'alerta',
+        hasta: undefined,
+        creadaEn: new Date(Date.now() - (2 * i + 1) * minuto),
+      })
+      const p = await crearPedido(est, { fecha: PASADO, estado: 'no_recogido' })
+      // Descartes intercalados en el tiempo con las alertas.
+      await col('pedidos').updateOne(
+        { codigo: p.codigo },
+        {
+          $set: {
+            caso: {
+              resolucion: 'descartado',
+              por: { id: String(admin._id), nombre: admin.nombre },
+              en: new Date(Date.now() - 2 * i * minuto),
+            },
+          },
+        }
+      )
+    }
+    const p1 = await llamar('GET', '/sanciones/historial', { como: admin })
+    const p2 = await llamar('GET', '/sanciones/historial?pagina=2', {
+      como: admin,
+    })
+    expect(p1.cuerpo.total).toBe(30)
+    expect(p1.cuerpo.registros).toHaveLength(20)
+    expect(p2.cuerpo.registros).toHaveLength(10)
+    const fechas = [...p1.cuerpo.registros, ...p2.cuerpo.registros].map((r) =>
+      new Date(r.creadaEn).getTime()
+    )
+    expect(fechas).toEqual([...fechas].sort((a, b) => b - a))
+    expect(new Set(fechas).size).toBe(30)
+  })
+})
+
+describe('API: usuarios', () => {
+  it('lista las cuentas de a 20 con el total de coincidencias', async () => {
+    const admin = await crearUsuario('admin')
+    for (let i = 0; i < 21; i++) await crearUsuario('profesor')
+    const p1 = await llamar('GET', '/usuarios', { como: admin })
+    expect(p1.estado).toBe(200)
+    expect(p1.cuerpo.usuarios).toHaveLength(20)
+    expect(p1.cuerpo.coincidencias).toBe(22)
+    expect(p1.cuerpo.total).toBe(22)
+    const p2 = await llamar('GET', '/usuarios?pagina=2', { como: admin })
+    expect(p2.cuerpo.usuarios).toHaveLength(2)
+    const soloAdmin = await llamar('GET', '/usuarios?rol=admin', {
+      como: admin,
+    })
+    expect(soloAdmin.cuerpo.coincidencias).toBe(1)
+    expect(soloAdmin.cuerpo.total).toBe(22)
+  })
+
+  it('cambiar solo el nombre responde con la cuenta actualizada', async () => {
+    const admin = await crearUsuario('admin')
+    const profe = await crearUsuario('profesor')
+    const r = await llamar('PATCH', `/usuarios/${profe._id}`, {
+      como: admin,
+      cuerpo: { nombre: 'Nombre Nuevo' },
+    })
+    expect(r.estado).toBe(200)
+    expect(r.cuerpo.usuario.nombre).toBe('Nombre Nuevo')
+  })
+
+  it('acepta sanciones.gestionar como permiso ajustado', async () => {
+    const admin = await crearUsuario('admin')
+    const soda = await crearUsuario('soda')
+    const r = await llamar('PATCH', `/usuarios/${soda._id}`, {
+      como: admin,
+      cuerpo: { permisos: ['pedidos.gestionar', 'sanciones.gestionar'] },
+    })
+    expect(r.estado).toBe(200)
+    expect(r.cuerpo.usuario.permisos).toContain('sanciones.gestionar')
   })
 })

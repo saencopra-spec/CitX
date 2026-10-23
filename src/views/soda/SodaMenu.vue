@@ -5,7 +5,6 @@ import { Search, ShoppingBag, Plus, Receipt, SearchX } from 'lucide-vue-next'
 import EncabezadoPagina from '@/components/estructura/EncabezadoPagina.vue'
 import EstadoVacio from '@/components/avisos/EstadoVacio.vue'
 import FotoComida from '@/components/soda/FotoComida.vue'
-import Estrellas from '@/components/formularios/Estrellas.vue'
 import Cantidad from '@/components/formularios/Cantidad.vue'
 import TarjetaSancion from '@/components/sanciones/TarjetaSancion.vue'
 import { useCarrito } from '@/stores/carrito'
@@ -193,16 +192,27 @@ onMounted(cargar)
               <p class="producto__descripcion">{{ p.descripcion }}</p>
               <div class="producto__pie">
                 <span class="producto__precio">{{ colones(p.precio) }}</span>
-                <Estrellas
-                  :valor="p.calificacion ?? 0"
-                  :cantidad="p.calificaciones"
-                />
+                <span
+                  v-if="p.estado === 'pocas'"
+                  class="etiqueta etiqueta--aviso"
+                  >Pocas unidades</span
+                >
+                <span
+                  v-else-if="!p.disponible"
+                  class="etiqueta etiqueta--neutra"
+                  >Agotado</span
+                >
               </div>
             </div>
             <div class="producto__accion">
-              <span v-if="!p.disponible" class="etiqueta etiqueta--neutra"
-                >Agotado</span
+              <button
+                v-if="!p.disponible"
+                type="button"
+                class="boton boton--contorno producto__boton"
+                disabled
               >
+                Agotado<span class="solo-lectores">: {{ p.nombre }}</span>
+              </button>
               <Cantidad
                 v-else-if="carrito.cantidadDe(p.id) && !sanciones.bloqueado"
                 :valor="carrito.cantidadDe(p.id)"
@@ -212,11 +222,11 @@ onMounted(cargar)
               <button
                 v-else
                 type="button"
-                class="boton boton--accion boton--pequeno"
+                class="boton boton--accion producto__boton"
                 :disabled="sanciones.bloqueado"
                 @click="agregar(p)"
               >
-                <Plus :size="16" aria-hidden="true" />
+                <Plus :size="18" aria-hidden="true" />
                 Agregar<span class="solo-lectores"> {{ p.nombre }}</span>
               </button>
             </div>
@@ -272,12 +282,15 @@ onMounted(cargar)
 }
 
 .producto {
+  --ancho-foto: 96px;
   display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-columns: var(--ancho-foto) minmax(0, 1fr);
+  /* La accion va abajo, a todo el ancho de la tarjeta. */
+  grid-template-rows: 1fr auto;
   grid-template-areas:
     'foto info'
-    'foto accion';
-  gap: var(--e-2) var(--e-4);
+    'accion accion';
+  gap: var(--e-3) var(--e-4);
   padding: var(--e-3);
   background: var(--superficie);
   border: 1px solid var(--borde);
@@ -286,7 +299,10 @@ onMounted(cargar)
 
 .producto__foto {
   grid-area: foto;
-  width: 112px;
+  /* Mismo ancho que su columna: nunca invade el espacio del texto. */
+  width: var(--ancho-foto);
+  min-width: var(--ancho-foto);
+  max-width: var(--ancho-foto);
   height: auto;
   aspect-ratio: 640 / 461;
   align-self: start;
@@ -331,8 +347,18 @@ onMounted(cargar)
 .producto__accion {
   grid-area: accion;
   display: flex;
-  justify-content: flex-end;
   align-items: center;
+}
+
+.producto__boton {
+  width: 100%;
+  min-height: 48px;
+}
+
+.producto__accion :deep(.cantidad) {
+  width: 100%;
+  min-height: 48px;
+  justify-content: space-between;
 }
 
 .es-agotado .producto__foto {
@@ -434,11 +460,7 @@ onMounted(cargar)
   }
 
   .producto {
-    grid-template-columns: 120px minmax(0, 1fr);
-  }
-
-  .producto__foto {
-    width: 144px;
+    --ancho-foto: 132px;
   }
 
   .barra-carrito {

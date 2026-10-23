@@ -1,20 +1,28 @@
 import { z } from 'zod'
 import { registrar } from '../_lib/enrutador.js'
-import { col, COLECCIONES, asegurarIndices } from '../_lib/db.js'
+import { col, COLECCIONES } from '../_lib/db.js'
 import {
   ok,
   creado,
   leerCuerpo,
   noExiste,
   malaPeticion,
-  conflicto,
 } from '../_lib/respuesta.js'
 import { requerir, idValido, usuarioDeSesion } from '../_lib/sesion.js'
 import { campoFoto, guardarFotoSiEsNueva } from '../_lib/imagenes.js'
 import { puede } from '../../compartido/permisos.js'
 import { franjasDeRetiro } from '../../compartido/jornada.js'
+import {
+  ESTADOS_PRODUCTO,
+  CAMBIO_STOCK_MAXIMO,
+  UMBRAL_POCAS,
+  estadoDe,
+  umbralDe,
+} from '../../compartido/soda.js'
 
 export const CATEGORIAS_SODA = ['desayunos', 'almuerzos', 'bebidas', 'snacks']
+
+const campoEstado = z.enum(ESTADOS_PRODUCTO, { error: 'Elegí un estado.' })
 
 const esquemaProducto = z.object({
   nombre: z.string().trim().min(2, 'Escribí el nombre del producto.').max(60),
@@ -29,42 +37,53 @@ const esquemaProducto = z.object({
     .int('El precio va sin decimales.')
     .min(100, 'El precio mínimo es ₡100.')
     .max(20000, 'Ese precio parece demasiado alto.'),
-  disponible: z.boolean(),
+  estado: campoEstado,
   oculto: z.boolean(),
   foto: campoFoto,
 })
 
-export function productoPublico(p) {
-  const cantidad = p.calificacionCantidad ?? 0
-  return {
+/**
+ * Datos de un producto para el navegador. El numero de unidades solo lo ve
+ * el personal (`personal`); el resto ve el estado.
+ */
+export function productoPublico(p, { personal = false } = {}) {
+  const estado = estadoDe(p)
+  const datos = {
     id: String(p._id),
     nombre: p.nombre,
     categoria: p.categoria,
     descripcion: p.descripcion,
     precio: p.precio,
     foto: p.foto ?? null,
-    disponible: p.disponible !== false,
+    estado,
+    disponible: estado !== 'agotado',
     oculto: p.oculto === true,
-    calificacion: cantidad
-      ? Math.round((p.calificacionSuma / cantidad) * 10) / 10
-      : null,
-    calificaciones: cantidad,
   }
+  if (personal) {
+    datos.controlStock = p.controlStock === true
+    datos.stock = p.controlStock ? Math.max(0, Number(p.stock) || 0) : null
+    datos.umbralPocas = umbralDe(p)
+  }
+  return datos
 }
 
 /** El menu se puede ver sin sesion; el personal de la soda ve tambien los ocultos. */
 registrar('GET', '/soda/productos', async ({ req, res, query }) => {
   const productos = await col(COLECCIONES.productos)
   let filtro = { oculto: { $ne: true } }
+  let personal = false
   if (query.todos === '1') {
     const usuario = await usuarioDeSesion(req)
-    if (usuario && puede(usuario, 'productos.gestionar')) filtro = {}
+    if (usuario && puede(usuario, 'productos.gestionar')) {
+      filtro = {}
+      personal = true
+    }
   }
   const lista = await productos
     .find(filtro)
     .sort({ categoria: 1, nombre: 1 })
     .toArray()
-  ok(res, { productos: lista.map(productoPublico) })
+  ok(res, { productos: lista.map((p) => productoPublico(p, { personal })) })
 })
 
 registrar('GET', '/soda/franjas', async ({ res }) => {
@@ -77,105 +96,151 @@ registrar('POST', '/soda/productos', async ({ req, res }) => {
   const producto = {
     ...datos,
     foto: await guardarFotoSiEsNueva(datos.foto),
-    calificacionSuma: 0,
-    calificacionCantidad: 0,
+    controlStock: false,
+    umbralPocas: UMBRAL_POCAS,
     creadoEn: new Date(),
   }
   const productos = await col(COLECCIONES.productos)
   const { insertedId } = await productos.insertOne(producto)
-  creado(res, { producto: productoPublico({ ...producto, _id: insertedId }) })
+  creado(res, {
+    producto: productoPublico(
+      { ...producto, _id: insertedId },
+      { personal: true }
+    ),
+  })
 })
 
+/** Con el stock activo el estado se calcula solo: aqui no se toca. */
 registrar('PUT', '/soda/productos/:id', async ({ req, res, params }) => {
   await requerir(req, 'productos.gestionar')
-  const datos = esquemaProducto.parse(await leerCuerpo(req))
+  const { estado, ...datos } = esquemaProducto.parse(await leerCuerpo(req))
   const productos = await col(COLECCIONES.productos)
-  const r = await productos.findOneAndUpdate(
-    { _id: idValido(params.id) },
-    {
-      $set: {
-        ...datos,
-        foto: await guardarFotoSiEsNueva(datos.foto),
-        actualizadoEn: new Date(),
-      },
+  const _id = idValido(params.id)
+  const actual = await productos.findOne({ _id })
+  if (!actual) throw noExiste('Ese producto ya no existe.')
+  const cambios = {
+    $set: {
+      ...datos,
+      foto: await guardarFotoSiEsNueva(datos.foto),
+      actualizadoEn: new Date(),
     },
-    { returnDocument: 'after' }
-  )
+  }
+  if (!actual.controlStock) {
+    cambios.$set.estado = estado
+    cambios.$unset = { disponible: '' }
+  }
+  const r = await productos.findOneAndUpdate({ _id }, cambios, {
+    returnDocument: 'after',
+  })
   if (!r) throw noExiste('Ese producto ya no existe.')
-  ok(res, { producto: productoPublico(r) })
+  ok(res, { producto: productoPublico(r, { personal: true }) })
 })
 
-/** Cambio rapido de un solo campo: agotado o visible. */
+/**
+ * Cambios rapidos desde la lista: visible, estado (solo sin stock), activar
+ * o apagar el control de stock y el umbral de "pocas unidades".
+ */
 registrar('PATCH', '/soda/productos/:id', async ({ req, res, params }) => {
   await requerir(req, 'productos.gestionar')
   const datos = z
     .object({
-      disponible: z.boolean().optional(),
       oculto: z.boolean().optional(),
+      estado: campoEstado.optional(),
+      controlStock: z.boolean().optional(),
+      umbralPocas: z
+        .number({ error: 'Escribí un número.' })
+        .int('Va sin decimales.')
+        .min(0, 'No puede ser negativo.')
+        .max(CAMBIO_STOCK_MAXIMO, 'Ese número es muy alto.')
+        .optional(),
     })
     .parse(await leerCuerpo(req))
   const productos = await col(COLECCIONES.productos)
-  const r = await productos.findOneAndUpdate(
-    { _id: idValido(params.id) },
-    { $set: datos },
-    { returnDocument: 'after' }
-  )
+  const _id = idValido(params.id)
+  const actual = await productos.findOne({ _id })
+  if (!actual) throw noExiste('Ese producto ya no existe.')
+
+  if (datos.estado !== undefined) {
+    // El filtro evita que se cuele un cambio a mano si alguien acaba de
+    // activar el stock.
+    const r = await productos.updateOne(
+      { _id, controlStock: { $ne: true } },
+      { $set: { estado: datos.estado }, $unset: { disponible: '' } }
+    )
+    if (r.matchedCount === 0) {
+      throw malaPeticion(
+        'Este producto controla stock: su estado se calcula con las unidades.'
+      )
+    }
+  }
+  if (datos.oculto !== undefined) {
+    await productos.updateOne({ _id }, { $set: { oculto: datos.oculto } })
+  }
+  if (datos.umbralPocas !== undefined) {
+    await productos.updateOne(
+      { _id },
+      { $set: { umbralPocas: datos.umbralPocas } }
+    )
+  }
+  if (datos.controlStock === true) {
+    // Al activarlo empieza en 0 (agotado) hasta que se repongan unidades.
+    await productos.updateOne(
+      { _id, controlStock: { $ne: true } },
+      { $set: { controlStock: true, stock: 0 } }
+    )
+  } else if (datos.controlStock === false) {
+    // Al apagarlo queda a mano con el estado que tenia en ese momento.
+    const conStock = await productos.findOne({ _id, controlStock: true })
+    if (conStock) {
+      await productos.updateOne(
+        { _id, controlStock: true },
+        {
+          $set: { controlStock: false, estado: estadoDe(conStock) },
+          $unset: { stock: '', disponible: '' },
+        }
+      )
+    }
+  }
+  const r = await productos.findOne({ _id })
   if (!r) throw noExiste('Ese producto ya no existe.')
-  ok(res, { producto: productoPublico(r) })
+  ok(res, { producto: productoPublico(r, { personal: true }) })
 })
 
-/** Calificar un producto de un pedido ya entregado. Una vez por producto. */
-registrar(
-  'POST',
-  '/soda/productos/:id/calificar',
-  async ({ req, res, params }) => {
-    await asegurarIndices()
-    const usuario = await requerir(req)
-    const { estrellas, codigo } = z
-      .object({
-        estrellas: z.number().int().min(1, 'Elegí de 1 a 5 estrellas.').max(5),
-        codigo: z.string().min(1),
-      })
-      .parse(await leerCuerpo(req))
-
-    const productoId = String(idValido(params.id))
-    const pedidos = await col(COLECCIONES.pedidos)
-    const pedido = await pedidos.findOne({
-      codigo: codigo.toUpperCase(),
-      usuarioId: String(usuario._id),
+/**
+ * Reponer (+N) o quitar (-N) unidades. Las dos son atomicas: quitar solo se
+ * aplica si quedan al menos N, asi el stock nunca queda negativo.
+ */
+registrar('POST', '/soda/productos/:id/stock', async ({ req, res, params }) => {
+  await requerir(req, 'productos.gestionar')
+  const { cambio } = z
+    .object({
+      cambio: z
+        .number({ error: 'Escribí cuántas unidades.' })
+        .int('Van sin decimales.')
+        .min(-CAMBIO_STOCK_MAXIMO, 'Ese número es muy alto.')
+        .max(CAMBIO_STOCK_MAXIMO, 'Ese número es muy alto.')
+        .refine((n) => n !== 0, 'Escribí al menos una unidad.'),
     })
-    if (!pedido) throw noExiste('No encontramos ese pedido.')
-    if (pedido.estado !== 'entregado') {
-      throw malaPeticion('Podés calificar cuando ya hayas recibido el pedido.')
+    .parse(await leerCuerpo(req))
+  const productos = await col(COLECCIONES.productos)
+  const _id = idValido(params.id)
+  const filtro = { _id, controlStock: true }
+  if (cambio < 0) filtro.stock = { $gte: -cambio }
+  const r = await productos.findOneAndUpdate(
+    filtro,
+    { $inc: { stock: cambio } },
+    { returnDocument: 'after' }
+  )
+  if (!r) {
+    const actual = await productos.findOne({ _id })
+    if (!actual) throw noExiste('Ese producto ya no existe.')
+    if (!actual.controlStock) {
+      throw malaPeticion('Este producto no controla stock.')
     }
-    if (!pedido.items.some((i) => i.productoId === productoId)) {
-      throw malaPeticion('Ese producto no venía en tu pedido.')
-    }
-
-    const calificaciones = await col(COLECCIONES.calificaciones)
-    try {
-      await calificaciones.insertOne({
-        productoId,
-        usuarioId: String(usuario._id),
-        pedidoId: String(pedido._id),
-        estrellas,
-        creadoEn: new Date(),
-      })
-    } catch (e) {
-      if (e?.code === 11000)
-        throw conflicto('Ya calificaste este producto. Gracias.')
-      throw e
-    }
-
-    const productos = await col(COLECCIONES.productos)
-    await productos.updateOne(
-      { _id: idValido(productoId) },
-      { $inc: { calificacionSuma: estrellas, calificacionCantidad: 1 } }
+    throw malaPeticion(
+      `No se pueden quitar ${-cambio} unidades: quedan ${actual.stock ?? 0}.`,
+      { cambio: `Quedan ${actual.stock ?? 0} unidades.` }
     )
-    await pedidos.updateOne(
-      { _id: pedido._id },
-      { $addToSet: { calificados: productoId } }
-    )
-    ok(res, { listo: true })
   }
-)
+  ok(res, { producto: productoPublico(r, { personal: true }) })
+})

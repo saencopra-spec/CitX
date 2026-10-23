@@ -97,7 +97,6 @@ export const PERMISOS = {
     nombre: 'Alertas y sanciones',
     explica:
       'Alertar o sancionar a quien no recoge pedidos y levantar sanciones.',
-    soloAdmin: true,
   },
 }
 

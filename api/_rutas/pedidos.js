@@ -14,8 +14,10 @@ import {
 import { requerir } from '../_lib/sesion.js'
 import { notificar } from '../_lib/notificar.js'
 import { revisarNoRecogidos, exigirSinSancion } from '../_lib/sanciones.js'
+import { descontarStock, devolverStock } from '../_lib/stock.js'
 import { puede } from '../../compartido/permisos.js'
 import { calcularTotal } from '../../compartido/dinero.js'
+import { sePuedePedir } from '../../compartido/soda.js'
 import {
   franjaValida,
   nombreFranja,
@@ -88,7 +90,6 @@ export function pedidoPublico(p, { personal = false } = {}) {
     franja: p.franja,
     pago: p.pago,
     historial: p.historial,
-    calificados: p.calificados ?? [],
     creadoEn: p.creadoEn,
   }
   if (personal) {
@@ -165,7 +166,7 @@ registrar('POST', '/pedidos', async ({ req, res }) => {
     const p = porId.get(i.productoId)
     if (!p || p.oculto)
       throw malaPeticion('Uno de los productos ya no está en el menú.')
-    if (p.disponible === false) {
+    if (!sePuedePedir(p)) {
       throw malaPeticion(
         `${p.nombre} se acaba de agotar. Quitalo del carrito para seguir.`
       )
@@ -184,6 +185,23 @@ registrar('POST', '/pedidos', async ({ req, res }) => {
   const ahora = new Date()
   const pedidos = await col(COLECCIONES.pedidos)
 
+  // Lo ultimo antes de guardar: descontar el stock (un renglon por producto,
+  // aunque venga repetido con notas distintas).
+  const cantidades = new Map()
+  for (const i of items) {
+    cantidades.set(
+      i.productoId,
+      (cantidades.get(i.productoId) ?? 0) + i.cantidad
+    )
+  }
+  const descontados = await descontarStock(
+    productos,
+    [...cantidades].map(([id, cantidad]) => ({
+      producto: porId.get(id),
+      cantidad,
+    }))
+  )
+
   const pedido = {
     usuarioId: String(usuario._id),
     usuarioNombre: usuario.nombre,
@@ -198,7 +216,6 @@ registrar('POST', '/pedidos', async ({ req, res }) => {
     pago,
     estado: 'recibido',
     historial: [{ estado: 'recibido', en: ahora }],
-    calificados: [],
     creadoEn: ahora,
   }
 
@@ -209,10 +226,14 @@ registrar('POST', '/pedidos', async ({ req, res }) => {
       await pedidos.insertOne(pedido)
       return creado(res, { pedido: pedidoPublico(pedido) })
     } catch (e) {
-      if (e?.code !== 11000) throw e
+      if (e?.code !== 11000) {
+        await devolverStock(productos, descontados)
+        throw e
+      }
       delete pedido._id
     }
   }
+  await devolverStock(productos, descontados)
   throw new Error('No se pudo generar un codigo de pedido unico.')
 })
 
@@ -269,23 +290,6 @@ registrar('GET', '/pedidos/:codigo', async ({ req, res, params }) => {
   if (!pedido || (!personal && pedido.usuarioId !== String(usuario._id))) {
     throw noExiste('No encontramos un pedido con ese código.')
   }
-  // Cada persona califica un producto una sola vez, aunque lo pida varias veces.
-  const calificaciones = await col(COLECCIONES.calificaciones)
-  const yaCalificados = await calificaciones
-    .find(
-      {
-        usuarioId: pedido.usuarioId,
-        productoId: { $in: pedido.items.map((i) => i.productoId) },
-      },
-      { projection: { productoId: 1 } }
-    )
-    .toArray()
-  pedido.calificados = [
-    ...new Set([
-      ...(pedido.calificados ?? []),
-      ...yaCalificados.map((c) => c.productoId),
-    ]),
-  ]
   ok(res, { pedido: pedidoPublico(pedido, { personal }) })
 })
 

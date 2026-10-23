@@ -19,6 +19,7 @@ import EncabezadoPanel from '@/components/estructura/EncabezadoPanel.vue'
 import Dialogo from '@/components/avisos/Dialogo.vue'
 import Campo from '@/components/formularios/Campo.vue'
 import CampoContrasena from '@/components/formularios/CampoContrasena.vue'
+import Paginacion from '@/components/formularios/Paginacion.vue'
 import { api } from '@/lib/api'
 import { useAuth } from '@/stores/auth'
 import { useAvisos } from '@/stores/avisos'
@@ -30,9 +31,9 @@ import {
   SECCIONES,
   NOMBRE_NIVEL,
   PERMISOS,
-  PERMISOS_ASIGNABLES,
   PERMISOS_POR_ROL,
 } from '@compartido/permisos.js'
+import { gruposDePermisos } from '@compartido/panel.js'
 import { fechaCorta, fechaRelativa, horaDe } from '@compartido/hora.js'
 
 const auth = useAuth()
@@ -42,6 +43,9 @@ const confirmar = useConfirmar()
 const usuarios = ref([])
 const porRol = ref({})
 const total = ref(0)
+const coincidencias = ref(0)
+const pagina = ref(1)
+const porPagina = ref(20)
 const cargando = ref(true)
 const busqueda = ref('')
 const rolFiltro = ref('')
@@ -49,6 +53,8 @@ const estadoFiltro = ref('')
 
 const opcionesRol = ROLES.map((r) => ({ valor: r, texto: NOMBRE_ROL[r] }))
 const opcionesSec = opcionesSeccion(SECCIONES, NOMBRE_NIVEL)
+/** Los mismos grupos y el mismo orden que el menu del panel. */
+const gruposPermisos = gruposDePermisos()
 
 let temporizador = null
 async function cargar() {
@@ -58,10 +64,19 @@ async function cargar() {
     if (busqueda.value) p.set('buscar', busqueda.value)
     if (rolFiltro.value) p.set('rol', rolFiltro.value)
     if (estadoFiltro.value) p.set('estado', estadoFiltro.value)
+    p.set('pagina', pagina.value)
     const datos = await api.get(`/usuarios?${p}`)
+    // Si la pagina quedo vacia (por ejemplo, al borrar), se va a la ultima.
+    const ultima = Math.max(1, Math.ceil(datos.coincidencias / datos.porPagina))
+    if (!datos.usuarios.length && pagina.value > ultima) {
+      pagina.value = ultima
+      return cargar()
+    }
     usuarios.value = datos.usuarios
     porRol.value = datos.porRol
     total.value = datos.total
+    coincidencias.value = datos.coincidencias
+    porPagina.value = datos.porPagina
   } catch (e) {
     avisos.error(e.message)
   } finally {
@@ -71,8 +86,16 @@ async function cargar() {
 
 watch([busqueda, rolFiltro, estadoFiltro], () => {
   clearTimeout(temporizador)
-  temporizador = setTimeout(cargar, 300)
+  temporizador = setTimeout(() => {
+    pagina.value = 1
+    cargar()
+  }, 300)
 })
+
+function irAPagina(n) {
+  pagina.value = n
+  cargar()
+}
 
 // --- Detalle de una persona ---
 const elegido = ref(null)
@@ -232,10 +255,9 @@ async function borrar() {
   if (!si) return
   try {
     await api.delete(`/usuarios/${u.id}`)
-    usuarios.value = usuarios.value.filter((x) => x.id !== u.id)
-    total.value--
     elegido.value = null
     avisos.exito('Cuenta borrada.')
+    await cargar()
   } catch (e) {
     avisos.error(e.message)
   }
@@ -267,8 +289,8 @@ async function crear() {
       ...nueva.value,
       seccion: nueva.value.seccion || null,
     })
-    usuarios.value.unshift(usuario)
-    total.value++
+    pagina.value = 1
+    await cargar()
     avisos.exito(
       `Cuenta creada. Al entrar, a ${usuario.nombre} se le va a pedir cambiar la contraseña.`
     )
@@ -411,6 +433,13 @@ onMounted(cargar)
         </button>
       </li>
     </ul>
+    <Paginacion
+      :pagina="pagina"
+      :total="coincidencias"
+      :por-pagina="porPagina"
+      etiqueta="Páginas de cuentas"
+      @cambiar="irAPagina"
+    />
 
     <!-- Detalle -->
     <Dialogo
@@ -531,21 +560,25 @@ onMounted(cargar)
                 </li>
               </ul>
               <div v-else class="permisos__opciones">
-                <label
-                  v-for="p in PERMISOS_ASIGNABLES"
-                  :key="p"
-                  class="permiso"
+                <fieldset
+                  v-for="g in gruposPermisos"
+                  :key="g.titulo"
+                  class="permisos__grupo"
                 >
-                  <input
-                    v-model="edicion.permisos"
-                    type="checkbox"
-                    :value="p"
-                  />
-                  <span>
-                    <strong>{{ PERMISOS[p].nombre }}</strong>
-                    <small>{{ PERMISOS[p].explica }}</small>
-                  </span>
-                </label>
+                  <legend class="permisos__titulo">{{ g.titulo }}</legend>
+                  <label v-for="p in g.permisos" :key="p.clave" class="permiso">
+                    <input
+                      v-model="edicion.permisos"
+                      type="checkbox"
+                      :value="p.clave"
+                    />
+                    <span>
+                      <strong>{{ p.nombre }}</strong>
+                      <small>{{ p.explica }}</small>
+                      <small class="permiso__habilita">{{ p.habilita }}</small>
+                    </span>
+                  </label>
+                </fieldset>
                 <button
                   type="button"
                   class="boton boton--texto boton--pequeno"
@@ -936,7 +969,29 @@ onMounted(cargar)
 
 .permisos__opciones {
   display: grid;
+  gap: var(--e-4);
+}
+
+.permisos__grupo {
+  display: grid;
   gap: var(--e-2);
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.permisos__titulo {
+  margin-bottom: var(--e-2);
+  padding: 0;
+  font-size: var(--txt-xs);
+  font-weight: var(--peso-semi);
+  color: var(--texto-tenue);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.permiso__habilita {
+  font-weight: var(--peso-semi);
 }
 
 .permiso {

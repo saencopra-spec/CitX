@@ -7,7 +7,6 @@ import EncabezadoPagina from '@/components/estructura/EncabezadoPagina.vue'
 import EstadoVacio from '@/components/avisos/EstadoVacio.vue'
 import LineaEstado from '@/components/soda/LineaEstado.vue'
 import CodigoQR from '@/components/soda/CodigoQR.vue'
-import Estrellas from '@/components/formularios/Estrellas.vue'
 import { api } from '@/lib/api'
 import { usarSondeo } from '@/lib/sondeo'
 import { sinMovimiento } from '@/lib/movimiento'
@@ -41,7 +40,6 @@ const error = ref('')
 const esNuevo = route.query.nuevo === '1'
 const permiso = ref(permisoNotificaciones())
 const tarjetaCodigo = ref(null)
-const calificando = ref({})
 
 const terminado = computed(() => pedido.value?.estado === 'entregado')
 const retiroHoy = computed(() => pedido.value?.franja.fecha === partesCR().iso)
@@ -90,25 +88,6 @@ async function activarAvisos() {
   permiso.value = await pedirPermisoNotificaciones()
   if (permiso.value === 'granted')
     avisos.exito('Te avisamos cuando esté listo.')
-}
-
-async function calificar(item, estrellas) {
-  calificando.value = { ...calificando.value, [item.productoId]: estrellas }
-  try {
-    await api.post(`/soda/productos/${item.productoId}/calificar`, {
-      estrellas,
-      codigo: props.codigo,
-    })
-    pedido.value.calificados = [...pedido.value.calificados, item.productoId]
-    avisos.exito(`Gracias por calificar ${item.nombre}.`)
-  } catch (e) {
-    if (e.estado === 409) {
-      pedido.value.calificados = [...pedido.value.calificados, item.productoId]
-      avisos.info(e.message)
-    } else {
-      avisos.error(e.message)
-    }
-  }
 }
 
 onMounted(() => {
@@ -250,20 +229,6 @@ onMounted(() => {
                 <span>{{ colones(i.precio * i.cantidad) }}</span>
               </div>
               <p v-if="i.nota" class="linea-item__nota">Nota: {{ i.nota }}</p>
-              <div v-if="terminado" class="calificar">
-                <template v-if="pedido.calificados.includes(i.productoId)">
-                  <span class="etiqueta etiqueta--exito">Calificado</span>
-                </template>
-                <template v-else>
-                  <span class="texto-suave">¿Qué tal estuvo?</span>
-                  <Estrellas
-                    editable
-                    :nombre="`estrellas-${i.productoId}`"
-                    :valor="calificando[i.productoId] ?? 0"
-                    @elegir="(n) => calificar(i, n)"
-                  />
-                </template>
-              </div>
             </li>
           </ul>
           <dl class="pago">
@@ -414,15 +379,6 @@ onMounted(() => {
 .linea-item__nota {
   font-size: var(--txt-sm);
   color: var(--texto-suave);
-}
-
-.calificar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--e-2);
-  margin-top: var(--e-1);
-  font-size: var(--txt-sm);
 }
 
 .pago {

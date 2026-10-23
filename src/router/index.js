@@ -159,26 +159,26 @@ const rutas = [
         meta: { permiso: 'panel.entrar', titulo: 'Resumen' },
       },
       {
-        path: 'pedidos',
+        path: 'soda/pedidos',
         name: 'admin-pedidos',
         component: () => import('@/views/admin/PedidosTablero.vue'),
         meta: { permiso: 'pedidos.gestionar', titulo: 'Pedidos' },
       },
       {
-        path: 'verificar/:codigo?',
+        path: 'soda/verificar/:codigo?',
         name: 'admin-verificar',
         component: () => import('@/views/admin/VerificarPedido.vue'),
         props: true,
         meta: { permiso: 'pedidos.gestionar', titulo: 'Verificar pedido' },
       },
       {
-        path: 'reportes',
+        path: 'soda/reportes',
         name: 'admin-reportes',
         component: () => import('@/views/admin/Reportes.vue'),
         meta: { permiso: 'reportes.ver', titulo: 'Reportes de la soda' },
       },
       {
-        path: 'menu',
+        path: 'soda/menu',
         name: 'admin-menu',
         component: () => import('@/views/admin/MenuSoda.vue'),
         meta: { permiso: 'productos.gestionar', titulo: 'Menú de la soda' },
@@ -232,11 +232,24 @@ const rutas = [
         meta: { permiso: 'usuarios.gestionar', titulo: 'Invitaciones' },
       },
       {
-        path: 'sanciones',
+        path: 'soda/sanciones',
         name: 'admin-sanciones',
         component: () => import('@/views/admin/SancionesAdmin.vue'),
         meta: { permiso: 'sanciones.gestionar', titulo: 'Alertas y sanciones' },
       },
+
+      // Direcciones viejas de la soda (antes de tener su propia seccion).
+      { path: 'pedidos', redirect: { name: 'admin-pedidos' } },
+      {
+        path: 'verificar/:codigo?',
+        redirect: (hacia) => ({
+          name: 'admin-verificar',
+          params: hacia.params,
+        }),
+      },
+      { path: 'reportes', redirect: { name: 'admin-reportes' } },
+      { path: 'menu', redirect: { name: 'admin-menu' } },
+      { path: 'sanciones', redirect: { name: 'admin-sanciones' } },
     ],
   },
 

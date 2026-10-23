@@ -24,6 +24,7 @@ import LogoCitx from '@/components/marca/LogoCitx.vue'
 import EscudoCit from '@/components/marca/EscudoCit.vue'
 import { useAuth } from '@/stores/auth'
 import { useConfirmar } from '@/stores/confirmar'
+import { GRUPOS_PANEL } from '@compartido/panel.js'
 
 defineOptions({ inheritAttrs: false })
 
@@ -32,112 +33,33 @@ const route = useRoute()
 const router = useRouter()
 const confirmar = useConfirmar()
 
-const grupos = [
-  {
-    titulo: 'Día a día',
-    enlaces: [
-      {
-        nombre: 'admin-resumen',
-        texto: 'Resumen',
-        icono: LayoutDashboard,
-        permiso: 'panel.entrar',
-      },
-      {
-        nombre: 'admin-pedidos',
-        texto: 'Pedidos',
-        icono: ClipboardList,
-        permiso: 'pedidos.gestionar',
-      },
-      {
-        nombre: 'admin-verificar',
-        texto: 'Verificar pedido',
-        icono: ScanLine,
-        permiso: 'pedidos.gestionar',
-      },
-      {
-        nombre: 'admin-reportes',
-        texto: 'Reportes de la soda',
-        icono: ChartColumn,
-        permiso: 'reportes.ver',
-      },
-      {
-        nombre: 'admin-menu',
-        texto: 'Menú de la soda',
-        icono: UtensilsCrossed,
-        permiso: 'productos.gestionar',
-      },
-    ],
-  },
-  {
-    titulo: 'Comunicación',
-    enlaces: [
-      {
-        nombre: 'admin-anuncios',
-        texto: 'Anuncios',
-        icono: Megaphone,
-        permiso: 'anuncios.publicar',
-      },
-      {
-        nombre: 'admin-eventos',
-        texto: 'Eventos',
-        icono: CalendarDays,
-        permiso: 'eventos.gestionarTodos',
-      },
-    ],
-  },
-  {
-    titulo: 'Colegio',
-    enlaces: [
-      {
-        nombre: 'admin-lugares',
-        texto: 'Lugares del mapa',
-        icono: IconoMapa,
-        permiso: 'lugares.editar',
-      },
-      {
-        nombre: 'admin-objetos',
-        texto: 'Objetos perdidos',
-        icono: PackageSearch,
-        permiso: 'objetos.gestionar',
-      },
-      {
-        nombre: 'admin-horarios',
-        texto: 'Horarios',
-        icono: CalendarClock,
-        permiso: 'horarios.editar',
-      },
-      {
-        nombre: 'admin-enfermeria',
-        texto: 'Enfermería',
-        icono: HeartPulse,
-        permiso: 'enfermeria.editar',
-      },
-    ],
-  },
-  {
-    titulo: 'Personas y seguridad',
-    enlaces: [
-      {
-        nombre: 'admin-usuarios',
-        texto: 'Usuarios y permisos',
-        icono: Users,
-        permiso: 'usuarios.gestionar',
-      },
-      {
-        nombre: 'admin-invitaciones',
-        texto: 'Invitaciones',
-        icono: TicketCheck,
-        permiso: 'usuarios.gestionar',
-      },
-      {
-        nombre: 'admin-sanciones',
-        texto: 'Alertas y sanciones',
-        icono: Ban,
-        permiso: 'sanciones.gestionar',
-      },
-    ],
-  },
-]
+/** Icono de cada apartado; las secciones salen de compartido/panel.js. */
+const ICONOS = {
+  'admin-resumen': LayoutDashboard,
+  'admin-pedidos': ClipboardList,
+  'admin-verificar': ScanLine,
+  'admin-menu': UtensilsCrossed,
+  'admin-reportes': ChartColumn,
+  'admin-sanciones': Ban,
+  'admin-anuncios': Megaphone,
+  'admin-eventos': CalendarDays,
+  'admin-lugares': IconoMapa,
+  'admin-objetos': PackageSearch,
+  'admin-horarios': CalendarClock,
+  'admin-enfermeria': HeartPulse,
+  'admin-usuarios': Users,
+  'admin-invitaciones': TicketCheck,
+}
+
+const grupos = GRUPOS_PANEL.map((g) => ({
+  titulo: g.titulo,
+  enlaces: g.apartados.map((a) => ({
+    nombre: a.ruta,
+    texto: a.texto,
+    icono: ICONOS[a.ruta],
+    permiso: a.permiso,
+  })),
+}))
 
 const visibles = computed(() =>
   grupos

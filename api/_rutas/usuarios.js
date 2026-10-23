@@ -12,6 +12,7 @@ import {
   conflicto,
 } from '../_lib/respuesta.js'
 import { requerir, idValido, usuarioPublico } from '../_lib/sesion.js'
+import { paginaDe } from '../_lib/paginas.js'
 import {
   generarCodigoInvitacion,
   huella,
@@ -22,8 +23,6 @@ import {
   ROLES,
   ROLES_PERSONAL,
   SECCIONES,
-  NOMBRE_ROL,
-  PERMISOS,
   PERMISOS_ASIGNABLES,
 } from '../../compartido/permisos.js'
 
@@ -54,8 +53,13 @@ async function esUltimoAdmin(usuarios, id) {
 // Usuarios
 // ---------------------------------------------------------------------------
 
+/**
+ * Lista de cuentas de a una pagina. `coincidencias` es cuantas cumplen los
+ * filtros; `total` y `porRol` cuentan todas las cuentas.
+ */
 registrar('GET', '/usuarios', async ({ req, res, query }) => {
   await requerir(req, 'usuarios.gestionar')
+  const { pagina, saltar, porPagina } = paginaDe(query)
   const usuarios = await col(COLECCIONES.usuarios)
   const filtro = {}
   if (query.rol && ROLES.includes(query.rol)) filtro.rol = query.rol
@@ -69,17 +73,22 @@ registrar('GET', '/usuarios', async ({ req, res, query }) => {
       { seccion: { $regex: `^${texto}`, $options: 'i' } },
     ]
   }
-  const [lista, total, porRol] = await Promise.all([
+  const [lista, coincidencias, total, porRol] = await Promise.all([
     usuarios
       .find(filtro, { projection: { hash: 0, configuracion: 0 } })
-      .sort({ creadoEn: -1 })
-      .limit(500)
+      .sort({ creadoEn: -1, _id: -1 })
+      .skip(saltar)
+      .limit(porPagina)
       .toArray(),
+    usuarios.countDocuments(filtro),
     usuarios.countDocuments({}),
     usuarios.aggregate([{ $group: { _id: '$rol', n: { $sum: 1 } } }]).toArray(),
   ])
   ok(res, {
     usuarios: lista.map(conDatosPanel),
+    coincidencias,
+    pagina,
+    porPagina,
     total,
     porRol: Object.fromEntries(porRol.map((r) => [r._id, r.n])),
   })
@@ -124,18 +133,15 @@ registrar('PATCH', '/usuarios/:id', async ({ req, res, params }) => {
 
   const set = {}
   const unset = {}
-  const notas = []
   if (datos.nombre) set.nombre = datos.nombre
   if (datos.activo !== undefined) {
     set.activo = datos.activo
-    notas.push(datos.activo ? 'activó la cuenta' : 'desactivó la cuenta')
   }
   if (datos.rol && datos.rol !== actual.rol) {
     set.rol = datos.rol
     // Al cambiar de rol se vuelve a los permisos de ese rol.
     unset.permisos = ''
     if (datos.rol !== 'estudiante') set.seccion = null
-    notas.push(`rol: ${NOMBRE_ROL[actual.rol]} a ${NOMBRE_ROL[datos.rol]}`)
   }
   const rolFinal = set.rol ?? actual.rol
   if (rolFinal === 'estudiante') {
@@ -156,12 +162,8 @@ registrar('PATCH', '/usuarios/:id', async ({ req, res, params }) => {
     }
     if (datos.permisos === null) {
       unset.permisos = ''
-      notas.push('permisos: los del rol')
     } else {
       set.permisos = datos.permisos
-      notas.push(
-        `permisos: ${datos.permisos.map((p) => PERMISOS[p].nombre).join(', ') || 'ninguno'}`
-      )
     }
   }
   // Si se desactiva o cambia el rol, se cierran sus sesiones abiertas.
@@ -176,7 +178,7 @@ registrar('PATCH', '/usuarios/:id', async ({ req, res, params }) => {
         returnDocument: 'after',
       })
     : actual
-  if (notas.length) ok(res, { usuario: conDatosPanel(r) })
+  ok(res, { usuario: conDatosPanel(r) })
 })
 
 registrar('DELETE', '/usuarios/:id', async ({ req, res, params }) => {

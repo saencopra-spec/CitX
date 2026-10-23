@@ -81,18 +81,17 @@ async function main() {
   }
   console.log(`Lugares: ${LUGARES_CIT.length} oficiales (${nuevos} nuevos)`)
 
-  // Menu de la soda (con calificaciones de ejemplo)
+  // Menu de la soda
   const productos = base.collection(COLECCIONES.productos)
   if ((await productos.countDocuments()) === 0 || opcion('--reiniciar-menu')) {
     await productos.deleteMany({})
-    await base.collection(COLECCIONES.calificaciones).deleteMany({})
     await productos.insertMany(
-      PRODUCTOS.map(({ estrellas = [], disponible = true, ...p }) => ({
+      PRODUCTOS.map(({ disponible = true, ...p }) => ({
         ...p,
-        disponible,
+        estado: disponible ? 'disponible' : 'agotado',
+        controlStock: false,
+        umbralPocas: 5,
         oculto: false,
-        calificacionSuma: estrellas.reduce((a, b) => a + b, 0),
-        calificacionCantidad: estrellas.length,
         creadoEn: ahora,
       }))
     )

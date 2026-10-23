@@ -14,7 +14,9 @@ import {
   permisosDe,
   seccionValida,
   SECCIONES,
+  PERMISOS_ASIGNABLES,
 } from '../compartido/permisos.js'
+import { GRUPOS_PANEL, gruposDePermisos } from '../compartido/panel.js'
 import { LUGARES_CIT, CATEGORIAS, LIENZO } from '../compartido/campus.js'
 import { generarCodigoInvitacion, huella } from '../api/_lib/invitaciones.js'
 import { estadoEnfermeria } from '../compartido/enfermeria.js'
@@ -413,5 +415,34 @@ describe('claseDelMomento', () => {
     expect(claseDelMomento(dias, new Date('2026-10-18T08:00:00-06:00'))).toBe(
       null
     )
+  })
+})
+
+describe('Secciones del panel y permisos', () => {
+  it('cada permiso asignable aparece una sola vez', () => {
+    const claves = gruposDePermisos().flatMap((g) =>
+      g.permisos.map((p) => p.clave)
+    )
+    expect(claves.toSorted()).toEqual([...PERMISOS_ASIGNABLES].toSorted())
+  })
+
+  it('los grupos de permisos siguen el orden del menu del panel', () => {
+    const titulos = GRUPOS_PANEL.map((g) => g.titulo)
+    const conPermisos = gruposDePermisos().map((g) => g.titulo)
+    expect(conPermisos).toEqual(titulos.filter((t) => conPermisos.includes(t)))
+    expect(titulos.slice(0, 2)).toEqual(['Día a día', 'Soda'])
+  })
+
+  it('un permiso compartido explica todos los apartados que habilita', () => {
+    const soda = gruposDePermisos().find((g) => g.titulo === 'Soda')
+    const pedidos = soda.permisos.filter((p) => p.clave === 'pedidos.gestionar')
+    expect(pedidos).toHaveLength(1)
+    expect(pedidos[0].habilita).toBe('En el panel: Pedidos y Verificar pedido.')
+    expect(soda.permisos.map((p) => p.clave)).toContain('sanciones.gestionar')
+  })
+
+  it('Dia a dia solo tiene el resumen', () => {
+    const dia = GRUPOS_PANEL.find((g) => g.titulo === 'Día a día')
+    expect(dia.apartados.map((a) => a.ruta)).toEqual(['admin-resumen'])
   })
 })

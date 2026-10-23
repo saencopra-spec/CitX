@@ -12,12 +12,15 @@ import EncabezadoPagina from '@/components/estructura/EncabezadoPagina.vue'
 import EstadoVacio from '@/components/avisos/EstadoVacio.vue'
 import FotoComida from '@/components/soda/FotoComida.vue'
 import Cantidad from '@/components/formularios/Cantidad.vue'
+import TarjetaSancion from '@/components/sanciones/TarjetaSancion.vue'
 import { useCarrito } from '@/stores/carrito'
+import { useSanciones } from '@/stores/sanciones'
 import { api } from '@/lib/api'
 import { colones } from '@compartido/dinero.js'
 import { horaLegible, fechaIsoLegible } from '@compartido/hora.js'
 
 const carrito = useCarrito()
+const sanciones = useSanciones()
 const router = useRouter()
 
 const franjas = ref([])
@@ -83,6 +86,8 @@ onMounted(async () => {
 <template>
   <div class="pagina carrito">
     <EncabezadoPagina titulo="Tu carrito" :volver="{ name: 'soda' }" />
+
+    <TarjetaSancion />
 
     <EstadoVacio
       v-if="carrito.vacio"
@@ -211,7 +216,7 @@ onMounted(async () => {
         <button
           type="button"
           class="boton boton--accion boton--ancho boton--grande"
-          :disabled="hayAgotados || !franjas.length"
+          :disabled="hayAgotados || !franjas.length || sanciones.bloqueado"
           @click="continuar"
         >
           Ir a pagar

@@ -82,6 +82,7 @@ export const COLECCIONES = {
   imagenes: 'imagenes',
   invitaciones: 'invitaciones',
   anuncios: 'anuncios',
+  sanciones: 'sanciones',
 }
 
 /**
@@ -134,6 +135,10 @@ export async function asegurarIndices() {
       .collection(COLECCIONES.invitaciones)
       .createIndex({ hash: 1 }, { unique: true }),
     base.collection(COLECCIONES.anuncios).createIndex({ creadoEn: -1 }),
+    base
+      .collection(COLECCIONES.sanciones)
+      .createIndex({ usuarioId: 1, creadaEn: -1 }),
+    base.collection(COLECCIONES.sanciones).createIndex({ tipo: 1, hasta: 1 }),
   ])
   cache.indicesListos = true
 }

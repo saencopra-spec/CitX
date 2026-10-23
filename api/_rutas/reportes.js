@@ -19,7 +19,13 @@ registrar('GET', '/reportes/soda', async ({ req, res, query }) => {
   const pedidos = await col(COLECCIONES.pedidos)
   const productos = await col(COLECCIONES.productos)
 
-  const base = { creadoEn: { $gte: desde } }
+  // Un no recogido sin pagar (efectivo al retirar) no es una venta. Si ya se
+  // pago por adelantado (SINPE o tarjeta) sigue contando como ingreso.
+  const noRecogidoSinPagar = {
+    estado: 'no_recogido',
+    'pago.estado': 'pendiente',
+  }
+  const base = { creadoEn: { $gte: desde }, $nor: [noRecogidoSinPagar] }
   const zona = 'America/Costa_Rica'
 
   const [
@@ -31,6 +37,7 @@ registrar('GET', '/reportes/soda', async ({ req, res, query }) => {
     porFranja,
     porEstado,
     catalogo,
+    noRecogidos,
   ] = await Promise.all([
     pedidos
       .aggregate([
@@ -134,6 +141,18 @@ registrar('GET', '/reportes/soda', async ({ req, res, query }) => {
         }
       )
       .toArray(),
+    pedidos
+      .aggregate([
+        { $match: { creadoEn: { $gte: desde }, estado: 'no_recogido' } },
+        {
+          $group: {
+            _id: { $eq: ['$pago.estado', 'pendiente'] },
+            pedidos: { $sum: 1 },
+            monto: { $sum: '$total' },
+          },
+        },
+      ])
+      .toArray(),
   ])
 
   const porId = new Map(catalogo.map((p) => [String(p._id), p]))
@@ -193,6 +212,16 @@ registrar('GET', '/reportes/soda', async ({ req, res, query }) => {
     })),
     porFranja: porFranja.map((f) => ({ franja: f._id, pedidos: f.pedidos })),
     porEstado: Object.fromEntries(porEstado.map((e) => [e._id, e.pedidos])),
+    noRecogidos: {
+      pagados: {
+        pedidos: noRecogidos.find((n) => n._id === false)?.pedidos ?? 0,
+        monto: noRecogidos.find((n) => n._id === false)?.monto ?? 0,
+      },
+      sinPagar: {
+        pedidos: noRecogidos.find((n) => n._id === true)?.pedidos ?? 0,
+        monto: noRecogidos.find((n) => n._id === true)?.monto ?? 0,
+      },
+    },
     sinVentas: catalogo
       .filter((p) => !vendidos.has(String(p._id)))
       .map((p) => ({

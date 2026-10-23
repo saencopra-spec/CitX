@@ -18,6 +18,7 @@ const tonos = {
   preparacion: 'aviso',
   listo: 'exito',
   entregado: 'neutra',
+  no_recogido: 'error',
 }
 
 function resumen(p) {

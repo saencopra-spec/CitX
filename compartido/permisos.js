@@ -93,6 +93,12 @@ export const PERMISOS = {
     explica: 'Crear invitaciones, cambiar permisos y borrar cuentas.',
     soloAdmin: true,
   },
+  'sanciones.gestionar': {
+    nombre: 'Alertas y sanciones',
+    explica:
+      'Alertar o sancionar a quien no recoge pedidos y levantar sanciones.',
+    soloAdmin: true,
+  },
 }
 
 export const ACCIONES = Object.keys(PERMISOS)

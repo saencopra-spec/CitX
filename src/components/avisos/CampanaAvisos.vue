@@ -10,6 +10,8 @@ import {
   ListChecks,
   PackageSearch,
   Megaphone,
+  TriangleAlert,
+  Ban,
   MapPin,
   CheckCheck,
   ArrowRight,
@@ -39,6 +41,8 @@ const iconos = {
   recordatorio: ListChecks,
   objeto: PackageSearch,
   anuncio: Megaphone,
+  alerta: TriangleAlert,
+  sancion: Ban,
 }
 
 const recientes = computed(() => notificaciones.lista.slice(0, 8))

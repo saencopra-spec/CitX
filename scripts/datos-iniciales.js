@@ -54,7 +54,6 @@ export const PRODUCTOS = [
       'Gallo pinto recién hecho, huevo al gusto, natilla y una tortilla.',
     // Foto: James Diggans, CC BY 2.0 (Wikimedia Commons).
     foto: '/fotos/comida/gallo-pinto.webp',
-    estrellas: [5, 5, 4, 5],
   },
   {
     nombre: 'Tostadas francesas con banano',
@@ -63,7 +62,6 @@ export const PRODUCTOS = [
     descripcion:
       'Dos tostadas francesas con banano, arándanos y un toque de miel.',
     foto: '/fotos/comida/tostadas-francesas.webp',
-    estrellas: [5, 4, 4],
   },
   {
     nombre: 'Tostada de aguacate y huevo',
@@ -72,7 +70,6 @@ export const PRODUCTOS = [
     descripcion:
       'Pan integral tostado, aguacate majado, huevo duro y semillas.',
     foto: '/fotos/comida/tostada-aguacate.webp',
-    estrellas: [4, 4, 5],
   },
   {
     nombre: 'Huevo frito sobre pan integral',
@@ -80,7 +77,6 @@ export const PRODUCTOS = [
     precio: 1200,
     descripcion: 'Huevo frito con yema suave sobre pan integral de la casa.',
     foto: '/fotos/comida/huevo-pan-integral.webp',
-    estrellas: [4, 3, 4],
   },
   {
     nombre: 'Yogur con fresas y granola',
@@ -88,7 +84,6 @@ export const PRODUCTOS = [
     precio: 1100,
     descripcion: 'Yogur natural con fresas de la huerta y granola crujiente.',
     foto: '/fotos/comida/yogur-fresas.webp',
-    estrellas: [5, 4],
   },
   {
     nombre: 'Plato de frutas',
@@ -96,7 +91,6 @@ export const PRODUCTOS = [
     precio: 1300,
     descripcion: 'Papaya, piña, banano y fresas picadas, según la temporada.',
     foto: '/fotos/comida/bowl-frutas.webp',
-    estrellas: [4, 5, 4],
   },
   // Almuerzos
   {
@@ -106,7 +100,6 @@ export const PRODUCTOS = [
     descripcion:
       'Arroz, frijoles, pollo en salsa, ensalada verde, picadillo del día y plátano maduro.',
     foto: '/fotos/comida/casado-pollo.webp',
-    estrellas: [5, 4, 4, 5, 4],
   },
   {
     nombre: 'Pasta en salsa de tomate',
@@ -114,7 +107,6 @@ export const PRODUCTOS = [
     precio: 2600,
     descripcion: 'Pasta corta en salsa de tomate casera con queso rallado.',
     foto: '/fotos/comida/pasta-tomate.webp',
-    estrellas: [4, 4, 3],
   },
   {
     nombre: 'Hamburguesa de res con papas',
@@ -123,7 +115,6 @@ export const PRODUCTOS = [
     descripcion:
       'Torta de res a la plancha, queso, lechuga, tomate y papas a la francesa.',
     foto: '/fotos/comida/hamburguesa.webp',
-    estrellas: [5, 5, 4, 4],
   },
   {
     nombre: 'Ensalada de pollo',
@@ -132,7 +123,6 @@ export const PRODUCTOS = [
     descripcion:
       'Lechuga, pollo a la plancha, maíz dulce, huevo y aderezo de la casa.',
     foto: '/fotos/comida/ensalada-pollo.webp',
-    estrellas: [4, 4],
   },
   {
     nombre: 'Arroz con camarones',
@@ -141,7 +131,6 @@ export const PRODUCTOS = [
     descripcion:
       'Arroz con camarones y vegetales, acompañado de ensalada. Solo los viernes.',
     foto: '/fotos/comida/arroz-camarones.webp',
-    estrellas: [5, 4, 5],
   },
   {
     nombre: 'Pollo frito con ensalada',
@@ -149,7 +138,6 @@ export const PRODUCTOS = [
     precio: 2900,
     descripcion: 'Dos piezas de pollo frito, ensalada de repollo y tortilla.',
     foto: '/fotos/comida/pollo-frito.webp',
-    estrellas: [4, 5, 4],
   },
   // Bebidas
   {
@@ -159,7 +147,6 @@ export const PRODUCTOS = [
     descripcion:
       'Café chorreado con leche caliente. Pedilo con o sin azúcar en la nota.',
     foto: '/fotos/comida/cafe-leche.webp',
-    estrellas: [5, 4, 5],
   },
   {
     nombre: 'Té frío de limón',
@@ -167,7 +154,6 @@ export const PRODUCTOS = [
     precio: 600,
     descripcion: 'Té negro frío con limón, hecho en la soda. Vaso de 400 ml.',
     foto: '/fotos/comida/te-frio.webp',
-    estrellas: [4, 4, 4],
   },
   {
     nombre: 'Jugo de naranja natural',
@@ -175,7 +161,6 @@ export const PRODUCTOS = [
     precio: 900,
     descripcion: 'Naranjas exprimidas al momento, sin azúcar añadida.',
     foto: '/fotos/comida/jugo-naranja.webp',
-    estrellas: [5, 5],
   },
   {
     nombre: 'Batido de fresa',
@@ -183,7 +168,6 @@ export const PRODUCTOS = [
     precio: 1100,
     descripcion: 'Fresas de la huerta Armonía, en agua o en leche.',
     foto: '/fotos/comida/batido-fresa.webp',
-    estrellas: [5, 4, 4],
   },
   {
     nombre: 'Limonada con hierbabuena',
@@ -191,7 +175,6 @@ export const PRODUCTOS = [
     precio: 700,
     descripcion: 'Limonada fría con hojas de hierbabuena de la huerta.',
     foto: '/fotos/comida/limonada-hierbabuena.webp',
-    estrellas: [4, 5],
   },
   {
     nombre: 'Batido de banano',
@@ -199,7 +182,6 @@ export const PRODUCTOS = [
     precio: 1000,
     descripcion: 'Banano maduro con leche y un poco de canela.',
     foto: '/fotos/comida/batido-banano.webp',
-    estrellas: [4, 4],
     disponible: false,
   },
   // Snacks
@@ -210,7 +192,6 @@ export const PRODUCTOS = [
     descripcion:
       'Galleta grande con trozos de chocolate, horneada en la mañana.',
     foto: '/fotos/comida/galletas-chocolate.webp',
-    estrellas: [5, 5, 4],
   },
   {
     nombre: 'Dona con chispas',
@@ -218,7 +199,6 @@ export const PRODUCTOS = [
     precio: 700,
     descripcion: 'Dona cubierta de chocolate con chispas de colores.',
     foto: '/fotos/comida/dona.webp',
-    estrellas: [4, 3, 4],
   },
   {
     nombre: 'Helado de cono',
@@ -227,7 +207,6 @@ export const PRODUCTOS = [
     descripcion:
       'Helado de vainilla o fresa en cono. Pedí el sabor en la nota.',
     foto: '/fotos/comida/helado-cono.webp',
-    estrellas: [5, 4],
   },
   {
     nombre: 'Sandía en trozos',
@@ -235,7 +214,6 @@ export const PRODUCTOS = [
     precio: 500,
     descripcion: 'Vasito de sandía fría picada.',
     foto: '/fotos/comida/sandia.webp',
-    estrellas: [4],
   },
   {
     nombre: 'Porción de pizza',
@@ -243,7 +221,6 @@ export const PRODUCTOS = [
     precio: 1300,
     descripcion: 'Porción de pizza de jamón y queso, recién salida del horno.',
     foto: '/fotos/comida/pizza-porcion.webp',
-    estrellas: [4, 5, 4, 4],
   },
   {
     nombre: 'Sándwich tostado de jamón y queso',
@@ -251,7 +228,6 @@ export const PRODUCTOS = [
     precio: 1200,
     descripcion: 'Pan blanco tostado con jamón, queso derretido y mayonesa.',
     foto: '/fotos/comida/sandwich-tostado.webp',
-    estrellas: [4, 4, 3],
   },
 ]
 

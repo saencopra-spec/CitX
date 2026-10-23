@@ -1,38 +1,37 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue'
-import { Search, Ban, History, RefreshCw } from 'lucide-vue-next'
+import { Search, Ban, History, RefreshCw, TriangleAlert } from 'lucide-vue-next'
 import EncabezadoPanel from '@/components/estructura/EncabezadoPanel.vue'
-import Dialogo from '@/components/avisos/Dialogo.vue'
 import ListaNoRecogidos from '@/components/sanciones/ListaNoRecogidos.vue'
 import FormularioSancion from '@/components/sanciones/FormularioSancion.vue'
-import HistorialSanciones from '@/components/sanciones/HistorialSanciones.vue'
+import FormularioAlerta from '@/components/sanciones/FormularioAlerta.vue'
+import HistorialGeneral from '@/components/sanciones/HistorialGeneral.vue'
+import Paginacion from '@/components/formularios/Paginacion.vue'
 import { useSanciones } from '@/stores/sanciones'
-import { useAvisos } from '@/stores/avisos'
-import { useConfirmar } from '@/stores/confirmar'
+import { useAuth } from '@/stores/auth'
 import { NOMBRE_ROL } from '@compartido/permisos.js'
 import { textoFin } from '@compartido/sanciones.js'
 
 /**
  * Panel de alertas y sanciones: los pedidos no recogidos que esperan una
- * decision y un buscador para sancionar a cualquier persona, ver su
- * historial o levantar una sancion antes de tiempo.
+ * decision (alertar, sancionar o descartar), un buscador con todas las
+ * cuentas para alertar o sancionar a cualquiera, y el historial general.
  */
 const sanciones = useSanciones()
-const avisos = useAvisos()
-const confirmar = useConfirmar()
+const auth = useAuth()
 
 const lista = ref(null)
 const busqueda = ref('')
 const usuarios = ref([])
+const total = ref(0)
+const pagina = ref(1)
+const porPagina = ref(20)
 const buscando = ref(false)
 const errorBusqueda = ref('')
 
-const viendo = ref(null)
-const historial = ref([])
-const cargandoHistorial = ref(false)
-const levantando = ref('')
-
 const sancionando = ref(null)
+const alertando = ref(null)
+const viendoHistorial = ref(false)
 
 let espera = null
 let consulta = 0
@@ -42,8 +41,14 @@ async function buscar() {
   buscando.value = true
   errorBusqueda.value = ''
   try {
-    const encontrados = await sanciones.buscarUsuarios(busqueda.value.trim())
-    if (mia === consulta) usuarios.value = encontrados
+    const datos = await sanciones.buscarUsuarios(
+      busqueda.value.trim(),
+      pagina.value
+    )
+    if (mia !== consulta) return
+    usuarios.value = datos.usuarios
+    total.value = datos.total
+    porPagina.value = datos.porPagina
   } catch (e) {
     if (mia === consulta) errorBusqueda.value = e.message
   } finally {
@@ -53,70 +58,42 @@ async function buscar() {
 
 watch(busqueda, () => {
   clearTimeout(espera)
-  espera = setTimeout(buscar, 300)
+  espera = setTimeout(() => {
+    pagina.value = 1
+    buscar()
+  }, 300)
 })
 
 onMounted(buscar)
+
+function irAPagina(n) {
+  pagina.value = n
+  buscar()
+}
 
 function plural(n, uno, varios) {
   return `${n} ${n === 1 ? uno : varios}`
 }
 
-async function verHistorial(u) {
-  viendo.value = u
-  historial.value = []
-  cargandoHistorial.value = true
-  try {
-    const datos = await sanciones.historialDe(u.id)
-    historial.value = datos.historial
-  } catch (e) {
-    avisos.error(e.message)
-  } finally {
-    cargandoHistorial.value = false
-  }
+/** La API no deja alertar ni sancionar a uno mismo ni a la cuenta de la soda. */
+function motivoSinAcciones(u) {
+  if (u.id === auth.usuario?.id) return 'Es tu cuenta.'
+  if (u.rol === 'soda') return 'La cuenta de la soda no hace pedidos.'
+  return ''
 }
 
-function abrirSancion(u) {
-  sancionando.value = u
-}
-
-function sancionarDesdeHistorial() {
-  const u = viendo.value
-  viendo.value = null
-  abrirSancion(u)
-}
-
-async function refrescar() {
-  await buscar()
-  if (viendo.value) {
-    const actual = usuarios.value.find((u) => u.id === viendo.value.id)
-    await verHistorial(actual ?? viendo.value)
-  }
+async function actualizar() {
+  await Promise.all([lista.value?.cargar(), buscar()])
 }
 
 async function alSancionar() {
   sancionando.value = null
-  await refrescar()
+  await buscar()
 }
 
-async function levantar(s) {
-  const si = await confirmar.preguntar({
-    titulo: '¿Levantar esta sanción?',
-    mensaje: `${viendo.value?.nombre ?? 'La persona'} va a poder volver a pedir en la soda de inmediato y le llega un aviso.`,
-    aceptar: 'Levantar sanción',
-    peligro: false,
-  })
-  if (!si) return
-  levantando.value = s.id
-  try {
-    await sanciones.levantar(s.id)
-    avisos.exito('Sanción levantada.')
-    await refrescar()
-  } catch (e) {
-    avisos.error(e.message)
-  } finally {
-    levantando.value = ''
-  }
+async function alAlertar() {
+  alertando.value = null
+  await buscar()
 }
 </script>
 
@@ -132,19 +109,28 @@ async function levantar(s) {
         <h2 id="t-no-recogidos" class="seccion__titulo">
           Pedidos no recogidos
         </h2>
-        <button
-          type="button"
-          class="boton boton--contorno boton--pequeno"
-          @click="lista?.cargar()"
-        >
-          <RefreshCw :size="16" aria-hidden="true" /> Actualizar
-        </button>
+        <div class="seccion__botones">
+          <button
+            type="button"
+            class="boton boton--contorno boton--pequeno"
+            @click="actualizar"
+          >
+            <RefreshCw :size="16" aria-hidden="true" /> Actualizar
+          </button>
+          <button
+            type="button"
+            class="boton boton--contorno boton--pequeno"
+            @click="viendoHistorial = true"
+          >
+            <History :size="16" aria-hidden="true" /> Historial
+          </button>
+        </div>
       </div>
       <ListaNoRecogidos ref="lista" @cambio="buscar" />
     </section>
 
     <section class="seccion" aria-labelledby="t-personas">
-      <h2 id="t-personas" class="seccion__titulo">Sancionar a una persona</h2>
+      <h2 id="t-personas" class="seccion__titulo">Buscar una persona</h2>
       <div class="buscador">
         <Search :size="18" aria-hidden="true" />
         <input
@@ -155,12 +141,6 @@ async function levantar(s) {
           aria-label="Buscar persona"
         />
       </div>
-      <p class="texto-suave seccion__explica">
-        <template v-if="!busqueda.trim()"
-          >Sin búsqueda se ven las personas sancionadas ahora mismo.</template
-        >
-        <template v-else-if="buscando">Buscando...</template>
-      </p>
       <p v-if="errorBusqueda" class="nota nota--aviso">{{ errorBusqueda }}</p>
       <p
         v-else-if="!buscando && !usuarios.length"
@@ -169,95 +149,91 @@ async function levantar(s) {
         {{
           busqueda.trim()
             ? 'No encontramos a nadie con esa búsqueda.'
-            : 'Nadie tiene una sanción activa.'
+            : 'Todavía no hay cuentas.'
         }}
       </p>
-      <ul v-else class="personas">
-        <li v-for="u in usuarios" :key="u.id" class="persona">
-          <div class="persona__datos">
-            <p class="persona__nombre">
-              <strong>{{ u.nombre }}</strong>
-              <span v-if="u.sancionActiva" class="etiqueta etiqueta--error"
-                >Sanción activa</span
-              >
+      <template v-else>
+        <p class="texto-suave seccion__explica" aria-live="polite">
+          {{ buscando ? 'Buscando...' : plural(total, 'cuenta', 'cuentas') }}
+        </p>
+        <ul class="personas">
+          <li v-for="u in usuarios" :key="u.id" class="persona">
+            <div class="persona__datos">
+              <p class="persona__nombre">
+                <strong>{{ u.nombre }}</strong>
+                <span v-if="u.sancionActiva" class="etiqueta etiqueta--error"
+                  >Sanción activa</span
+                >
+              </p>
+              <p class="texto-suave">
+                {{ NOMBRE_ROL[u.rol] ?? u.rol
+                }}<template v-if="u.seccion"> · {{ u.seccion }}</template> ·
+                {{ u.correo }}
+              </p>
+              <p v-if="u.sancionActiva" class="texto-suave">
+                {{
+                  u.sancionActiva.permanente
+                    ? 'Sanción permanente'
+                    : `Hasta ${textoFin(u.sancionActiva.hasta)}`
+                }}
+                · {{ u.sancionActiva.razon }}
+              </p>
+              <p class="persona__previos">
+                {{ plural(u.alertas, 'alerta', 'alertas') }} ·
+                {{ plural(u.sanciones, 'sanción', 'sanciones') }}
+              </p>
+            </div>
+            <p v-if="motivoSinAcciones(u)" class="texto-suave persona__sin">
+              {{ motivoSinAcciones(u) }}
             </p>
-            <p class="texto-suave">
-              {{ NOMBRE_ROL[u.rol] ?? u.rol
-              }}<template v-if="u.seccion"> · {{ u.seccion }}</template> ·
-              {{ u.correo }}
-            </p>
-            <p v-if="u.sancionActiva" class="texto-suave">
-              {{
-                u.sancionActiva.permanente
-                  ? 'Sanción permanente'
-                  : `Hasta ${textoFin(u.sancionActiva.hasta)}`
-              }}
-              · {{ u.sancionActiva.razon }}
-            </p>
-            <p class="persona__previos">
-              {{ plural(u.alertas, 'alerta', 'alertas') }} ·
-              {{ plural(u.sanciones, 'sanción', 'sanciones') }}
-            </p>
-          </div>
-          <div class="persona__acciones">
-            <button
-              type="button"
-              class="boton boton--contorno boton--pequeno"
-              @click="verHistorial(u)"
-            >
-              <History :size="16" aria-hidden="true" /> Historial<span
-                class="solo-lectores"
+            <div v-else class="persona__acciones">
+              <button
+                type="button"
+                class="boton boton--contorno boton--pequeno"
+                @click="alertando = u"
               >
-                de {{ u.nombre }}</span
+                <TriangleAlert :size="16" aria-hidden="true" /> Alertar<span
+                  class="solo-lectores"
+                >
+                  a {{ u.nombre }}</span
+                >
+              </button>
+              <button
+                type="button"
+                class="boton boton--peligro boton--pequeno"
+                @click="sancionando = u"
               >
-            </button>
-            <button
-              type="button"
-              class="boton boton--peligro boton--pequeno"
-              @click="abrirSancion(u)"
-            >
-              <Ban :size="16" aria-hidden="true" /> Sancionar<span
-                class="solo-lectores"
-              >
-                a {{ u.nombre }}</span
-              >
-            </button>
-          </div>
-        </li>
-      </ul>
+                <Ban :size="16" aria-hidden="true" /> Sancionar<span
+                  class="solo-lectores"
+                >
+                  a {{ u.nombre }}</span
+                >
+              </button>
+            </div>
+          </li>
+        </ul>
+        <Paginacion
+          :pagina="pagina"
+          :total="total"
+          :por-pagina="porPagina"
+          etiqueta="Páginas de cuentas"
+          @cambiar="irAPagina"
+        />
+      </template>
     </section>
 
-    <Dialogo
-      :abierto="Boolean(viendo)"
-      :titulo="`Historial de ${viendo?.nombre ?? ''}`"
-      ancho="36rem"
-      @cerrar="viendo = null"
-    >
-      <p v-if="cargandoHistorial" class="texto-suave">Cargando...</p>
-      <HistorialSanciones
-        v-else
-        :items="historial"
-        admin
-        :levantando="levantando"
-        @levantar="levantar"
-      />
-      <template #pie>
-        <button
-          type="button"
-          class="boton boton--contorno"
-          @click="viendo = null"
-        >
-          Cerrar
-        </button>
-        <button
-          type="button"
-          class="boton boton--peligro"
-          @click="sancionarDesdeHistorial"
-        >
-          <Ban :size="16" aria-hidden="true" /> Sancionar
-        </button>
-      </template>
-    </Dialogo>
+    <HistorialGeneral
+      :abierto="viendoHistorial"
+      @cerrar="viendoHistorial = false"
+      @cambio="buscar"
+    />
+
+    <FormularioAlerta
+      :abierto="Boolean(alertando)"
+      :usuario="alertando"
+      @cerrar="alertando = null"
+      @alertado="alAlertar"
+    />
 
     <FormularioSancion
       :abierto="Boolean(sancionando)"
@@ -288,6 +264,12 @@ async function levantar(s) {
   align-items: center;
   justify-content: space-between;
   gap: var(--e-3);
+}
+
+.seccion__botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-2);
 }
 
 .seccion__titulo {
@@ -344,6 +326,11 @@ async function levantar(s) {
 
 .persona__previos {
   font-weight: 600;
+}
+
+.persona__sin {
+  margin: 0;
+  font-size: var(--txt-sm);
 }
 
 .persona__acciones {

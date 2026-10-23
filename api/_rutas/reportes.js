@@ -3,6 +3,7 @@ import { col, COLECCIONES } from '../_lib/db.js'
 import { ok } from '../_lib/respuesta.js'
 import { requerir } from '../_lib/sesion.js'
 import { partesCR, sumarDias, fechaDesdeCR } from '../../compartido/hora.js'
+import { sePuedePedir } from '../../compartido/soda.js'
 
 /**
  * Reportes de la soda: que se vende mas, cuanto entra por dia, horas pico y
@@ -134,9 +135,11 @@ registrar('GET', '/reportes/soda', async ({ req, res, query }) => {
           projection: {
             nombre: 1,
             categoria: 1,
-            calificacionSuma: 1,
-            calificacionCantidad: 1,
             disponible: 1,
+            estado: 1,
+            controlStock: 1,
+            stock: 1,
+            umbralPocas: 1,
           },
         }
       )
@@ -227,19 +230,7 @@ registrar('GET', '/reportes/soda', async ({ req, res, query }) => {
       .map((p) => ({
         nombre: p.nombre,
         categoria: p.categoria,
-        disponible: p.disponible !== false,
+        disponible: sePuedePedir(p),
       })),
-    mejorCalificados: catalogo
-      .filter((p) => p.calificacionCantidad > 0)
-      .map((p) => ({
-        nombre: p.nombre,
-        calificacion:
-          Math.round((p.calificacionSuma / p.calificacionCantidad) * 10) / 10,
-        cantidad: p.calificacionCantidad,
-      }))
-      .sort(
-        (a, b) => b.calificacion - a.calificacion || b.cantidad - a.cantidad
-      )
-      .slice(0, 8),
   })
 })

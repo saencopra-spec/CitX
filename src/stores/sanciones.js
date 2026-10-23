@@ -76,15 +76,22 @@ export const useSanciones = defineStore('sanciones', () => {
     quitarCaso(codigo)
   }
 
-  async function buscarUsuarios(texto = '') {
-    const datos = await api.get(
-      `/sanciones/usuarios?buscar=${encodeURIComponent(texto)}`
-    )
-    return datos.usuarios
+  /** Una pagina de cuentas: { usuarios, total, pagina, porPagina }. */
+  async function buscarUsuarios(texto = '', pagina = 1) {
+    const p = new URLSearchParams({ buscar: texto, pagina })
+    return api.get(`/sanciones/usuarios?${p}`)
   }
 
-  async function historialDe(usuarioId) {
-    return api.get(`/sanciones/usuario/${usuarioId}`)
+  /** Alerta sin pedido de por medio, desde el buscador. */
+  async function alertarPersona(usuarioId, razon) {
+    const r = await api.post('/sanciones/alertas', { usuarioId, razon })
+    return r.alerta
+  }
+
+  /** Una pagina del historial: { registros, total, pagina, porPagina }. */
+  async function historialGeneral(tipo = 'todos', pagina = 1) {
+    const p = new URLSearchParams({ tipo, pagina })
+    return api.get(`/sanciones/historial?${p}`)
   }
 
   async function sancionar(datos) {
@@ -111,7 +118,8 @@ export const useSanciones = defineStore('sanciones', () => {
     alertar,
     descartar,
     buscarUsuarios,
-    historialDe,
+    alertarPersona,
+    historialGeneral,
     sancionar,
     levantar,
   }

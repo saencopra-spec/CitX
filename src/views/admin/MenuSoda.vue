@@ -1,24 +1,34 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { Plus, Pencil, Search, EyeOff } from 'lucide-vue-next'
+import { Plus, Pencil, Search, EyeOff, Boxes } from 'lucide-vue-next'
 import EncabezadoPanel from '@/components/estructura/EncabezadoPanel.vue'
 import Dialogo from '@/components/avisos/Dialogo.vue'
 import Campo from '@/components/formularios/Campo.vue'
 import SubirFoto from '@/components/formularios/SubirFoto.vue'
 import FotoComida from '@/components/soda/FotoComida.vue'
+import DialogoStock from '@/components/soda/DialogoStock.vue'
 import { api } from '@/lib/api'
 import { usarErrores } from '@/lib/errores'
 import { useAvisos } from '@/stores/avisos'
+import { useConfirmar } from '@/stores/confirmar'
 import { colones } from '@compartido/dinero.js'
+import { ESTADOS_PRODUCTO, NOMBRE_ESTADO_PRODUCTO } from '@compartido/soda.js'
 import { coincide } from '@compartido/texto.js'
 
 const avisos = useAvisos()
+const confirmar = useConfirmar()
 const { errores, limpiar, mostrar } = usarErrores()
 
 const productos = ref([])
 const cargando = ref(true)
 const busqueda = ref('')
 const categoria = ref('todo')
+
+const OPCIONES_ESTADO = ESTADOS_PRODUCTO.map((e) => ({
+  valor: e,
+  texto: NOMBRE_ESTADO_PRODUCTO[e],
+}))
+const TONO_ESTADO = { disponible: 'exito', pocas: 'aviso', agotado: 'error' }
 
 const CATEGORIAS = [
   { valor: 'desayunos', texto: 'Desayunos' },
@@ -47,7 +57,7 @@ function nuevo() {
     categoria: 'almuerzos',
     descripcion: '',
     precio: '',
-    disponible: true,
+    estado: 'disponible',
     oculto: false,
     foto: null,
   }
@@ -71,7 +81,7 @@ async function guardar() {
       categoria: formulario.value.categoria,
       descripcion: formulario.value.descripcion,
       precio: Number(formulario.value.precio),
-      disponible: formulario.value.disponible,
+      estado: formulario.value.estado,
       oculto: formulario.value.oculto,
       foto: formulario.value.foto,
     }
@@ -95,25 +105,71 @@ async function guardar() {
   }
 }
 
-/** Cambio rapido de agotado o visible, sin abrir el formulario. */
-async function cambiar(p, campo) {
-  const valor = !p[campo]
-  p[campo] = valor
+function reemplazar(producto) {
+  const i = productos.value.findIndex((x) => x.id === producto.id)
+  if (i !== -1) productos.value[i] = producto
+}
+
+/** Cambio rapido sin abrir el formulario. */
+async function cambiar(p, cambios, texto) {
   try {
-    await api.patch(`/soda/productos/${p.id}`, { [campo]: valor })
-    const textos = {
-      disponible: valor
-        ? `${p.nombre} vuelve a estar disponible.`
-        : `${p.nombre} quedó como agotado.`,
-      oculto: valor
-        ? `${p.nombre} ya no se ve en el menú.`
-        : `${p.nombre} se ve otra vez en el menú.`,
-    }
-    avisos.exito(textos[campo], { duracion: 2500 })
+    const { producto } = await api.patch(`/soda/productos/${p.id}`, cambios)
+    reemplazar(producto)
+    avisos.exito(texto(producto), { duracion: 2500 })
   } catch (e) {
-    p[campo] = !valor
     avisos.error(e.message)
   }
+}
+
+function cambiarVisible(p) {
+  cambiar(p, { oculto: !p.oculto }, (r) =>
+    r.oculto
+      ? `${r.nombre} ya no se ve en el menú.`
+      : `${r.nombre} se ve otra vez en el menú.`
+  )
+}
+
+function cambiarEstado(p, estado) {
+  if (estado === p.estado) return
+  cambiar(
+    p,
+    { estado },
+    (r) => `${r.nombre}: ${NOMBRE_ESTADO_PRODUCTO[r.estado].toLowerCase()}.`
+  )
+}
+
+async function alternarStock(p) {
+  const activar = !p.controlStock
+  const si = await confirmar.preguntar(
+    activar
+      ? {
+          titulo: `¿Controlar el stock de ${p.nombre}?`,
+          mensaje:
+            'Empieza en 0 unidades y queda como agotado hasta que repongas. Cada pedido descuenta sus unidades y el estado se calcula solo.',
+          aceptar: 'Controlar stock',
+          peligro: false,
+        }
+      : {
+          titulo: `¿Dejar de controlar el stock de ${p.nombre}?`,
+          mensaje: `Queda como «${NOMBRE_ESTADO_PRODUCTO[p.estado]}» y desde ahí lo cambiás a mano. Las unidades que quedan se olvidan.`,
+          aceptar: 'Dejar de controlar',
+          peligro: false,
+        }
+  )
+  if (!si) return
+  await cambiar(p, { controlStock: activar }, (r) =>
+    activar
+      ? `${r.nombre} controla stock. Reponé unidades para venderlo.`
+      : `${r.nombre} ya no controla stock.`
+  )
+}
+
+// --- Stock ---
+const enStock = ref(null)
+
+function alActualizarStock(producto, { seguirAbierto = false } = {}) {
+  reemplazar(producto)
+  enStock.value = seguirAbierto ? producto : null
 }
 
 onMounted(async () => {
@@ -131,7 +187,7 @@ onMounted(async () => {
   <div>
     <EncabezadoPanel
       titulo="Menú de la soda"
-      ayuda="Si algo se acaba, apagá «Disponible»: la gente lo ve como agotado y no lo puede pedir. «Oculto» lo saca del menú sin borrarlo."
+      ayuda="Elegí el estado de cada producto (Disponible, Pocas unidades o Agotado), o activá «Controlar stock» para que se calcule con las unidades. Lo agotado no se puede pedir. «Visible» lo saca del menú sin borrarlo."
     >
       <template #acciones>
         <button type="button" class="boton boton--accion" @click="nuevo">
@@ -192,31 +248,52 @@ onMounted(async () => {
             <span v-if="p.oculto" class="etiqueta etiqueta--neutra"
               ><EyeOff :size="12" aria-hidden="true" /> Oculto</span
             >
-            <span v-else-if="!p.disponible" class="etiqueta etiqueta--error"
-              >Agotado</span
-            >
+            <span :class="`etiqueta etiqueta--${TONO_ESTADO[p.estado]}`">{{
+              NOMBRE_ESTADO_PRODUCTO[p.estado]
+            }}</span>
           </p>
           <p class="producto__datos">
             {{ colones(p.precio) }} ·
             {{ CATEGORIAS.find((c) => c.valor === p.categoria)?.texto }}
-            <template v-if="p.calificacion">
-              · {{ p.calificacion.toFixed(1) }} de 5 ({{
-                p.calificaciones
-              }})</template
-            >
+          </p>
+          <p v-if="p.controlStock" class="producto__stock">
+            Quedan <strong>{{ p.stock }}</strong>
+            {{ p.stock === 1 ? 'unidad' : 'unidades' }} · «pocas» con
+            {{ p.umbralPocas }} o menos
           </p>
         </div>
         <div class="producto__controles">
+          <label class="estado-fila">
+            <span>Estado</span>
+            <select
+              class="campo__control estado-fila__select"
+              :value="p.estado"
+              :disabled="p.controlStock"
+              :title="
+                p.controlStock ? 'Con stock, el estado se calcula solo.' : ''
+              "
+              :aria-label="`Estado de ${p.nombre}`"
+              @change="cambiarEstado(p, $event.target.value)"
+            >
+              <option
+                v-for="o in OPCIONES_ESTADO"
+                :key="o.valor"
+                :value="o.valor"
+              >
+                {{ o.texto }}
+              </option>
+            </select>
+          </label>
           <label class="interruptor-fila">
             <button
               type="button"
               role="switch"
               class="interruptor"
-              :aria-checked="p.disponible"
-              :aria-label="`${p.nombre} disponible`"
-              @click="cambiar(p, 'disponible')"
+              :aria-checked="p.controlStock"
+              :aria-label="`Controlar stock de ${p.nombre}`"
+              @click="alternarStock(p)"
             />
-            <span aria-hidden="true">Disponible</span>
+            <span aria-hidden="true">Controlar stock</span>
           </label>
           <label class="interruptor-fila">
             <button
@@ -225,10 +302,22 @@ onMounted(async () => {
               class="interruptor"
               :aria-checked="!p.oculto"
               :aria-label="`${p.nombre} visible en el menú`"
-              @click="cambiar(p, 'oculto')"
+              @click="cambiarVisible(p)"
             />
             <span aria-hidden="true">Visible</span>
           </label>
+          <button
+            v-if="p.controlStock"
+            type="button"
+            class="boton boton--contorno boton--pequeno"
+            @click="enStock = p"
+          >
+            <Boxes :size="16" aria-hidden="true" /> Stock<span
+              class="solo-lectores"
+            >
+              de {{ p.nombre }}</span
+            >
+          </button>
           <button
             type="button"
             class="boton boton--contorno boton--pequeno"
@@ -303,18 +392,20 @@ onMounted(async () => {
           etiqueta="Foto"
           :error="errores.foto"
         />
+        <Campo
+          v-if="!formulario.controlStock"
+          id="pr-estado"
+          v-model="formulario.estado"
+          etiqueta="Estado"
+          tipo="select"
+          :opciones="OPCIONES_ESTADO"
+          :error="errores.estado"
+        />
+        <p v-else class="campo__ayuda">
+          Estado: {{ NOMBRE_ESTADO_PRODUCTO[formulario.estado] }}. Se calcula
+          con el stock; las unidades se cambian con el botón «Stock».
+        </p>
         <div class="interruptores">
-          <div class="interruptor-fila">
-            <button
-              id="pr-disponible"
-              type="button"
-              role="switch"
-              class="interruptor"
-              :aria-checked="formulario.disponible"
-              @click="formulario.disponible = !formulario.disponible"
-            />
-            <label for="pr-disponible">Disponible para pedir</label>
-          </div>
           <div class="interruptor-fila">
             <button
               id="pr-oculto"
@@ -346,6 +437,13 @@ onMounted(async () => {
         </button>
       </template>
     </Dialogo>
+
+    <DialogoStock
+      :abierto="Boolean(enStock)"
+      :producto="enStock"
+      @cerrar="enStock = null"
+      @actualizado="alActualizarStock"
+    />
   </div>
 </template>
 
@@ -378,8 +476,9 @@ onMounted(async () => {
 }
 
 .producto {
+  --ancho-foto: 72px;
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr);
+  grid-template-columns: var(--ancho-foto) minmax(0, 1fr);
   gap: var(--e-2) var(--e-4);
   align-items: center;
   padding: var(--e-3) var(--e-4);
@@ -396,7 +495,9 @@ onMounted(async () => {
 }
 
 .producto__foto {
-  width: 72px;
+  /* Mismo ancho que su columna: el texto queda separado por el gap. */
+  width: var(--ancho-foto);
+  min-width: var(--ancho-foto);
   aspect-ratio: 640 / 461;
   border-radius: var(--radio-sm);
 }
@@ -409,9 +510,28 @@ onMounted(async () => {
   font-weight: var(--peso-semi);
 }
 
-.producto__datos {
+.producto__info {
+  min-width: 0;
+}
+
+.producto__datos,
+.producto__stock {
   font-size: var(--txt-sm);
   color: var(--texto-suave);
+}
+
+.estado-fila {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  font-size: var(--txt-sm);
+}
+
+.estado-fila__select {
+  width: auto;
+  min-width: 10rem;
+  min-height: 40px;
+  padding-block: 0;
 }
 
 .producto__controles {
@@ -452,13 +572,15 @@ onMounted(async () => {
   gap: var(--e-2);
 }
 
+/* En pantallas anchas los controles van debajo del texto, alineados con el:
+   asi el nombre y el stock no se aprietan. */
 @media (min-width: 900px) {
   .producto {
-    grid-template-columns: 56px minmax(0, 1fr) auto;
+    align-items: start;
   }
 
   .producto__controles {
-    grid-column: auto;
+    grid-column: 2;
   }
 }
 </style>

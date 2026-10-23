@@ -7,7 +7,6 @@ import {
   Clock,
   Tags,
   CreditCard,
-  Star,
   PackageX,
   Table2,
 } from 'lucide-vue-next'
@@ -433,22 +432,6 @@ onMounted(cargar)
               >
             </li>
           </ul>
-        </section>
-
-        <!-- Calificaciones -->
-        <section class="bloque" aria-labelledby="t-estrellas">
-          <h2 id="t-estrellas" class="subtitulo">
-            <Star :size="20" aria-hidden="true" /> Mejor calificados
-          </h2>
-          <ol v-if="datos.mejorCalificados.length" class="lista-simple">
-            <li v-for="p in datos.mejorCalificados" :key="p.nombre">
-              <span>{{ p.nombre }}</span>
-              <span class="lista-simple__dato"
-                >{{ p.calificacion.toFixed(1) }} de 5 ({{ p.cantidad }})</span
-              >
-            </li>
-          </ol>
-          <p v-else class="texto-suave">Todavía no hay calificaciones.</p>
         </section>
 
         <!-- Sin ventas -->

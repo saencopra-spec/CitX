@@ -13,6 +13,7 @@ import {
 } from '../_lib/respuesta.js'
 import { requerir } from '../_lib/sesion.js'
 import { notificar } from '../_lib/notificar.js'
+import { revisarNoRecogidos, exigirSinSancion } from '../_lib/sanciones.js'
 import { puede } from '../../compartido/permisos.js'
 import { calcularTotal } from '../../compartido/dinero.js'
 import {
@@ -33,6 +34,7 @@ import {
   cambioDeEstadoPermitido,
   NOMBRE_ESTADO,
   ESTADOS_PEDIDO,
+  NO_RECOGIDO,
 } from '../../compartido/pedidos.js'
 
 /** Tarjeta que simula un rechazo del banco, para mostrarlo en la demostracion. */
@@ -138,6 +140,8 @@ registrar('POST', '/pedidos', async ({ req, res }) => {
   const usuario = await requerir(req)
   if (usuario.rol === 'soda')
     throw sinPermiso('La cuenta de la soda no puede hacer pedidos.')
+  await revisarNoRecogidos()
+  await exigirSinSancion(usuario)
   const datos = esquemaPedido.parse(await leerCuerpo(req))
 
   if (!franjaValida(datos.franja.fecha, datos.franja.clave)) {
@@ -214,6 +218,7 @@ registrar('POST', '/pedidos', async ({ req, res }) => {
 
 registrar('GET', '/pedidos/mios', async ({ req, res }) => {
   const usuario = await requerir(req)
+  await revisarNoRecogidos()
   const pedidos = await col(COLECCIONES.pedidos)
   const lista = await pedidos
     .find({ usuarioId: String(usuario._id) })
@@ -226,13 +231,15 @@ registrar('GET', '/pedidos/mios', async ({ req, res }) => {
 /** Tablero de la soda: lo de hoy y cualquier pedido que siga pendiente. */
 registrar('GET', '/pedidos', async ({ req, res }) => {
   await requerir(req, 'pedidos.gestionar')
+  await revisarNoRecogidos()
   const hoy = partesCR().iso
   const pedidos = await col(COLECCIONES.pedidos)
   const lista = await pedidos
     .find({
       $or: [
         { 'franja.fecha': hoy },
-        { estado: { $ne: 'entregado' } },
+        // Los no recogidos de dias pasados los revisa la administracion.
+        { estado: { $nin: ['entregado', NO_RECOGIDO] } },
         // Lo que se entrego hoy, aunque fuera para otro dia.
         {
           historial: {
@@ -255,6 +262,7 @@ registrar('GET', '/pedidos', async ({ req, res }) => {
 
 registrar('GET', '/pedidos/:codigo', async ({ req, res, params }) => {
   const usuario = await requerir(req)
+  await revisarNoRecogidos()
   const pedidos = await col(COLECCIONES.pedidos)
   const pedido = await pedidos.findOne({ codigo: params.codigo.toUpperCase() })
   const personal = puede(usuario, 'pedidos.gestionar')

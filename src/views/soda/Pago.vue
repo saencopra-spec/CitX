@@ -13,7 +13,9 @@ import {
 } from 'lucide-vue-next'
 import EncabezadoPagina from '@/components/estructura/EncabezadoPagina.vue'
 import Campo from '@/components/formularios/Campo.vue'
+import TarjetaSancion from '@/components/sanciones/TarjetaSancion.vue'
 import { useCarrito } from '@/stores/carrito'
+import { useSanciones } from '@/stores/sanciones'
 import { useAvisos } from '@/stores/avisos'
 import { api } from '@/lib/api'
 import { usarErrores } from '@/lib/errores'
@@ -32,6 +34,7 @@ import {
 
 const carrito = useCarrito()
 const avisos = useAvisos()
+const sanciones = useSanciones()
 const router = useRouter()
 const { errores, limpiar, mostrar } = usarErrores()
 
@@ -130,6 +133,7 @@ async function pagar() {
     })
   } catch (e) {
     mostrar(e)
+    if (e.esDePermiso) sanciones.cargarEstado().catch(() => {})
     if (e.campos?.franja) router.replace({ name: 'carrito' })
   } finally {
     procesando.value = false
@@ -145,6 +149,8 @@ onMounted(() => {
 <template>
   <div class="pagina pago">
     <EncabezadoPagina titulo="Pagar" :volver="{ name: 'carrito' }" />
+
+    <TarjetaSancion />
 
     <p class="demo" role="note">
       <Info :size="20" aria-hidden="true" />
@@ -325,7 +331,7 @@ onMounted(() => {
         <button
           type="submit"
           class="boton boton--accion boton--ancho boton--grande"
-          :disabled="procesando"
+          :disabled="procesando || sanciones.bloqueado"
         >
           <LoaderCircle
             v-if="procesando"

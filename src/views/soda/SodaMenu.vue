@@ -7,7 +7,9 @@ import EstadoVacio from '@/components/avisos/EstadoVacio.vue'
 import FotoComida from '@/components/soda/FotoComida.vue'
 import Estrellas from '@/components/formularios/Estrellas.vue'
 import Cantidad from '@/components/formularios/Cantidad.vue'
+import TarjetaSancion from '@/components/sanciones/TarjetaSancion.vue'
 import { useCarrito } from '@/stores/carrito'
+import { useSanciones } from '@/stores/sanciones'
 import { useAvisos } from '@/stores/avisos'
 import { api } from '@/lib/api'
 import { entradaEscalonada } from '@/lib/movimiento'
@@ -16,6 +18,7 @@ import { coincide } from '@compartido/texto.js'
 
 const carrito = useCarrito()
 const avisos = useAvisos()
+const sanciones = useSanciones()
 
 const productos = ref([])
 const cargando = ref(true)
@@ -95,6 +98,8 @@ onMounted(cargar)
         </RouterLink>
       </template>
     </EncabezadoPagina>
+
+    <TarjetaSancion />
 
     <div class="filtros">
       <div class="buscador">
@@ -188,7 +193,7 @@ onMounted(cargar)
                 >Agotado</span
               >
               <Cantidad
-                v-else-if="carrito.cantidadDe(p.id)"
+                v-else-if="carrito.cantidadDe(p.id) && !sanciones.bloqueado"
                 :valor="carrito.cantidadDe(p.id)"
                 :nombre="p.nombre"
                 @cambiar="(n) => carrito.cambiarCantidad(p.id, n)"
@@ -197,6 +202,7 @@ onMounted(cargar)
                 v-else
                 type="button"
                 class="boton boton--accion boton--pequeno"
+                :disabled="sanciones.bloqueado"
                 @click="agregar(p)"
               >
                 <Plus :size="16" aria-hidden="true" />

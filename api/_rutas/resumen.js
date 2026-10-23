@@ -2,6 +2,7 @@ import { registrar } from '../_lib/enrutador.js'
 import { col, COLECCIONES } from '../_lib/db.js'
 import { ok } from '../_lib/respuesta.js'
 import { requerir } from '../_lib/sesion.js'
+import { revisarNoRecogidos } from '../_lib/sanciones.js'
 import { puede } from '../../compartido/permisos.js'
 import { partesCR, fechaDesdeCR } from '../../compartido/hora.js'
 
@@ -118,6 +119,7 @@ registrar('GET', '/resumen', async ({ req, res }) => {
 /** Lo util para el saludo del menu principal: proximo evento y pedido activo. */
 registrar('GET', '/inicio', async ({ req, res }) => {
   const usuario = await requerir(req)
+  await revisarNoRecogidos()
   const eventos = await col(COLECCIONES.eventos)
   const pedidos = await col(COLECCIONES.pedidos)
   const filtroEventos = { inicio: { $gte: new Date() } }

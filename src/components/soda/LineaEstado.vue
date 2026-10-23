@@ -6,7 +6,11 @@ import {
   BellRing,
   PackageCheck,
 } from 'lucide-vue-next'
-import { ESTADOS_PEDIDO, NOMBRE_ESTADO } from '@compartido/pedidos.js'
+import {
+  ESTADOS_PEDIDO,
+  NOMBRE_ESTADO,
+  NO_RECOGIDO,
+} from '@compartido/pedidos.js'
 import { horaDe } from '@compartido/hora.js'
 
 /**
@@ -33,7 +37,10 @@ const explicaciones = {
   entregado: 'Ya lo retiraste. Buen provecho.',
 }
 
-const indice = computed(() => ESTADOS_PEDIDO.indexOf(props.estado))
+const noRecogido = computed(() => props.estado === NO_RECOGIDO)
+const indice = computed(() =>
+  ESTADOS_PEDIDO.indexOf(noRecogido.value ? 'listo' : props.estado)
+)
 const progreso = computed(
   () => (indice.value / (ESTADOS_PEDIDO.length - 1)) * 100
 )
@@ -58,7 +65,10 @@ function horaDel(estado) {
       </span>
       <span class="paso__texto">
         <strong>{{ NOMBRE_ESTADO[e] }}</strong>
-        <span v-if="i === indice">{{ explicaciones[e] }}</span>
+        <span v-if="i === indice && noRecogido"
+          >No lo retiraste a tiempo. Si todavía podés, pasá por la soda.</span
+        >
+        <span v-else-if="i === indice">{{ explicaciones[e] }}</span>
         <span v-if="i <= indice && horaDel(e)" class="paso__hora">{{
           horaDel(e)
         }}</span>

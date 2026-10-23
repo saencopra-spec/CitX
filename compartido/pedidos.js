@@ -5,7 +5,14 @@ export const NOMBRE_ESTADO = {
   preparacion: 'En preparación',
   listo: 'Listo para retirar',
   entregado: 'Entregado',
+  no_recogido: 'No recogido',
 }
+
+/**
+ * Pedido listo que nadie retiro a tiempo. Queda fuera de la linea normal: lo
+ * marca el sistema solo y desde ahi la soda todavia lo puede entregar.
+ */
+export const NO_RECOGIDO = 'no_recogido'
 
 export const METODOS_PAGO = {
   sinpe: 'SINPE Móvil',
@@ -15,6 +22,7 @@ export const METODOS_PAGO = {
 
 /** Siguiente estado en la linea de tiempo, o null si ya termino. */
 export function siguienteEstado(estado) {
+  if (estado === NO_RECOGIDO) return 'entregado'
   const i = ESTADOS_PEDIDO.indexOf(estado)
   if (i === -1 || i === ESTADOS_PEDIDO.length - 1) return null
   return ESTADOS_PEDIDO[i + 1]
@@ -22,6 +30,7 @@ export function siguienteEstado(estado) {
 
 /** Se avanza de uno en uno, o se devuelve un paso si fue un error. */
 export function cambioDeEstadoPermitido(actual, nuevo) {
+  if (actual === NO_RECOGIDO) return nuevo === 'entregado'
   const a = ESTADOS_PEDIDO.indexOf(actual)
   const n = ESTADOS_PEDIDO.indexOf(nuevo)
   if (a === -1 || n === -1) return false

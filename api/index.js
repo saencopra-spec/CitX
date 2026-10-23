@@ -23,6 +23,7 @@ import './_rutas/resumen.js'
 import './_rutas/imagenes.js'
 import './_rutas/anuncios.js'
 import './_rutas/reportes.js'
+import './_rutas/sanciones.js'
 
 registrar('GET', '/salud', async ({ res }) => {
   json(res, 200, {

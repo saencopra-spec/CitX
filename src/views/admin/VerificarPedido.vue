@@ -50,6 +50,7 @@ const accionPara = {
   recibido: 'Empezar a preparar',
   preparacion: 'Marcar como listo',
   listo: 'Entregar pedido',
+  no_recogido: 'Entregar pedido',
 }
 
 const hoy = computed(() => partesCR().iso)

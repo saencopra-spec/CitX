@@ -229,6 +229,12 @@ const rutas = [
         component: () => import('@/views/admin/Invitaciones.vue'),
         meta: { permiso: 'usuarios.gestionar', titulo: 'Invitaciones' },
       },
+      {
+        path: 'sanciones',
+        name: 'admin-sanciones',
+        component: () => import('@/views/admin/SancionesAdmin.vue'),
+        meta: { permiso: 'sanciones.gestionar', titulo: 'Alertas y sanciones' },
+      },
     ],
   },
 

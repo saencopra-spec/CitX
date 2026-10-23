@@ -18,6 +18,7 @@ import EscudoCit from '@/components/marca/EscudoCit.vue'
 import Dialogo from '@/components/avisos/Dialogo.vue'
 import Campo from '@/components/formularios/Campo.vue'
 import CampoContrasena from '@/components/formularios/CampoContrasena.vue'
+import MiHistorial from '@/components/sanciones/MiHistorial.vue'
 import { useConfiguracion } from '@/stores/configuracion'
 import { useAuth } from '@/stores/auth'
 import { useAvisos } from '@/stores/avisos'
@@ -279,6 +280,8 @@ onMounted(() => entradaEscalonada(raiz.value))
           >
         </p>
       </section>
+
+      <MiHistorial v-if="auth.haySesion && !auth.soloPanel" data-entra />
 
       <!-- Lo esencial -->
       <section data-entra class="bloque" aria-labelledby="t-apariencia">

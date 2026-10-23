@@ -208,6 +208,15 @@ onMounted(cargar)
           <span class="cifra__texto">Personas que pidieron</span>
           <span class="cifra__numero">{{ datos.resumen.clientes }}</span>
         </div>
+        <div v-if="datos.noRecogidos?.pagados.pedidos" class="cifra">
+          <span class="cifra__texto"
+            >Pagado, no recogido ({{ datos.noRecogidos.pagados.pedidos }}, ya en
+            ingresos)</span
+          >
+          <span class="cifra__numero">{{
+            colones(datos.noRecogidos.pagados.monto)
+          }}</span>
+        </div>
       </div>
 
       <div class="rejilla">

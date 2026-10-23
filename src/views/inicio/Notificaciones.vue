@@ -11,6 +11,8 @@ import {
   CheckCheck,
   MapPin,
   Megaphone,
+  TriangleAlert,
+  Ban,
 } from 'lucide-vue-next'
 import EncabezadoPagina from '@/components/estructura/EncabezadoPagina.vue'
 import EstadoVacio from '@/components/avisos/EstadoVacio.vue'
@@ -30,6 +32,8 @@ const iconos = {
   recordatorio: ListChecks,
   objeto: PackageSearch,
   anuncio: Megaphone,
+  alerta: TriangleAlert,
+  sancion: Ban,
   general: Bell,
 }
 

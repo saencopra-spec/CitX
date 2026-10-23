@@ -127,7 +127,7 @@ onMounted(cargar)
           ? `Los de todo el colegio y los de la sección ${auth.usuario.seccion}.`
           : 'Actividades del colegio.'
       "
-      :volver="{ name: 'guia' }"
+      :volver="auth.usuario ? { name: 'guia' } : null"
     >
       <template v-if="auth.puede('eventos.publicar')" #acciones>
         <button

@@ -62,7 +62,7 @@ function cerrar(devolverFoco = false) {
 
 function verRecorrido() {
   cerrar()
-  router.push({ name: 'menu' }).then(() => recorrido.iniciar())
+  router.push(auth.inicioDe()).then(() => recorrido.iniciar())
 }
 
 async function salir() {

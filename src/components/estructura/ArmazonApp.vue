@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   KeyRound,
   UserPlus,
+  CalendarDays,
 } from 'lucide-vue-next'
 import LogoCitx from '@/components/marca/LogoCitx.vue'
 import EscudoCit from '@/components/marca/EscudoCit.vue'
@@ -29,19 +30,32 @@ const auth = useAuth()
 const carrito = useCarrito()
 const notificaciones = useNotificaciones()
 
-const secciones = [
+const todas = [
   { nombre: 'menu', texto: 'Inicio', icono: House, prefijo: '/menu' },
   { nombre: 'mapa', texto: 'Mapa', icono: IconoMapa, prefijo: '/mapa' },
   { nombre: 'guia', texto: 'Guía', icono: BookOpen, prefijo: '/guia' },
   { nombre: 'soda', texto: 'Soda', icono: UtensilsCrossed, prefijo: '/soda' },
 ]
 
+/** Quien entra como invitado solo ve el mapa y los eventos. */
+const deInvitado = [
+  { nombre: 'mapa', texto: 'Mapa', icono: IconoMapa, prefijo: '/mapa' },
+  {
+    nombre: 'eventos',
+    texto: 'Eventos',
+    icono: CalendarDays,
+    prefijo: '/guia/eventos',
+  },
+]
+
+const secciones = computed(() => (auth.haySesion ? todas : deInvitado))
+
 function activa(seccion) {
   return route.path.startsWith(seccion.prefijo)
 }
 
 /** Posicion de la pastilla que marca la seccion activa (se desliza). */
-const indiceActivo = computed(() => secciones.findIndex((s) => activa(s)))
+const indiceActivo = computed(() => secciones.value.findIndex((s) => activa(s)))
 
 // La campana se consulta cada 20 segundos mientras la pestana este visible.
 usarSondeo(() => (auth.haySesion ? notificaciones.cargar() : null), 20000)
@@ -57,7 +71,7 @@ watch(
 watch(indiceActivo, (i) => {
   if (i < 0) return
   document
-    .querySelectorAll(`[data-icono-seccion="${secciones[i].nombre}"]`)
+    .querySelectorAll(`[data-icono-seccion="${secciones.value[i].nombre}"]`)
     .forEach((el) => rebote(el))
 })
 </script>
@@ -70,7 +84,7 @@ watch(indiceActivo, (i) => {
     <!-- Barra lateral en computadora -->
     <aside class="lateral" aria-label="Navegación principal">
       <RouterLink
-        :to="{ name: 'menu' }"
+        :to="auth.inicioDe()"
         class="lateral__marca"
         aria-label="CitX, ir al inicio"
       >
@@ -173,7 +187,7 @@ watch(indiceActivo, (i) => {
       <!-- Barra superior: en celular lleva la marca; en computadora, la campanita y la cuenta -->
       <header class="superior">
         <RouterLink
-          :to="{ name: 'menu' }"
+          :to="auth.inicioDe()"
           class="superior__marca"
           aria-label="CitX, ir al inicio"
         >
@@ -246,7 +260,10 @@ watch(indiceActivo, (i) => {
     <nav
       class="inferior"
       aria-label="Navegación principal"
-      :style="{ '--indice': Math.max(0, indiceActivo) }"
+      :style="{
+        '--indice': Math.max(0, indiceActivo),
+        '--columnas': secciones.length,
+      }"
     >
       <span
         class="inferior__pastilla"
@@ -436,7 +453,7 @@ watch(indiceActivo, (i) => {
   bottom: calc(var(--e-3) + env(safe-area-inset-bottom));
   z-index: var(--z-barra);
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(var(--columnas, 4), 1fr);
   padding: 6px;
   border-radius: var(--radio-xl);
   background: var(--fondo-elevado);
@@ -448,7 +465,7 @@ watch(indiceActivo, (i) => {
   top: 6px;
   bottom: 6px;
   left: 6px;
-  width: calc((100% - 12px) / 4);
+  width: calc((100% - 12px) / var(--columnas, 4));
   border-radius: calc(var(--radio-xl) - 6px);
   background: var(--principal-suave);
   transform: translateX(calc(var(--indice) * 100%));

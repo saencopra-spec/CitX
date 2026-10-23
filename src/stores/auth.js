@@ -64,7 +64,7 @@ export const useAuth = defineStore('auth', () => {
 
   /** Adonde va cada persona al entrar. */
   function inicioDe(u = usuario.value) {
-    if (!u) return invitado.value ? { name: 'menu' } : { name: 'empieza' }
+    if (!u) return invitado.value ? { name: 'mapa' } : { name: 'empieza' }
     if (u.rol === 'soda') return { name: 'admin-pedidos' }
     if (u.rol === 'objetos') return { name: 'admin-objetos' }
     return { name: 'menu' }

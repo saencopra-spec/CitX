@@ -43,7 +43,7 @@ const rutas = [
     path: '/menu',
     name: 'menu',
     component: () => import('@/views/inicio/MenuPrincipal.vue'),
-    meta: { invitado: true, titulo: 'Menú principal' },
+    meta: { titulo: 'Menú principal' },
   },
   {
     path: '/mapa',
@@ -55,7 +55,7 @@ const rutas = [
     path: '/guia',
     name: 'guia',
     component: () => import('@/views/guia/Guia.vue'),
-    meta: { invitado: true, titulo: 'Guía digital' },
+    meta: { titulo: 'Guía digital' },
   },
   {
     path: '/guia/eventos',
@@ -67,7 +67,7 @@ const rutas = [
     path: '/guia/clases',
     name: 'clases',
     component: () => import('@/views/guia/Clases.vue'),
-    meta: { invitado: true, titulo: 'Clases' },
+    meta: { titulo: 'Clases' },
   },
   {
     path: '/guia/objetos-perdidos',
@@ -85,13 +85,13 @@ const rutas = [
     path: '/guia/enfermeria',
     name: 'enfermeria',
     component: () => import('@/views/guia/Enfermeria.vue'),
-    meta: { invitado: true, titulo: 'Enfermería' },
+    meta: { titulo: 'Enfermería' },
   },
   {
     path: '/soda',
     name: 'soda',
     component: () => import('@/views/soda/SodaMenu.vue'),
-    meta: { invitado: true, titulo: 'Soda Armonía' },
+    meta: { titulo: 'Soda Armonía' },
   },
   {
     path: '/soda/carrito',

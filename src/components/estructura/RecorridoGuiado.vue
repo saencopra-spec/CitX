@@ -15,6 +15,7 @@ import {
   CircleUserRound,
   LayoutDashboard,
   PartyPopper,
+  CalendarDays,
 } from 'lucide-vue-next'
 
 /**
@@ -26,7 +27,47 @@ import {
 const auth = useAuth()
 const recorrido = useRecorrido()
 
+/** Sin cuenta solo se usan el mapa y los eventos: el recorrido es corto. */
+function pasosDeInvitado() {
+  return [
+    {
+      clave: 'hola',
+      titulo: 'Te damos la bienvenida a CitX',
+      texto:
+        'Como invitado podés usar dos partes de la app. Te las mostramos en un momento.',
+    },
+    {
+      clave: 'mapa',
+      icono: IconoMapa,
+      titulo: 'Mapa interactivo',
+      texto:
+        'Buscá cualquier lugar del CIT. Tocá un número para ver qué hay ahí y cómo llegar.',
+    },
+    {
+      clave: 'eventos',
+      icono: CalendarDays,
+      titulo: 'Próximos eventos',
+      texto:
+        'Las actividades de todo el colegio: qué hay, cuándo y en qué lugar del campus.',
+    },
+    {
+      clave: 'cuenta',
+      icono: CircleUserRound,
+      titulo: 'Modo invitado',
+      texto:
+        'Con una cuenta se abren la guía, tu horario, la soda y los avisos. Desde aquí la creás cuando querás.',
+    },
+    {
+      clave: 'fin',
+      icono: PartyPopper,
+      titulo: '¡Listo!',
+      texto: 'Explorá el campus. Que tengás un buen día en el CIT.',
+    },
+  ]
+}
+
 const pasos = computed(() => {
+  if (!auth.usuario) return pasosDeInvitado()
   const lista = [
     {
       clave: 'hola',

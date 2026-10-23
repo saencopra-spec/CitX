@@ -62,7 +62,7 @@ async function enviar() {
 
 function comoInvitado() {
   auth.entrarComoInvitado()
-  router.replace({ name: 'menu' })
+  router.replace({ name: 'mapa' })
 }
 </script>
 
@@ -151,9 +151,7 @@ function comoInvitado() {
               </span>
               <span class="invitado__textos">
                 <strong>Entrar como invitado</strong>
-                <span
-                  >Mirá el mapa, eventos y el menú de la soda sin cuenta.</span
-                >
+                <span>Mirá el mapa y los eventos sin cuenta.</span>
               </span>
               <ArrowRight
                 :size="18"

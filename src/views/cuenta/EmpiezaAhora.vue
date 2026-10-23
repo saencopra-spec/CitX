@@ -28,7 +28,7 @@ const masOpciones = ref(false)
 
 function comoInvitado() {
   auth.entrarComoInvitado()
-  router.replace({ name: 'menu' })
+  router.replace({ name: 'mapa' })
 }
 </script>
 

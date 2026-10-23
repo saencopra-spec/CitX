@@ -211,7 +211,7 @@ async function salir() {
 }
 
 function verRecorrido() {
-  router.push({ name: 'menu' }).then(() => recorrido.iniciar())
+  router.push(auth.inicioDe()).then(() => recorrido.iniciar())
 }
 
 async function restablecer() {

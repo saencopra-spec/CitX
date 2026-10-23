@@ -32,7 +32,7 @@ const router = useRouter()
 
 function comoInvitado() {
   auth.entrarComoInvitado()
-  router.push({ name: 'menu' })
+  router.push({ name: 'mapa' })
 }
 
 /** Pines del mapa de la portada, en porcentaje para que escalen solos. */

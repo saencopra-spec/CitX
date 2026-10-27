@@ -11,10 +11,16 @@ import {
   Clock,
   Banknote,
   CircleCheck,
+  User,
+  Mail,
+  Phone,
+  GraduationCap,
 } from 'lucide-vue-next'
 import EncabezadoPanel from '@/components/estructura/EncabezadoPanel.vue'
 import EscanerQR from '@/components/soda/EscanerQR.vue'
+import Dialogo from '@/components/avisos/Dialogo.vue'
 import { api } from '@/lib/api'
+import { formatearTelefono } from '@compartido/contacto.js'
 import { usarSondeo } from '@/lib/sondeo'
 import { sonarCampana } from '@/lib/avisosNavegador'
 import { useAvisos } from '@/stores/avisos'
@@ -146,6 +152,9 @@ async function irAPedido(codigo) {
 // El QR (o el codigo) abre la pagina del pedido, donde se entrega.
 const escaneando = ref(false)
 
+// Datos de la cuenta que hizo el pedido (al tocar el nombre).
+const cliente = ref(null)
+
 function abrirPedido(codigo) {
   escaneando.value = false
   router.push({ name: 'admin-verificar', params: { codigo } })
@@ -270,10 +279,20 @@ function buscarCodigo() {
               <span class="pedido__hora">{{ horaDe(p.creadoEn) }}</span>
             </div>
             <p class="pedido__cliente">
-              {{ p.usuarioNombre
-              }}<template v-if="p.usuarioSeccion">
-                · {{ p.usuarioSeccion }}</template
+              <button
+                type="button"
+                class="pedido__cliente-boton"
+                :aria-label="`Ver los datos de la cuenta de ${p.usuarioNombre}`"
+                @click="cliente = p"
               >
+                <User :size="14" aria-hidden="true" />
+                <span
+                  >{{ p.usuarioNombre
+                  }}<template v-if="p.usuarioSeccion">
+                    · {{ p.usuarioSeccion }}</template
+                  ></span
+                >
+              </button>
             </p>
             <ul class="pedido__items">
               <li v-for="i in p.items" :key="i.productoId">
@@ -300,7 +319,7 @@ function buscarCodigo() {
                 class="etiqueta etiqueta--aviso"
               >
                 <Banknote :size="14" aria-hidden="true" /> Cobrar
-                {{ colones(p.total) }} en efectivo
+                {{ colones(p.total) }} en caja
               </span>
               <span v-else class="etiqueta etiqueta--exito">
                 <CircleCheck :size="14" aria-hidden="true" /> Pagado ·
@@ -339,6 +358,50 @@ function buscarCodigo() {
       @cerrar="escaneando = false"
       @leido="abrirPedido"
     />
+
+    <Dialogo
+      :abierto="Boolean(cliente)"
+      titulo="Datos de la cuenta"
+      ancho="26rem"
+      @cerrar="cliente = null"
+    >
+      <dl v-if="cliente" class="cliente">
+        <div class="cliente__fila">
+          <dt><User :size="16" aria-hidden="true" /> Nombre</dt>
+          <dd>{{ cliente.usuarioNombre }}</dd>
+        </div>
+        <div v-if="cliente.usuarioSeccion" class="cliente__fila">
+          <dt><GraduationCap :size="16" aria-hidden="true" /> Sección</dt>
+          <dd>{{ cliente.usuarioSeccion }}</dd>
+        </div>
+        <div class="cliente__fila">
+          <dt><Phone :size="16" aria-hidden="true" /> Teléfono</dt>
+          <dd>
+            <a v-if="cliente.usuarioTelefono" :href="`tel:${cliente.usuarioTelefono}`">{{
+              formatearTelefono(cliente.usuarioTelefono)
+            }}</a>
+            <span v-else class="texto-suave">Sin teléfono</span>
+          </dd>
+        </div>
+        <div class="cliente__fila">
+          <dt><Mail :size="16" aria-hidden="true" /> Correo</dt>
+          <dd>
+            <a v-if="cliente.usuarioCorreo" :href="`mailto:${cliente.usuarioCorreo}`">{{
+              cliente.usuarioCorreo
+            }}</a>
+            <span v-else class="texto-suave">Sin correo</span>
+          </dd>
+        </div>
+        <p class="cliente__pedido texto-suave">
+          Pedido <strong>{{ cliente.codigo }}</strong>
+        </p>
+      </dl>
+      <template #pie>
+        <button type="button" class="boton boton--contorno" @click="cliente = null">
+          Cerrar
+        </button>
+      </template>
+    </Dialogo>
   </div>
 </template>
 
@@ -465,6 +528,55 @@ function buscarCodigo() {
 .pedido__cliente {
   font-size: var(--txt-sm);
   color: var(--texto-suave);
+}
+
+.pedido__cliente-boton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-1);
+  padding: 2px 0;
+  background: none;
+  border: none;
+  color: var(--accion);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radio-sm);
+}
+
+.pedido__cliente-boton:hover span {
+  text-decoration: underline;
+}
+
+.cliente {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+}
+
+.cliente__fila {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cliente__fila dt {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-1);
+  font-size: var(--txt-sm);
+  color: var(--texto-tenue);
+}
+
+.cliente__fila dd {
+  margin: 0;
+  font-weight: var(--peso-semi);
+  overflow-wrap: anywhere;
+}
+
+.cliente__pedido {
+  margin: var(--e-1) 0 0;
+  font-size: var(--txt-sm);
 }
 
 .pedido__items {

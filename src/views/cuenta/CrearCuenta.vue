@@ -15,6 +15,7 @@ import { useAuth } from '@/stores/auth'
 import { useAvisos } from '@/stores/avisos'
 import { usarErrores, opcionesSeccion } from '@/lib/errores'
 import { SECCIONES, NOMBRE_NIVEL, NOMBRE_ROL } from '@compartido/permisos.js'
+import { telefonoValido } from '@compartido/contacto.js'
 
 const auth = useAuth()
 const avisos = useAvisos()
@@ -47,6 +48,7 @@ const formulario = ref({
   tipo: '',
   nombre: '',
   correo: '',
+  telefono: '',
   contrasena: '',
   seccion: '',
   codigo: '',
@@ -96,6 +98,8 @@ function validar() {
   if (!/^\S+@\S+\.\S+$/.test(f.correo.trim()))
     errores.correo =
       'Ese correo no parece válido. Revisá que tenga @ y un dominio.'
+  if (f.telefono.trim() && !telefonoValido(f.telefono))
+    errores.telefono = 'El teléfono es un número de 8 dígitos.'
   if (f.contrasena.length < 8)
     errores.contrasena = 'La contraseña necesita al menos 8 caracteres.'
   else if (!/[a-zA-Z]/.test(f.contrasena) || !/\d/.test(f.contrasena))
@@ -116,6 +120,7 @@ async function enviar() {
     const usuario = await auth.registrar({
       nombre: f.nombre.trim(),
       correo: f.correo.trim(),
+      telefono: f.telefono.trim() || null,
       contrasena: f.contrasena,
       seccion: esEstudiante.value ? f.seccion : null,
       codigo: esEstudiante.value ? null : f.codigo,
@@ -281,6 +286,17 @@ async function enviar() {
           modo-teclado="email"
           placeholder="tu.correo@ejemplo.com"
           :error="errores.correo"
+        />
+        <Campo
+          id="telefono"
+          v-model="formulario.telefono"
+          etiqueta="Teléfono (opcional)"
+          tipo="tel"
+          autocompletar="tel"
+          modo-teclado="numeric"
+          placeholder="8888 8888"
+          ayuda="Podés agregarlo ahora o después. Para hacer pedidos en la soda vas a necesitar tener un teléfono en tu cuenta."
+          :error="errores.telefono"
         />
         <div>
           <CampoContrasena

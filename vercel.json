@@ -19,7 +19,7 @@
       "destination": "/api/index"
     },
     {
-      "source": "/((?!api/)(?!.*\\.[a-zA-Z0-9]+$).*)",
+      "source": "/((?!api/)(?!@)(?!src/)(?!node_modules/)(?!.*\\.[a-zA-Z0-9]+$).*)",
       "destination": "/index.html"
     }
   ],

@@ -27,7 +27,6 @@ import {
 } from '@compartido/hora.js'
 import { textoQR, METODOS_PAGO } from '@compartido/pedidos.js'
 import { inicioFranja } from '@compartido/jornada.js'
-import { NOMBRE_MARCA } from '@compartido/pagos.js'
 
 const props = defineProps({ codigo: { type: String, required: true } })
 const route = useRoute()
@@ -128,14 +127,10 @@ onMounted(() => {
         <CircleCheck :size="20" aria-hidden="true" />
         <span>
           <strong>Pedido confirmado.</strong>
-          <template v-if="pedido.pago.metodo === 'efectivo'">
-            Pagás {{ colones(pedido.total) }} al retirar.</template
+          <template v-if="pedido.pago.estado === 'pendiente'">
+            Pagás {{ colones(pedido.total) }} en la caja al retirar.</template
           >
-          <template v-else>
-            El pago quedó
-            {{ pedido.pago.metodo === 'sinpe' ? 'verificado' : 'aprobado' }}
-            (simulado).</template
-          >
+          <template v-else> Recibimos el comprobante de tu SINPE.</template>
         </span>
       </p>
 
@@ -234,13 +229,7 @@ onMounted(() => {
           <dl class="pago">
             <div>
               <dt>Pago</dt>
-              <dd>
-                {{ METODOS_PAGO[pedido.pago.metodo] }}
-                <template v-if="pedido.pago.metodo === 'tarjeta'"
-                  >{{ NOMBRE_MARCA[pedido.pago.marca] }} terminada en
-                  {{ pedido.pago.ultimos }}</template
-                >
-              </dd>
+              <dd>{{ METODOS_PAGO[pedido.pago.metodo] }}</dd>
             </div>
             <div>
               <dt>Hecho</dt>

@@ -137,9 +137,6 @@ registrar('GET', '/reportes/soda', async ({ req, res, query }) => {
             categoria: 1,
             disponible: 1,
             estado: 1,
-            controlStock: 1,
-            stock: 1,
-            umbralPocas: 1,
           },
         }
       )

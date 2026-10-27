@@ -1,22 +1,19 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { Plus, Pencil, Search, EyeOff, Boxes } from 'lucide-vue-next'
+import { Plus, Pencil, Search, EyeOff } from 'lucide-vue-next'
 import EncabezadoPanel from '@/components/estructura/EncabezadoPanel.vue'
 import Dialogo from '@/components/avisos/Dialogo.vue'
 import Campo from '@/components/formularios/Campo.vue'
 import SubirFoto from '@/components/formularios/SubirFoto.vue'
 import FotoComida from '@/components/soda/FotoComida.vue'
-import DialogoStock from '@/components/soda/DialogoStock.vue'
 import { api } from '@/lib/api'
 import { usarErrores } from '@/lib/errores'
 import { useAvisos } from '@/stores/avisos'
-import { useConfirmar } from '@/stores/confirmar'
 import { colones } from '@compartido/dinero.js'
 import { ESTADOS_PRODUCTO, NOMBRE_ESTADO_PRODUCTO } from '@compartido/soda.js'
 import { coincide } from '@compartido/texto.js'
 
 const avisos = useAvisos()
-const confirmar = useConfirmar()
 const { errores, limpiar, mostrar } = usarErrores()
 
 const productos = ref([])
@@ -28,7 +25,7 @@ const OPCIONES_ESTADO = ESTADOS_PRODUCTO.map((e) => ({
   valor: e,
   texto: NOMBRE_ESTADO_PRODUCTO[e],
 }))
-const TONO_ESTADO = { disponible: 'exito', pocas: 'aviso', agotado: 'error' }
+const TONO_ESTADO = { disponible: 'exito', agotado: 'error' }
 
 const CATEGORIAS = [
   { valor: 'desayunos', texto: 'Desayunos' },
@@ -138,40 +135,6 @@ function cambiarEstado(p, estado) {
   )
 }
 
-async function alternarStock(p) {
-  const activar = !p.controlStock
-  const si = await confirmar.preguntar(
-    activar
-      ? {
-          titulo: `¿Controlar el stock de ${p.nombre}?`,
-          mensaje:
-            'Empieza en 0 unidades y queda como agotado hasta que repongas. Cada pedido descuenta sus unidades y el estado se calcula solo.',
-          aceptar: 'Controlar stock',
-          peligro: false,
-        }
-      : {
-          titulo: `¿Dejar de controlar el stock de ${p.nombre}?`,
-          mensaje: `Queda como «${NOMBRE_ESTADO_PRODUCTO[p.estado]}» y desde ahí lo cambiás a mano. Las unidades que quedan se olvidan.`,
-          aceptar: 'Dejar de controlar',
-          peligro: false,
-        }
-  )
-  if (!si) return
-  await cambiar(p, { controlStock: activar }, (r) =>
-    activar
-      ? `${r.nombre} controla stock. Reponé unidades para venderlo.`
-      : `${r.nombre} ya no controla stock.`
-  )
-}
-
-// --- Stock ---
-const enStock = ref(null)
-
-function alActualizarStock(producto, { seguirAbierto = false } = {}) {
-  reemplazar(producto)
-  enStock.value = seguirAbierto ? producto : null
-}
-
 onMounted(async () => {
   try {
     productos.value = (await api.get('/soda/productos?todos=1')).productos
@@ -187,7 +150,7 @@ onMounted(async () => {
   <div>
     <EncabezadoPanel
       titulo="Menú de la soda"
-      ayuda="Elegí el estado de cada producto (Disponible, Pocas unidades o Agotado), o activá «Controlar stock» para que se calcule con las unidades. Lo agotado no se puede pedir. «Visible» lo saca del menú sin borrarlo."
+      ayuda="Elegí el estado de cada producto: «Disponible» o «Agotado». Lo agotado no se puede pedir. «Visible» lo saca del menú sin borrarlo."
     >
       <template #acciones>
         <button type="button" class="boton boton--accion" @click="nuevo">
@@ -256,11 +219,6 @@ onMounted(async () => {
             {{ colones(p.precio) }} ·
             {{ CATEGORIAS.find((c) => c.valor === p.categoria)?.texto }}
           </p>
-          <p v-if="p.controlStock" class="producto__stock">
-            Quedan <strong>{{ p.stock }}</strong>
-            {{ p.stock === 1 ? 'unidad' : 'unidades' }} · «pocas» con
-            {{ p.umbralPocas }} o menos
-          </p>
         </div>
         <div class="producto__controles">
           <label class="estado-fila">
@@ -268,10 +226,6 @@ onMounted(async () => {
             <select
               class="campo__control estado-fila__select"
               :value="p.estado"
-              :disabled="p.controlStock"
-              :title="
-                p.controlStock ? 'Con stock, el estado se calcula solo.' : ''
-              "
               :aria-label="`Estado de ${p.nombre}`"
               @change="cambiarEstado(p, $event.target.value)"
             >
@@ -289,35 +243,12 @@ onMounted(async () => {
               type="button"
               role="switch"
               class="interruptor"
-              :aria-checked="p.controlStock"
-              :aria-label="`Controlar stock de ${p.nombre}`"
-              @click="alternarStock(p)"
-            />
-            <span aria-hidden="true">Controlar stock</span>
-          </label>
-          <label class="interruptor-fila">
-            <button
-              type="button"
-              role="switch"
-              class="interruptor"
               :aria-checked="!p.oculto"
               :aria-label="`${p.nombre} visible en el menú`"
               @click="cambiarVisible(p)"
             />
             <span aria-hidden="true">Visible</span>
           </label>
-          <button
-            v-if="p.controlStock"
-            type="button"
-            class="boton boton--contorno boton--pequeno"
-            @click="enStock = p"
-          >
-            <Boxes :size="16" aria-hidden="true" /> Stock<span
-              class="solo-lectores"
-            >
-              de {{ p.nombre }}</span
-            >
-          </button>
           <button
             type="button"
             class="boton boton--contorno boton--pequeno"
@@ -393,7 +324,6 @@ onMounted(async () => {
           :error="errores.foto"
         />
         <Campo
-          v-if="!formulario.controlStock"
           id="pr-estado"
           v-model="formulario.estado"
           etiqueta="Estado"
@@ -401,10 +331,6 @@ onMounted(async () => {
           :opciones="OPCIONES_ESTADO"
           :error="errores.estado"
         />
-        <p v-else class="campo__ayuda">
-          Estado: {{ NOMBRE_ESTADO_PRODUCTO[formulario.estado] }}. Se calcula
-          con el stock; las unidades se cambian con el botón «Stock».
-        </p>
         <div class="interruptores">
           <div class="interruptor-fila">
             <button
@@ -437,13 +363,6 @@ onMounted(async () => {
         </button>
       </template>
     </Dialogo>
-
-    <DialogoStock
-      :abierto="Boolean(enStock)"
-      :producto="enStock"
-      @cerrar="enStock = null"
-      @actualizado="alActualizarStock"
-    />
   </div>
 </template>
 
@@ -514,8 +433,7 @@ onMounted(async () => {
   min-width: 0;
 }
 
-.producto__datos,
-.producto__stock {
+.producto__datos {
   font-size: var(--txt-sm);
   color: var(--texto-suave);
 }

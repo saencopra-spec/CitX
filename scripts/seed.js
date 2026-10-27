@@ -89,8 +89,6 @@ async function main() {
       PRODUCTOS.map(({ disponible = true, ...p }) => ({
         ...p,
         estado: disponible ? 'disponible' : 'agotado',
-        controlStock: false,
-        umbralPocas: 5,
         oculto: false,
         creadoEn: ahora,
       }))

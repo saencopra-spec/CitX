@@ -34,6 +34,7 @@ import {
 } from '@/lib/avisosNavegador'
 import { entradaEscalonada } from '@/lib/movimiento'
 import { SECCIONES, NOMBRE_NIVEL } from '@compartido/permisos.js'
+import { formatearTelefono } from '@compartido/contacto.js'
 
 const configuracion = useConfiguracion()
 const auth = useAuth()
@@ -130,11 +131,12 @@ async function activarNotificaciones() {
 
 // Perfil
 const editandoPerfil = ref(false)
-const perfil = ref({ nombre: '', seccion: '' })
+const perfil = ref({ nombre: '', telefono: '', seccion: '' })
 const perfilErrores = usarErrores()
 function abrirPerfil() {
   perfil.value = {
     nombre: auth.usuario.nombre,
+    telefono: auth.usuario.telefono ?? '',
     seccion: auth.usuario.seccion ?? '',
   }
   perfilErrores.limpiar()
@@ -146,6 +148,7 @@ async function guardarPerfil() {
   try {
     await auth.actualizarPerfil({
       nombre: perfil.value.nombre,
+      telefono: perfil.value.telefono.trim() || null,
       seccion: perfil.value.seccion || null,
     })
     editandoPerfil.value = false
@@ -259,6 +262,12 @@ onMounted(() => entradaEscalonada(raiz.value))
             >
           </p>
           <p class="tarjeta-cuenta__detalle">{{ auth.usuario.correo }}</p>
+          <p class="tarjeta-cuenta__detalle">
+            <template v-if="auth.usuario.telefono">
+              Tel: {{ formatearTelefono(auth.usuario.telefono) }}
+            </template>
+            <template v-else>Sin teléfono · agregalo para pedir en la soda</template>
+          </p>
         </div>
         <div class="tarjeta-cuenta__acciones">
           <button
@@ -571,6 +580,17 @@ onMounted(() => entradaEscalonada(raiz.value))
           etiqueta="Nombre completo"
           autocompletar="name"
           :error="perfilErrores.errores.nombre"
+        />
+        <Campo
+          id="perfil-telefono"
+          v-model="perfil.telefono"
+          etiqueta="Teléfono"
+          tipo="tel"
+          autocompletar="tel"
+          modo-teclado="numeric"
+          placeholder="8888 8888"
+          ayuda="Necesario para hacer pedidos en la soda. Es una medida de seguridad: permite contactarte por tu pedido."
+          :error="perfilErrores.errores.telefono"
         />
         <Campo
           v-if="auth.esEstudiante"

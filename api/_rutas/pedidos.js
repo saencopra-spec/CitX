@@ -9,28 +9,22 @@ import {
   noExiste,
   malaPeticion,
   sinPermiso,
-  ErrorHttp,
 } from '../_lib/respuesta.js'
 import { requerir } from '../_lib/sesion.js'
 import { notificar } from '../_lib/notificar.js'
 import { revisarNoRecogidos, exigirSinSancion } from '../_lib/sanciones.js'
-import { descontarStock, devolverStock } from '../_lib/stock.js'
 import { puede } from '../../compartido/permisos.js'
 import { calcularTotal } from '../../compartido/dinero.js'
 import { sePuedePedir } from '../../compartido/soda.js'
+import { telefonoValido } from '../../compartido/contacto.js'
 import {
   franjaValida,
   nombreFranja,
   inicioFranja,
 } from '../../compartido/jornada.js'
 import { partesCR, fechaDesdeCR } from '../../compartido/hora.js'
-import {
-  validarTarjeta,
-  marcaTarjeta,
-  ultimosCuatro,
-  comprobanteSinpeValido,
-  soloDigitos,
-} from '../../compartido/pagos.js'
+import { comprobanteSinpeValido, soloDigitos } from '../../compartido/pagos.js'
+import { campoFoto, guardarFotoSiEsNueva } from '../_lib/imagenes.js'
 import {
   generarCodigo,
   cambioDeEstadoPermitido,
@@ -38,9 +32,6 @@ import {
   ESTADOS_PEDIDO,
   NO_RECOGIDO,
 } from '../../compartido/pedidos.js'
-
-/** Tarjeta que simula un rechazo del banco, para mostrarlo en la demostracion. */
-const TARJETA_RECHAZADA = '4000000000000002'
 
 const esquemaPedido = z.object({
   items: z
@@ -69,14 +60,15 @@ const esquemaPedido = z.object({
     clave: z.string(),
   }),
   pago: z.discriminatedUnion('metodo', [
+    // Pago en caja: se cobra en la soda al retirar. La persona elige si lo
+    // hará en efectivo o con tarjeta, para que la soda lo tenga listo.
     z.object({ metodo: z.literal('efectivo') }),
-    z.object({ metodo: z.literal('sinpe'), comprobante: z.string().max(40) }),
+    z.object({ metodo: z.literal('tarjeta') }),
+    // SINPE Móvil: online, con una foto del comprobante (obligatoria).
     z.object({
-      metodo: z.literal('tarjeta'),
-      numero: z.string().max(30),
-      titular: z.string().max(80),
-      vencimiento: z.string().max(7),
-      cvv: z.string().max(4),
+      metodo: z.literal('sinpe'),
+      comprobante: z.string().max(40).optional().default(''),
+      foto: campoFoto,
     }),
   ]),
 })
@@ -95,45 +87,35 @@ export function pedidoPublico(p, { personal = false } = {}) {
   if (personal) {
     datos.usuarioNombre = p.usuarioNombre
     datos.usuarioSeccion = p.usuarioSeccion ?? null
+    datos.usuarioCorreo = p.usuarioCorreo ?? null
+    datos.usuarioTelefono = p.usuarioTelefono ?? null
   }
   return datos
 }
 
-function validarPago(pago) {
+async function validarPago(pago) {
   if (pago.metodo === 'sinpe') {
-    if (!comprobanteSinpeValido(pago.comprobante)) {
+    // El único pago online: hace falta la foto del comprobante del SINPE.
+    if (!pago.foto) {
+      throw malaPeticion('Adjuntá la foto del comprobante del SINPE.', {
+        foto: 'Sin la foto del comprobante no se puede hacer el pedido.',
+      })
+    }
+    // El número de comprobante es opcional; si viene, tiene que ser válido.
+    if (pago.comprobante && !comprobanteSinpeValido(pago.comprobante)) {
       throw malaPeticion('Revisá el comprobante.', {
         comprobante: 'El comprobante son solo números, entre 6 y 25 dígitos.',
       })
     }
     return {
       metodo: 'sinpe',
-      referencia: soloDigitos(pago.comprobante),
+      referencia: pago.comprobante ? soloDigitos(pago.comprobante) : null,
+      foto: await guardarFotoSiEsNueva(pago.foto),
       estado: 'verificado',
     }
   }
-  if (pago.metodo === 'tarjeta') {
-    const errores = validarTarjeta(pago)
-    if (Object.keys(errores).length)
-      throw malaPeticion('Revisá los datos de la tarjeta.', errores)
-    if (soloDigitos(pago.numero) === TARJETA_RECHAZADA) {
-      throw new ErrorHttp(
-        402,
-        'El banco rechazó la tarjeta (simulado). Probá con otra o pagá en efectivo.',
-        {
-          numero: 'Tarjeta rechazada por el banco.',
-        }
-      )
-    }
-    // Nunca se guarda el numero completo ni el CVV.
-    return {
-      metodo: 'tarjeta',
-      marca: marcaTarjeta(pago.numero),
-      ultimos: ultimosCuatro(pago.numero),
-      estado: 'aprobado',
-    }
-  }
-  return { metodo: 'efectivo', estado: 'pendiente' }
+  // Efectivo o tarjeta: pago en caja. Se cobra en la soda al retirar.
+  return { metodo: pago.metodo, estado: 'pendiente' }
 }
 
 registrar('POST', '/pedidos', async ({ req, res }) => {
@@ -143,6 +125,16 @@ registrar('POST', '/pedidos', async ({ req, res }) => {
     throw sinPermiso('La cuenta de la soda no puede hacer pedidos.')
   await revisarNoRecogidos()
   await exigirSinSancion(usuario)
+
+  // Para pedir hace falta un teléfono vinculado a la cuenta. Así, si alguien
+  // no pasa a retirar su pedido, la soda tiene cómo ubicarlo.
+  if (!telefonoValido(usuario.telefono)) {
+    throw malaPeticion(
+      'Para hacer un pedido necesitás tener un número de teléfono en tu cuenta. Es una medida de seguridad de la soda: nos permite contactarte por tu pedido.',
+      { telefono: 'Agregá tu número de teléfono para poder pedir.' }
+    )
+  }
+
   const datos = esquemaPedido.parse(await leerCuerpo(req))
 
   if (!franjaValida(datos.franja.fecha, datos.franja.clave)) {
@@ -181,31 +173,16 @@ registrar('POST', '/pedidos', async ({ req, res }) => {
     }
   })
 
-  const pago = validarPago(datos.pago)
+  const pago = await validarPago(datos.pago)
   const ahora = new Date()
   const pedidos = await col(COLECCIONES.pedidos)
-
-  // Lo ultimo antes de guardar: descontar el stock (un renglon por producto,
-  // aunque venga repetido con notas distintas).
-  const cantidades = new Map()
-  for (const i of items) {
-    cantidades.set(
-      i.productoId,
-      (cantidades.get(i.productoId) ?? 0) + i.cantidad
-    )
-  }
-  const descontados = await descontarStock(
-    productos,
-    [...cantidades].map(([id, cantidad]) => ({
-      producto: porId.get(id),
-      cantidad,
-    }))
-  )
 
   const pedido = {
     usuarioId: String(usuario._id),
     usuarioNombre: usuario.nombre,
     usuarioSeccion: usuario.seccion ?? null,
+    usuarioCorreo: usuario.correo ?? null,
+    usuarioTelefono: usuario.telefono ?? null,
     items,
     total: calcularTotal(items),
     franja: {
@@ -226,14 +203,10 @@ registrar('POST', '/pedidos', async ({ req, res }) => {
       await pedidos.insertOne(pedido)
       return creado(res, { pedido: pedidoPublico(pedido) })
     } catch (e) {
-      if (e?.code !== 11000) {
-        await devolverStock(productos, descontados)
-        throw e
-      }
+      if (e?.code !== 11000) throw e
       delete pedido._id
     }
   }
-  await devolverStock(productos, descontados)
   throw new Error('No se pudo generar un codigo de pedido unico.')
 })
 
@@ -308,7 +281,7 @@ registrar('PATCH', '/pedidos/:codigo/estado', async ({ req, res, params }) => {
   }
 
   const cambios = { estado }
-  if (estado === 'entregado' && pedido.pago.metodo === 'efectivo') {
+  if (estado === 'entregado' && pedido.pago.estado === 'pendiente') {
     cambios['pago.estado'] = 'pagado'
   }
   // Solo se actualiza si nadie lo cambio en el medio (dos tablets a la vez).

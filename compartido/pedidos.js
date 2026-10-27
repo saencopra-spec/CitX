@@ -16,8 +16,10 @@ export const NO_RECOGIDO = 'no_recogido'
 
 export const METODOS_PAGO = {
   sinpe: 'SINPE Móvil',
-  tarjeta: 'Tarjeta',
-  efectivo: 'Efectivo al retirar',
+  efectivo: 'Efectivo · pago en caja',
+  tarjeta: 'Tarjeta · pago en caja',
+  // Método viejo: ya no se elige, pero queda por los pedidos previos.
+  caja: 'Pago en caja',
 }
 
 /** Siguiente estado en la linea de tiempo, o null si ya termino. */

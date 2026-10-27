@@ -192,14 +192,7 @@ onMounted(cargar)
               <p class="producto__descripcion">{{ p.descripcion }}</p>
               <div class="producto__pie">
                 <span class="producto__precio">{{ colones(p.precio) }}</span>
-                <span
-                  v-if="p.estado === 'pocas'"
-                  class="etiqueta etiqueta--aviso"
-                  >Pocas unidades</span
-                >
-                <span
-                  v-else-if="!p.disponible"
-                  class="etiqueta etiqueta--neutra"
+                <span v-if="!p.disponible" class="etiqueta etiqueta--neutra"
                   >Agotado</span
                 >
               </div>

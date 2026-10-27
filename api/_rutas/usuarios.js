@@ -207,6 +207,8 @@ registrar('DELETE', '/usuarios/:id', async ({ req, res, params }) => {
         $set: {
           usuarioNombre: 'Cuenta borrada',
           usuarioSeccion: null,
+          usuarioCorreo: null,
+          usuarioTelefono: null,
           usuarioId: 'borrado',
         },
       }

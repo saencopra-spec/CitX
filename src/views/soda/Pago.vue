@@ -3,31 +3,31 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Smartphone,
-  CreditCard,
   Banknote,
+  CreditCard,
+  Store,
   Info,
   Copy,
   ShieldCheck,
   LoaderCircle,
   Clock,
+  Phone,
 } from 'lucide-vue-next'
 import EncabezadoPagina from '@/components/estructura/EncabezadoPagina.vue'
 import Campo from '@/components/formularios/Campo.vue'
+import SubirFoto from '@/components/formularios/SubirFoto.vue'
 import TarjetaSancion from '@/components/sanciones/TarjetaSancion.vue'
 import { useCarrito } from '@/stores/carrito'
 import { useSanciones } from '@/stores/sanciones'
+import { useAuth } from '@/stores/auth'
 import { useAvisos } from '@/stores/avisos'
 import { api } from '@/lib/api'
 import { usarErrores } from '@/lib/errores'
 import { colones } from '@compartido/dinero.js'
+import { telefonoValido } from '@compartido/contacto.js'
 import { horaLegible, fechaIsoLegible, partesCR } from '@compartido/hora.js'
 import {
   SINPE_SODA,
-  TARJETA_PRUEBA,
-  marcaTarjeta,
-  NOMBRE_MARCA,
-  formatearNumeroTarjeta,
-  validarTarjeta,
   comprobanteSinpeValido,
   soloDigitos,
 } from '@compartido/pagos.js'
@@ -35,38 +35,58 @@ import {
 const carrito = useCarrito()
 const avisos = useAvisos()
 const sanciones = useSanciones()
+const auth = useAuth()
 const router = useRouter()
 const { errores, limpiar, mostrar } = usarErrores()
 
+// Para comprar en la soda hace falta un teléfono vinculado a la cuenta.
+const faltaTelefono = computed(
+  () => auth.haySesion && !auth.usuario?.telefono
+)
+const telefonoNuevo = ref('')
+const errorTelefono = ref('')
+const guardandoTelefono = ref(false)
+
+async function guardarTelefono() {
+  errorTelefono.value = ''
+  if (!telefonoValido(telefonoNuevo.value)) {
+    errorTelefono.value = 'Escribí un número de teléfono de 8 dígitos.'
+    return
+  }
+  guardandoTelefono.value = true
+  try {
+    await auth.actualizarPerfil({
+      nombre: auth.usuario.nombre,
+      seccion: auth.usuario.seccion ?? null,
+      telefono: telefonoNuevo.value,
+    })
+    telefonoNuevo.value = ''
+    avisos.exito('Listo. Vinculamos tu teléfono y ya podés completar el pedido.')
+  } catch (e) {
+    errorTelefono.value = e.campos?.telefono ?? e.message
+  } finally {
+    guardandoTelefono.value = false
+  }
+}
+
 const metodos = [
   { valor: 'sinpe', texto: 'SINPE Móvil', icono: Smartphone },
-  { valor: 'tarjeta', texto: 'Tarjeta', icono: CreditCard },
   { valor: 'efectivo', texto: 'Efectivo', icono: Banknote },
+  { valor: 'tarjeta', texto: 'Tarjeta', icono: CreditCard },
 ]
 const metodo = ref('sinpe')
+// Efectivo y tarjeta se cobran en la caja de la soda al retirar.
+const esEnCaja = computed(
+  () => metodo.value === 'efectivo' || metodo.value === 'tarjeta'
+)
 const procesando = ref(false)
 const mensajeProceso = ref('')
 
 const comprobante = ref('')
-const tarjeta = ref({ numero: '', titular: '', vencimiento: '', cvv: '' })
+/** Foto del comprobante del SINPE (obligatoria para pagar en línea). */
+const comprobanteFoto = ref(null)
 
-const marca = computed(() => marcaTarjeta(tarjeta.value.numero))
 const franjaHoy = computed(() => carrito.franja?.fecha === partesCR().iso)
-
-function alEscribirNumero(e) {
-  tarjeta.value.numero = formatearNumeroTarjeta(e.target.value)
-}
-
-function alEscribirVencimiento(e) {
-  const d = soloDigitos(e.target.value).slice(0, 4)
-  tarjeta.value.vencimiento =
-    d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d
-}
-
-function usarTarjetaPrueba() {
-  tarjeta.value = { ...TARJETA_PRUEBA, titular: 'Persona de prueba' }
-  limpiar()
-}
 
 async function copiarNumero() {
   try {
@@ -77,44 +97,49 @@ async function copiarNumero() {
   }
 }
 
-const esperar = (ms) => new Promise((r) => setTimeout(r, ms))
-
 function validar() {
   limpiar()
-  if (metodo.value === 'sinpe' && !comprobanteSinpeValido(comprobante.value)) {
-    errores.comprobante =
-      'El comprobante son solo números, entre 6 y 25 dígitos. Lo encontrás en el mensaje del banco.'
-  }
-  if (metodo.value === 'tarjeta') {
-    Object.assign(errores, validarTarjeta(tarjeta.value))
+  if (metodo.value === 'sinpe') {
+    if (!comprobanteFoto.value) {
+      errores.foto =
+        'Adjuntá la foto del comprobante del SINPE. Sin ella no se puede hacer el pedido.'
+    }
+    // El número de comprobante es opcional; si lo escriben, lo validamos.
+    if (comprobante.value && !comprobanteSinpeValido(comprobante.value)) {
+      errores.comprobante =
+        'El comprobante son solo números, entre 6 y 25 dígitos. Lo encontrás en el mensaje del banco.'
+    }
   }
   return Object.keys(errores).length === 0
 }
 
 async function pagar() {
+  if (faltaTelefono.value) {
+    avisos.aviso('Agregá tu teléfono para poder completar el pedido.')
+    document.getElementById('telefono-vincular')?.focus()
+    return
+  }
   if (!validar()) {
     document.querySelector('[aria-invalid="true"]')?.focus()
     return
   }
   procesando.value = true
   try {
-    // La espera imita lo que tarda un banco en responder.
-    if (metodo.value === 'sinpe') {
-      mensajeProceso.value = 'Verificando el SINPE con el banco...'
-      await esperar(1800)
-    } else if (metodo.value === 'tarjeta') {
-      mensajeProceso.value = 'Procesando el pago con la tarjeta...'
-      await esperar(1500)
-    } else {
-      mensajeProceso.value = 'Enviando tu pedido a la soda...'
-    }
+    mensajeProceso.value =
+      metodo.value === 'sinpe'
+        ? 'Enviando el comprobante a la soda...'
+        : 'Enviando tu pedido a la soda...'
 
     const pago =
       metodo.value === 'sinpe'
-        ? { metodo: 'sinpe', comprobante: soloDigitos(comprobante.value) }
-        : metodo.value === 'tarjeta'
-          ? { metodo: 'tarjeta', ...tarjeta.value }
-          : { metodo: 'efectivo' }
+        ? {
+            metodo: 'sinpe',
+            comprobante: comprobante.value
+              ? soloDigitos(comprobante.value)
+              : '',
+            foto: comprobanteFoto.value,
+          }
+        : { metodo: metodo.value }
 
     const { pedido } = await api.post('/pedidos', {
       items: carrito.items.map((i) => ({
@@ -156,10 +181,42 @@ onMounted(() => {
       <Info :size="20" aria-hidden="true" />
       <span>
         <strong>Esto es una demostración.</strong>
-        No se cobra dinero real. Podés usar datos inventados o la tarjeta de
-        prueba.
+        No se cobra dinero real. Para el SINPE podés adjuntar cualquier foto
+        como comprobante.
       </span>
     </p>
+
+    <section v-if="faltaTelefono" class="telefono" aria-labelledby="t-telefono">
+      <h2 id="t-telefono" class="telefono__titulo">
+        <Phone :size="20" aria-hidden="true" /> Vinculá tu teléfono para pedir
+      </h2>
+      <p class="telefono__texto">
+        Por seguridad, la soda necesita un teléfono asociado a tu cuenta antes
+        de tu primer pedido. Así podemos contactarte si surge algo con tu
+        pedido —por ejemplo, si no alcanzás a pasar a retirarlo— y tener un
+        respaldo de quién hizo cada compra. Lo guardamos una sola vez y queda
+        listo para siempre.
+      </p>
+      <form class="telefono__form" novalidate @submit.prevent="guardarTelefono">
+        <Campo
+          id="telefono-vincular"
+          v-model="telefonoNuevo"
+          etiqueta="Tu número de teléfono"
+          tipo="tel"
+          autocompletar="tel"
+          modo-teclado="numeric"
+          placeholder="8888 8888"
+          :error="errorTelefono"
+        />
+        <button
+          type="submit"
+          class="boton boton--accion"
+          :disabled="guardandoTelefono"
+        >
+          {{ guardandoTelefono ? 'Guardando...' : 'Vincular teléfono' }}
+        </button>
+      </form>
+    </section>
 
     <div class="distribucion">
       <form class="formulario" novalidate @submit.prevent="pagar">
@@ -198,140 +255,56 @@ onMounted(() => {
                 El monto exacto es <strong>{{ colones(carrito.total) }}</strong
                 >.
               </li>
-              <li>Escribí aquí el número de comprobante que te da el banco.</li>
+              <li>
+                Adjuntá una <strong>foto del comprobante</strong> que te da el
+                banco. Es obligatoria para confirmar el pedido.
+              </li>
             </ol>
+            <SubirFoto
+              id="comprobante-foto"
+              v-model="comprobanteFoto"
+              etiqueta="Foto del comprobante"
+              :error="errores.foto"
+            />
             <Campo
               id="comprobante"
               v-model="comprobante"
-              etiqueta="Número de comprobante"
+              etiqueta="Número de comprobante (opcional)"
               modo-teclado="numeric"
               placeholder="Por ejemplo 2026100912345678"
-              ayuda="En la demostración sirve cualquier número de 6 a 25 dígitos."
+              ayuda="Si lo tenés a mano, ayuda a la soda a ubicar tu pago."
               :maximo="30"
               :error="errores.comprobante"
             />
           </div>
 
-          <div v-else-if="metodo === 'tarjeta'" key="tarjeta" class="detalle">
-            <div
-              class="tarjeta-vista"
-              :data-marca="marca ?? 'ninguna'"
-              aria-hidden="true"
-            >
-              <span class="tarjeta-vista__chip" />
-              <span class="tarjeta-vista__numero">{{
-                tarjeta.numero || '0000 0000 0000 0000'
-              }}</span>
-              <span class="tarjeta-vista__fila">
-                <span>{{ tarjeta.titular || 'Nombre en la tarjeta' }}</span>
-                <span>{{ tarjeta.vencimiento || 'MM/AA' }}</span>
-              </span>
-              <span class="tarjeta-vista__marca">{{
-                marca ? NOMBRE_MARCA[marca] : ''
-              }}</span>
-            </div>
-
-            <p class="nota">
-              <CreditCard :size="18" aria-hidden="true" />
-              <span>
-                Tarjeta de prueba: <strong>{{ TARJETA_PRUEBA.numero }}</strong
-                >, vence {{ TARJETA_PRUEBA.vencimiento }}, CVV
-                {{ TARJETA_PRUEBA.cvv }}. La 4000 0000 0000 0002 simula una
-                tarjeta rechazada.
-                <button
-                  type="button"
-                  class="boton boton--texto boton--pequeno"
-                  @click="usarTarjetaPrueba"
-                >
-                  Usar la de prueba
-                </button>
-              </span>
-            </p>
-
-            <div class="campo">
-              <label class="campo__etiqueta" for="numero">
-                Número de la tarjeta
-                <span v-if="marca" class="etiqueta etiqueta--info">{{
-                  NOMBRE_MARCA[marca]
-                }}</span>
-              </label>
-              <input
-                id="numero"
-                class="campo__control numero"
-                :value="tarjeta.numero"
-                inputmode="numeric"
-                autocomplete="cc-number"
-                placeholder="0000 0000 0000 0000"
-                maxlength="23"
-                :aria-invalid="errores.numero ? 'true' : undefined"
-                :aria-describedby="errores.numero ? 'numero-error' : undefined"
-                @input="alEscribirNumero"
-              />
-              <p v-if="errores.numero" id="numero-error" class="campo__error">
-                {{ errores.numero }}
-              </p>
-            </div>
-            <Campo
-              id="titular"
-              v-model="tarjeta.titular"
-              etiqueta="Nombre en la tarjeta"
-              autocompletar="cc-name"
-              :error="errores.titular"
-            />
-            <div class="dos-columnas">
-              <div class="campo">
-                <label class="campo__etiqueta" for="vencimiento">Vence</label>
-                <input
-                  id="vencimiento"
-                  class="campo__control"
-                  :value="tarjeta.vencimiento"
-                  inputmode="numeric"
-                  autocomplete="cc-exp"
-                  placeholder="MM/AA"
-                  maxlength="5"
-                  :aria-invalid="errores.vencimiento ? 'true' : undefined"
-                  :aria-describedby="
-                    errores.vencimiento ? 'vencimiento-error' : undefined
-                  "
-                  @input="alEscribirVencimiento"
-                />
-                <p
-                  v-if="errores.vencimiento"
-                  id="vencimiento-error"
-                  class="campo__error"
-                >
-                  {{ errores.vencimiento }}
+          <div v-else key="caja" class="detalle">
+            <div class="en-caja">
+              <Store :size="24" aria-hidden="true" class="en-caja__icono" />
+              <div>
+                <p class="en-caja__titulo">Pago en caja</p>
+                <p class="en-caja__texto">
+                  <template v-if="metodo === 'efectivo'">
+                    Pagás <strong>{{ colones(carrito.total) }}</strong> en
+                    <strong>efectivo</strong> en la caja de la soda cuando
+                    retirés. Si podés, llevá el monto exacto para que todo sea
+                    más rápido.
+                  </template>
+                  <template v-else>
+                    Pagás <strong>{{ colones(carrito.total) }}</strong> con
+                    <strong>tarjeta</strong> en la caja de la soda cuando
+                    retirés.
+                  </template>
                 </p>
               </div>
-              <Campo
-                id="cvv"
-                v-model="tarjeta.cvv"
-                etiqueta="CVV"
-                modo-teclado="numeric"
-                autocompletar="cc-csc"
-                :maximo="4"
-                placeholder="123"
-                :error="errores.cvv"
-              />
             </div>
-          </div>
-
-          <div v-else key="efectivo" class="detalle">
-            <p class="nota">
-              <Banknote :size="18" aria-hidden="true" />
-              <span>
-                Pagás <strong>{{ colones(carrito.total) }}</strong> en la caja
-                de la soda cuando retirés. Si podés, llevá el monto exacto para
-                que todo sea más rápido.
-              </span>
-            </p>
           </div>
         </Transition>
 
         <button
           type="submit"
           class="boton boton--accion boton--ancho boton--grande"
-          :disabled="procesando || sanciones.bloqueado"
+          :disabled="procesando || sanciones.bloqueado || faltaTelefono"
         >
           <LoaderCircle
             v-if="procesando"
@@ -343,9 +316,9 @@ onMounted(() => {
           {{
             procesando
               ? mensajeProceso
-              : metodo === 'efectivo'
+              : esEnCaja
                 ? 'Confirmar pedido'
-                : `Pagar ${colones(carrito.total)}`
+                : `Enviar comprobante · ${colones(carrito.total)}`
           }}
         </button>
         <p class="solo-lectores" role="status" aria-live="assertive">
@@ -393,6 +366,42 @@ onMounted(() => {
 .demo svg {
   flex-shrink: 0;
   color: var(--aviso);
+}
+
+.telefono {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+  padding: var(--e-5);
+  margin-bottom: var(--e-5);
+  border-radius: var(--radio-lg);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-left: 4px solid var(--principal);
+}
+
+.telefono__titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  font-size: var(--txt-md);
+}
+
+.telefono__texto {
+  font-size: var(--txt-sm);
+  color: var(--texto-suave);
+  line-height: var(--alto-amplio);
+}
+
+.telefono__form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--e-3);
+}
+
+.telefono__form :deep(.campo) {
+  flex: 1 1 14rem;
 }
 
 .distribucion {
@@ -452,6 +461,35 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: var(--e-4);
+}
+
+.en-caja {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--e-3);
+  padding: var(--e-4);
+  border-radius: var(--radio-md);
+  border: 1px solid var(--borde);
+  background: var(--superficie-3);
+}
+
+.en-caja__icono {
+  flex-shrink: 0;
+  color: var(--principal-fuerte);
+}
+
+.en-caja__titulo {
+  font-weight: var(--peso-extra);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto);
+}
+
+.en-caja__texto {
+  margin-top: var(--e-1);
+  font-size: var(--txt-sm);
+  color: var(--texto-suave);
+  line-height: var(--alto-amplio);
 }
 
 .pasos {

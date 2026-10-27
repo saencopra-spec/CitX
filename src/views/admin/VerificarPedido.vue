@@ -11,6 +11,7 @@ import {
   Clock,
   PackageCheck,
   User,
+  Phone,
 } from 'lucide-vue-next'
 import EncabezadoPanel from '@/components/estructura/EncabezadoPanel.vue'
 import EscanerQR from '@/components/soda/EscanerQR.vue'
@@ -30,6 +31,7 @@ import {
   codigoDesdeQR,
 } from '@compartido/pedidos.js'
 import { inicioFranja } from '@compartido/jornada.js'
+import { formatearTelefono } from '@compartido/contacto.js'
 
 /**
  * Pagina que abre el QR de un pedido. La soda ve quien lo pidio, que lleva,
@@ -233,6 +235,14 @@ async function avanzar() {
             >
           </dd>
         </div>
+        <div v-if="pedido.usuarioTelefono">
+          <dt><Phone :size="16" aria-hidden="true" /> Teléfono</dt>
+          <dd>
+            <a :href="`tel:${pedido.usuarioTelefono}`">{{
+              formatearTelefono(pedido.usuarioTelefono)
+            }}</a>
+          </dd>
+        </div>
         <div>
           <dt><Clock :size="16" aria-hidden="true" /> Retiro</dt>
           <dd>
@@ -267,7 +277,7 @@ async function avanzar() {
           <Banknote :size="22" aria-hidden="true" />
           <span
             >Cobrar <strong>{{ colones(pedido.total) }}</strong> en
-            efectivo</span
+            caja</span
           >
         </template>
         <template v-else>
@@ -278,6 +288,17 @@ async function avanzar() {
           >
         </template>
       </div>
+
+      <a
+        v-if="pedido.pago.foto"
+        :href="pedido.pago.foto"
+        target="_blank"
+        rel="noopener"
+        class="comprobante"
+      >
+        <img :src="pedido.pago.foto" alt="Comprobante del SINPE" />
+        <span>Ver comprobante del SINPE</span>
+      </a>
 
       <button
         v-if="siguienteEstado(pedido.estado)"
@@ -422,6 +443,24 @@ async function avanzar() {
 .cobro--pendiente {
   color: var(--aviso);
   font-size: var(--txt-lg);
+}
+
+.comprobante {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  padding: var(--e-2) var(--e-3);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-md);
+  font-weight: var(--peso-semi);
+  color: var(--texto);
+}
+
+.comprobante img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: var(--radio-sm);
 }
 
 .entregado {

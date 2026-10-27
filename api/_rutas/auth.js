@@ -19,6 +19,10 @@ import {
   ipDe,
 } from '../_lib/sesion.js'
 import { SECCIONES } from '../../compartido/permisos.js'
+import {
+  normalizarTelefono,
+  telefonoValido,
+} from '../../compartido/contacto.js'
 import { canjear } from '../_lib/invitaciones.js'
 
 const correo = z
@@ -44,6 +48,18 @@ const nombre = z
   .min(2, 'Escribí tu nombre completo.')
   .max(80, 'El nombre es demasiado largo.')
 
+/** Teléfono opcional: si se escribe, tiene que ser un número de 8 dígitos. */
+const telefono = z
+  .string()
+  .trim()
+  .max(30)
+  .optional()
+  .nullable()
+  .refine(
+    (v) => !v || telefonoValido(v),
+    'El teléfono tiene que ser un número de 8 dígitos.'
+  )
+
 /**
  * Registro publico: cualquiera puede crear una cuenta de estudiante. Para ser
  * personal (profesor, administrativo, soda o administrador) hace falta un
@@ -54,6 +70,7 @@ const esquemaRegistro = z
     nombre,
     correo,
     contrasena: contrasenaNueva,
+    telefono,
     seccion: z.string().optional().nullable(),
     codigo: z.string().trim().max(40).optional().nullable(),
   })
@@ -77,6 +94,7 @@ const esquemaEntrar = z.object({
 
 const esquemaPerfil = z.object({
   nombre,
+  telefono,
   seccion: z.string().optional().nullable(),
 })
 
@@ -133,6 +151,7 @@ registrar('POST', '/auth/registro', async ({ req, res }) => {
   const usuario = {
     nombre: datos.nombre,
     correo: datos.correo,
+    telefono: normalizarTelefono(datos.telefono),
     hash: await bcrypt.hash(datos.contrasena, 10),
     rol: 'estudiante',
     seccion: datos.seccion ?? null,
@@ -254,6 +273,11 @@ registrar('PUT', '/auth/perfil', async ({ req, res }) => {
   const usuario = await requerir(req)
   const datos = esquemaPerfil.parse(await leerCuerpo(req))
   const cambios = { nombre: datos.nombre }
+
+  // El teléfono solo se toca si vino en la petición; vacío lo deja sin número.
+  if (datos.telefono !== undefined) {
+    cambios.telefono = normalizarTelefono(datos.telefono)
+  }
 
   if (usuario.rol === 'estudiante') {
     if (!SECCIONES.includes(datos.seccion ?? '')) {

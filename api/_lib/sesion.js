@@ -77,6 +77,7 @@ export function usuarioPublico(u) {
     id: String(u._id),
     nombre: u.nombre,
     correo: u.correo,
+    telefono: u.telefono ?? null,
     rol: u.rol,
     seccion: u.seccion ?? null,
     favoritos: u.favoritos ?? [],

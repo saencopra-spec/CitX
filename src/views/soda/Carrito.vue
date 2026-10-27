@@ -246,7 +246,7 @@ onMounted(async () => {
 
 .item {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) auto;
+  grid-template-columns: 80px minmax(0, 1fr) auto;
   grid-template-areas:
     'foto info cantidad'
     'foto nota nota';
@@ -257,7 +257,7 @@ onMounted(async () => {
 
 .item__foto {
   grid-area: foto;
-  width: 80px;
+  width: 100%;
   aspect-ratio: 640 / 461;
   align-self: start;
   border-radius: var(--radio-md);

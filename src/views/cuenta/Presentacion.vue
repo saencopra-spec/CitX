@@ -182,7 +182,7 @@ const extras = [
             Complejo Educativo CIT · La Asunción de Belén
           </p>
           <h1 id="titulo-portada" class="portada__titulo">
-            Todo el colegio,<br />
+            Todo el colegio<br />
             <span class="portada__titulo-acento">en tu bolsillo.</span>
           </h1>
           <p class="portada__bajada">
